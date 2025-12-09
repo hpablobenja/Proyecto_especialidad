@@ -5,9 +5,13 @@ import 'package:provider/provider.dart';
 
 import '../../../domain/entities/module_entity.dart';
 import '../../../domain/entities/lesson_entity.dart';
+import '../../../core/services/offline_cache_service.dart';
 import '../../widgets/app_drawer.dart';
-import '../courses/lesson_player_screen.dart';
+import '../../widgets/no_internet_message.dart';
+import '../courses/lesson_options_screen.dart';
 import '../../providers/admin_content_provider.dart';
+import '../../providers/connectivity_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../../core/constants/app_colors.dart';
 
 class CourseContentViewScreen extends StatefulWidget {
@@ -25,6 +29,7 @@ class _CourseContentViewScreenState extends State<CourseContentViewScreen> {
   String? _error;
   List<ModuleEntity> _modules = [];
   final Map<String, List<LessonEntity>> _lessonsByModule = {};
+  final OfflineCacheService _cacheService = OfflineCacheService();
 
   String? _youtubeIdFromLesson(LessonEntity lesson) {
     // Find a youtube media or fallback to first media
@@ -68,6 +73,32 @@ class _CourseContentViewScreenState extends State<CourseContentViewScreen> {
   }
 
   Future<void> _loadModules() async {
+    // Check if online
+    final connectivity = Provider.of<ConnectivityProvider>(context, listen: false);
+    if (!connectivity.isOnline) {
+      // Try to load cached data
+      final cachedModules = await _cacheService.getCachedModules(widget.courseId);
+      final cachedLesson = await _cacheService.getLastLesson();
+      
+      // Only show cached data if lesson belongs to this course
+      if (cachedModules.isNotEmpty && 
+          cachedLesson != null && 
+          cachedLesson.courseId == widget.courseId) {
+        setState(() {
+          _modules = cachedModules;
+          _lessonsByModule[cachedLesson.moduleId] = [cachedLesson];
+          _loading = false;
+          _error = null; // Clear error
+        });
+      } else {
+        setState(() {
+          _loading = false;
+          _error = 'offline';
+        });
+      }
+      return;
+    }
+
     setState(() {
       _loading = true;
       _error = null;
@@ -76,6 +107,9 @@ class _CourseContentViewScreenState extends State<CourseContentViewScreen> {
       final admin = Provider.of<AdminContentProvider>(context, listen: false);
       final mods = await admin.fetchModules(widget.courseId);
       setState(() => _modules = mods);
+      
+      // Cache modules for offline access
+      await _cacheService.cacheModules(widget.courseId, mods);
     } catch (e) {
       setState(() => _error = 'No se pudieron cargar los módulos: $e');
     } finally {
@@ -100,17 +134,23 @@ class _CourseContentViewScreenState extends State<CourseContentViewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+    final isMaestro = authProvider.currentUser?.role == 'maestro';
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Microformación: ${widget.courseTitle}'),
       ),
-      drawer: const AppDrawer(),
+      // Only show drawer if NOT maestro
+      drawer: isMaestro ? null : const AppDrawer(),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(child: Text(_error!, style: TextStyle(color: AppColors.errorColor)))
-              : _modules.isEmpty
-                  ? const Center(child: Text('Aún no hay contenido disponible.'))
+          : _error == 'offline'
+              ? const NoInternetMessage()
+              : _error != null
+                  ? Center(child: Text(_error!, style: TextStyle(color: AppColors.errorColor)))
+                  : _modules.isEmpty
+                      ? const Center(child: Text('Aún no hay contenido disponible.'))
                   : ListView.builder(
                       itemCount: _modules.length,
                       itemBuilder: (context, index) {
@@ -154,7 +194,7 @@ class _CourseContentViewScreenState extends State<CourseContentViewScreen> {
                                           onTap: () {
                                             Navigator.of(context).push(
                                               MaterialPageRoute(
-                                                builder: (_) => LessonPlayerScreen(lesson: l),
+                                                builder: (_) => LessonOptionsScreen(lesson: l),
                                               ),
                                             );
                                           },
@@ -195,9 +235,12 @@ class _CourseContentViewScreenState extends State<CourseContentViewScreen> {
                                     ],
                                   ),
                                   onTap: () {
+                                    // Cache lesson for offline access
+                                    _cacheService.cacheLastLesson(l);
+                                    
                                     Navigator.of(context).push(
                                       MaterialPageRoute(
-                                        builder: (_) => LessonPlayerScreen(lesson: l),
+                                        builder: (_) => LessonOptionsScreen(lesson: l),
                                       ),
                                     );
                                   },

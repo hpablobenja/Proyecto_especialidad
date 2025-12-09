@@ -17,6 +17,7 @@ class CreateCourseUsecase implements Usecase<CourseEntity, CreateCourseParams> {
       id: '', // Firestore generará el ID
       title: params.title,
       description: params.description,
+      targetAudience: params.targetAudience,
     );
     return await repository.createCourse(newCourse);
   }
@@ -25,6 +26,11 @@ class CreateCourseUsecase implements Usecase<CourseEntity, CreateCourseParams> {
 class CreateCourseParams {
   final String title;
   final String description;
+  final String targetAudience;
 
-  CreateCourseParams({required this.title, required this.description});
+  CreateCourseParams({
+    required this.title,
+    required this.description,
+    required this.targetAudience,
+  });
 }

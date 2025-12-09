@@ -6,16 +6,13 @@ class BackHomeButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool isVisible;
 
-  const BackHomeButton({
-    Key? key,
-    this.onPressed,
-    this.isVisible = true,
-  }) : super(key: key);
+  const BackHomeButton({Key? key, this.onPressed, this.isVisible = true})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     if (!isVisible) return const SizedBox.shrink();
-    
+
     void handlePress() {
       if (onPressed != null) {
         onPressed!();
@@ -23,7 +20,7 @@ class BackHomeButton extends StatelessWidget {
         Navigator.of(context).pop();
       }
     }
-    
+
     return Positioned(
       top: MediaQuery.of(context).padding.top + 16,
       left: 16,
@@ -37,13 +34,17 @@ class BackHomeButton extends StatelessWidget {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.white.withOpacity(0.1),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
             ],
           ),
-          child: const Icon(Icons.arrow_back, color: Colors.black87),
+          child: const Icon(
+            Icons.arrow_back,
+            //color: Color.fromARGB(221, 171, 82, 82),
+            color: Colors.white,
+          ),
         ),
       ),
     );

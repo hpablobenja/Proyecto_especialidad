@@ -370,17 +370,8 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
               children: [
                 const Icon(Icons.video_library, color: AppColors.primaryColor),
                 const SizedBox(width: 8),
-                Text(
-                  'Videos de YouTube (${youtubeVideos.length})',
-                  style: AppStyles.subhead1,
-                ),
+                Text('Videos de YouTube', style: AppStyles.subhead1),
                 const Spacer(),
-                if (widget.isAdmin)
-                  IconButton(
-                    onPressed: _addVideo,
-                    icon: const Icon(Icons.add),
-                    tooltip: 'Agregar video',
-                  ),
               ],
             ),
             const SizedBox(height: 16),

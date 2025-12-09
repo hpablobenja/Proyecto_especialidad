@@ -15,12 +15,14 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   String _selectedRole = 'maestro';
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -32,6 +34,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final result = await authProvider.registerWithEmailAndPassword(
         _emailController.text,
         _passwordController.text,
+        _nameController.text,
         _selectedRole,
       );
 
@@ -56,7 +59,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Registro de Usuario'),
+        title: Text(
+          'Registro de Usuario',
+          style: TextStyle(
+            color: Colors.white, // 👈 aquí defines el color blanco
+          ),
+        ),
         backgroundColor: AppColors.primaryColor,
       ),
       body: Padding(
@@ -66,6 +74,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
+              // Nombre
+              TextFormField(
+                controller: _nameController,
+                decoration: InputDecoration(labelText: 'Nombre Completo'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor ingrese su nombre';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 16),
               // Correo electrónico
               TextFormField(
                 controller: _emailController,
@@ -87,10 +107,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 decoration: InputDecoration(labelText: 'Rol'),
                 items: [
                   DropdownMenuItem(value: 'maestro', child: Text('Maestro')),
-                  DropdownMenuItem(
-                    value: 'admin',
-                    child: Text('Administrador'),
-                  ),
                 ],
                 onChanged: (value) {
                   setState(() {
@@ -102,16 +118,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
               authProvider.isLoading
                   ? CircularProgressIndicator()
                   : ElevatedButton(
-                      onPressed: _register,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.accentColor,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 50,
-                          vertical: 15,
-                        ),
+                    onPressed: _register,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.accentColor,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 50,
+                        vertical: 15,
                       ),
-                      child: Text('Registrarse', style: AppStyles.buttonText),
                     ),
+                    child: Text('Registrarse', style: AppStyles.buttonText),
+                  ),
             ],
           ),
         ),

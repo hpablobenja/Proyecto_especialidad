@@ -2,15 +2,23 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:open_filex/open_filex.dart';
 
 import '../../../core/injection_container.dart' as di;
-import '../../../domain/usecases/reports/generate_pdf_report_usecase.dart';
+import '../../../domain/usecases/reports/generate_all_users_report_usecase.dart';
 import '../../providers/auth_provider.dart';
 
-class AdminReportsScreen extends StatelessWidget {
+class AdminReportsScreen extends StatefulWidget {
   const AdminReportsScreen({super.key});
 
-  Future<void> _generateReport(BuildContext context) async {
+  @override
+  State<AdminReportsScreen> createState() => _AdminReportsScreenState();
+}
+
+class _AdminReportsScreenState extends State<AdminReportsScreen> {
+  bool _isGenerating = false;
+
+  Future<void> _generateAllUsersReport(BuildContext context) async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final user = auth.currentUser;
     if (user == null) {
@@ -19,15 +27,46 @@ class AdminReportsScreen extends StatelessWidget {
       );
       return;
     }
+
+    setState(() {
+      _isGenerating = true;
+    });
+
     try {
-      final usecase = di.sl<GeneratePdfReportUsecase>();
-      final bytes = await usecase.call(user.uid);
+      final usecase = di.sl<GenerateAllUsersReportUsecase>();
+      final filePath = await usecase.call(NoParams());
+      
+      if (!mounted) return;
+      
+      setState(() {
+        _isGenerating = false;
+      });
+
+      // Abrir el PDF automáticamente
+      await OpenFilex.open(filePath);
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Reporte generado (${bytes.length} bytes).')),
+        SnackBar(
+          content: Text('Reporte generado y abierto exitosamente.\nGuardado en: $filePath'),
+          duration: const Duration(seconds: 5),
+          action: SnackBarAction(
+            label: 'OK',
+            onPressed: () {},
+          ),
+        ),
       );
     } catch (e) {
+      if (!mounted) return;
+      
+      setState(() {
+        _isGenerating = false;
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al generar el reporte: $e')),
+        SnackBar(
+          content: Text('Error al generar el reporte: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -47,14 +86,45 @@ class AdminReportsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             const Text(
-              'Genera un reporte PDF con un resumen de microformaciones. ' 
-              'En futuras versiones podrás descargar y compartir el archivo.',
+              'Genera un reporte PDF completo con el progreso de todos los usuarios en las microformaciones.',
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.picture_as_pdf),
-              label: const Text('Generar reporte PDF'),
-              onPressed: () => _generateReport(context),
+            
+            if (_isGenerating)
+              const Center(
+                child: Column(
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Generando reporte...'),
+                  ],
+                ),
+              )
+            else
+              ElevatedButton.icon(
+                icon: const Icon(Icons.picture_as_pdf),
+                label: const Text('Generar reporte de todos los usuarios'),
+                onPressed: () => _generateAllUsersReport(context),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                ),
+              ),
+            
+            const SizedBox(height: 24),
+            const Divider(),
+            const SizedBox(height: 16),
+            
+            Text(
+              'Información del Reporte',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '• El reporte incluye el progreso de todos los usuarios maestros\n'
+              '• Se muestra el estado de cada lección (Completado, En Curso, No Iniciado)\n'
+              '• El archivo PDF se guarda automáticamente en la carpeta de documentos\n'
+              '• Incluye estadísticas generales de uso',
+              style: TextStyle(fontSize: 14),
             ),
           ],
         ),

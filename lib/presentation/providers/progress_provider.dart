@@ -1,14 +1,20 @@
 // lib/presentation/providers/progress_provider.dart
 
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/usecases/courses/get_course_progress_usecase.dart';
 import '../../domain/entities/course_entity.dart';
+import '../../domain/entities/lesson_progress_entity.dart';
 
 class ProgressProvider extends ChangeNotifier {
   final GetCourseProgressUsecase getCourseProgressUsecase;
+  final FirebaseFirestore firestore;
 
-  ProgressProvider({required this.getCourseProgressUsecase});
+  ProgressProvider({
+    required this.getCourseProgressUsecase,
+    FirebaseFirestore? firestore,
+  }) : firestore = firestore ?? FirebaseFirestore.instance;
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -44,6 +50,62 @@ class ProgressProvider extends ChangeNotifier {
     if (!_hasViewedAnyLesson) {
       _hasViewedAnyLesson = true;
       notifyListeners();
+    }
+  }
+
+  // Marca una lección como "en curso" cuando se selecciona "Reproducir video"
+  Future<void> markLessonInProgress({
+    required String userId,
+    required String courseId,
+    required String moduleId,
+    required String lessonId,
+  }) async {
+    try {
+      final progressId = '$userId-$courseId-$moduleId-$lessonId';
+      final progressRef = firestore.collection('userProgress').doc(progressId);
+
+      final progressData = {
+        'userId': userId,
+        'courseId': courseId,
+        'moduleId': moduleId,
+        'lessonId': lessonId,
+        'status': LessonProgressStatus.inProgress.name,
+        'hasViewedVideo': true,
+        'hasCompletedQuiz': false,
+        'lastUpdated': FieldValue.serverTimestamp(),
+      };
+
+      await progressRef.set(progressData, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('Error al marcar lección en progreso: $e');
+    }
+  }
+
+  // Marca una lección como "completada" cuando se completa el cuestionario
+  Future<void> markLessonCompleted({
+    required String userId,
+    required String courseId,
+    required String moduleId,
+    required String lessonId,
+  }) async {
+    try {
+      final progressId = '$userId-$courseId-$moduleId-$lessonId';
+      final progressRef = firestore.collection('userProgress').doc(progressId);
+
+      final progressData = {
+        'userId': userId,
+        'courseId': courseId,
+        'moduleId': moduleId,
+        'lessonId': lessonId,
+        'status': LessonProgressStatus.completed.name,
+        'hasViewedVideo': true,
+        'hasCompletedQuiz': true,
+        'lastUpdated': FieldValue.serverTimestamp(),
+      };
+
+      await progressRef.set(progressData, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('Error al marcar lección completada: $e');
     }
   }
 }

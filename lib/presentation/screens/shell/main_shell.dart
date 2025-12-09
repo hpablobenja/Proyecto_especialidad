@@ -11,6 +11,7 @@ import '../courses/my_progress_screen.dart';
 import '../profile/profile_screen.dart';
 import '../../widgets/app_drawer.dart';
 import '../../widgets/course_video_tile.dart';
+import '../../widgets/offline_banner.dart';
 import '../../providers/favorites_provider.dart';
 import '../courses/course_details_screen.dart';
 
@@ -33,10 +34,10 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _onItemTapped(int index) {
-    if (_currentIndex == index) {
-      // Si ya está en la misma pestaña, hacer scroll al inicio
-      _navigatorKey.currentState?.popUntil((route) => route.isFirst);
-    }
+    // Pop all routes in the nested navigator to return to the base screen
+    _navigatorKey.currentState?.popUntil((route) => route.isFirst);
+
+    // Then change the tab
     setState(() {
       _currentIndex = index;
     });
@@ -73,29 +74,37 @@ class _MainShellState extends State<MainShell> {
           ), //255, 74, 165, 95
         ),
         drawer: isMaestro ? null : const AppDrawer(),
-        body: Navigator(
-          key: _navigatorKey,
-          onGenerateRoute: (settings) {
-            return PageRouteBuilder(
-              pageBuilder:
-                  (context, animation, secondaryAnimation) =>
-                      _buildCurrentPage(),
-              transitionsBuilder: (
-                context,
-                animation,
-                secondaryAnimation,
-                child,
-              ) {
-                return FadeTransition(opacity: animation, child: child);
-              },
-            );
-          },
+        body: Column(
+          children: [
+            const OfflineBanner(),
+            Expanded(
+              child: Navigator(
+                key: _navigatorKey,
+                onGenerateRoute: (settings) {
+                  return PageRouteBuilder(
+                    pageBuilder:
+                        (context, animation, secondaryAnimation) =>
+                            _buildCurrentPage(),
+                    transitionsBuilder: (
+                      context,
+                      animation,
+                      secondaryAnimation,
+                      child,
+                    ) {
+                      return FadeTransition(opacity: animation, child: child);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
         ),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _currentIndex,
+          backgroundColor: const Color.fromARGB(255, 212, 221, 240),
           onTap: _onItemTapped,
           type: BottomNavigationBarType.fixed,
-          selectedItemColor: AppColors.primaryBlue,
+          selectedItemColor: const Color.fromARGB(255, 1, 1, 1),
           unselectedItemColor: Colors.grey,
           showSelectedLabels: true,
           showUnselectedLabels: true,
@@ -153,10 +162,23 @@ class _MainShellState extends State<MainShell> {
 }
 
 // ===== Gallery =====
-class _GalleryScreen extends StatelessWidget {
+class _GalleryScreen extends StatefulWidget {
   const _GalleryScreen();
 
-  // En main_shell.dart, reemplaza el método build de _GalleryScreen con esto:
+  @override
+  State<_GalleryScreen> createState() => _GalleryScreenState();
+}
+
+class _GalleryScreenState extends State<_GalleryScreen> {
+  String _selectedAudience = 'Todos';
+  final List<String> _audiences = [
+    'Todos',
+    'Inicial',
+    'Primaria',
+    'Secundaria',
+    'Alternativa',
+    'Otro(Especificar)',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -175,39 +197,74 @@ class _GalleryScreen extends StatelessWidget {
       );
     }
 
-    // Filtros temáticos de ejemplo
-    final filters = const ['Primaria', 'Secundaria', 'Especial'];
+    // Filter courses by selected audience
+    final filteredCourses =
+        _selectedAudience == 'Todos'
+            ? courseProvider.courses
+            : courseProvider.courses
+                .where(
+                  (c) =>
+                      c.targetAudience.trim().toLowerCase() ==
+                      _selectedAudience.trim().toLowerCase(),
+                )
+                .toList();
 
     return Container(
-      // Hacer el fondo transparente para que se vea la imagen de fondo
       color: Colors.transparent,
       child: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  for (final f in filters)
-                    FilterChip(
-                      label: Text(
-                        f,
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      selected: false,
-                      onSelected: (_) {},
-                      backgroundColor: Colors.white,
-                      shape: StadiumBorder(
-                        side: BorderSide(
-                          color: AppColors.primaryColor.withOpacity(0.2),
-                        ),
+                  const Padding(
+                    padding: EdgeInsets.only(left: 4.0, bottom: 8.0),
+                    child: Text(
+                      'Filtrar por público:',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
                       ),
                     ),
+                  ),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children:
+                          _audiences.map((audience) {
+                            final isSelected = _selectedAudience == audience;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: FilterChip(
+                                label: Text(audience),
+                                selected: isSelected,
+                                onSelected: (selected) {
+                                  setState(() {
+                                    _selectedAudience = audience;
+                                  });
+                                },
+                                selectedColor: Colors.green.shade100,
+                                checkmarkColor: Colors.green.shade700,
+                                labelStyle: TextStyle(
+                                  color:
+                                      isSelected
+                                          ? Colors.green.shade900
+                                          : Colors.black87,
+                                  fontWeight:
+                                      isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                ),
+                                backgroundColor: Colors.white,
+                                elevation: isSelected ? 2 : 0,
+                              ),
+                            );
+                          }).toList(),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -222,7 +279,7 @@ class _GalleryScreen extends StatelessWidget {
                 mainAxisSpacing: 8,
               ),
               delegate: SliverChildBuilderDelegate((context, index) {
-                final course = courseProvider.courses[index];
+                final course = filteredCourses[index];
                 return CourseVideoTile(
                   course: course,
                   onTap: () {
@@ -236,7 +293,7 @@ class _GalleryScreen extends StatelessWidget {
                     );
                   },
                 );
-              }, childCount: courseProvider.courses.length),
+              }, childCount: filteredCourses.length),
             ),
           ),
         ],
@@ -291,12 +348,9 @@ class _SearchBodyState extends State<_SearchBody> {
                   runSpacing: 8,
                   children: [
                     for (final label in const [
-                      'Evaluación',
-                      'Inclusión',
-                      'Tecnología',
-                      '<= 5 min',
-                      'Primaria',
-                      "Secundaria",
+                      'Lenguaje',
+                      'Matemática',
+                      'Robótica',
                     ])
                       FilterChip(
                         label: Text(

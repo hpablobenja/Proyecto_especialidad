@@ -1,10 +1,14 @@
 // lib/presentation/screens/courses/course_details_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../../domain/entities/course_entity.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/services/offline_cache_service.dart';
+import '../../providers/connectivity_provider.dart';
 import 'course_content_view_screen.dart';
+import 'lesson_documentation_screen.dart';
 
 class CourseDetailsScreen extends StatelessWidget {
   final CourseEntity course;
@@ -44,7 +48,40 @@ class CourseDetailsScreen extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () {
+                onPressed: () async {
+                  final cacheService = OfflineCacheService();
+                  final connectivity = Provider.of<ConnectivityProvider>(context, listen: false);
+                  
+                  // Cache course for offline access
+                  await cacheService.cacheLastCourse(course);
+                  
+                  // Check if offline
+                  if (!connectivity.isOnline) {
+                    // Try to get cached lesson for this course
+                    final cachedLesson = await cacheService.getLastLesson();
+                    
+                    if (cachedLesson != null && cachedLesson.courseId == course.id) {
+                      // Navigate directly to the lesson documentation (not options)
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => LessonDocumentationScreen(lesson: cachedLesson),
+                        ),
+                      );
+                      return;
+                    } else {
+                      // No cached lesson for this course
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('No hay contenido guardado para este curso. Accede online primero.'),
+                          backgroundColor: Colors.orange,
+                          duration: Duration(seconds: 3),
+                        ),
+                      );
+                      return;
+                    }
+                  }
+                  
+                  // Online: show normal course content
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder:

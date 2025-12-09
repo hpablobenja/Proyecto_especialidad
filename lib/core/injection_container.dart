@@ -17,10 +17,12 @@ import '../domain/repositories/content_repository.dart';
 import '../domain/usecases/auth/login_usecase.dart';
 import '../domain/usecases/auth/register_usecase.dart';
 import '../domain/usecases/auth/get_current_user_usecase.dart';
+import '../domain/usecases/auth/update_user_usecase.dart';
 import '../domain/usecases/courses/get_courses_usecase.dart';
 import '../domain/usecases/courses/create_course_usecase.dart';
 import '../domain/usecases/courses/get_course_progress_usecase.dart';
 import '../domain/usecases/reports/generate_pdf_report_usecase.dart';
+import '../domain/usecases/reports/generate_all_users_report_usecase.dart';
 import '../domain/usecases/content/list_courses_usecase.dart' as content_list;
 import '../domain/usecases/content/list_modules_usecase.dart' as content_list_modules;
 import '../domain/usecases/content/list_lessons_usecase.dart' as content_list_lessons;
@@ -71,6 +73,7 @@ void _initAuth() {
       loginUsecase: sl<LoginUsecase>(),
       registerUsecase: sl<RegisterUsecase>(),
       getCurrentUserUsecase: sl<GetCurrentUserUsecase>(),
+      updateUserUsecase: sl<UpdateUserUsecase>(),
     ),
   );
 
@@ -92,6 +95,9 @@ void _initAuth() {
   );
   sl.registerLazySingleton<GetCurrentUserUsecase>(
     () => GetCurrentUserUsecase(sl<AuthRepository>()),
+  );
+  sl.registerLazySingleton<UpdateUserUsecase>(
+    () => UpdateUserUsecase(sl<AuthRepository>()),
   );
 
   // Repository
@@ -116,6 +122,7 @@ void _initCourses() {
   sl.registerFactory<ProgressProvider>(
     () => ProgressProvider(
       getCourseProgressUsecase: sl<GetCourseProgressUsecase>(),
+      firestore: sl<FirebaseFirestore>(),
     ),
   );
 
@@ -130,7 +137,11 @@ void _initCourses() {
     () => GetCourseProgressUsecase(sl<CourseRepository>()),
   );
   sl.registerLazySingleton<GeneratePdfReportUsecase>(
-    () => GeneratePdfReportUsecase(sl<CourseRepository>()),
+    () => GeneratePdfReportUsecase(sl<CourseRepository>(), firestore: sl<FirebaseFirestore>()),
+  );
+
+  sl.registerLazySingleton<GenerateAllUsersReportUsecase>(
+    () => GenerateAllUsersReportUsecase(sl<CourseRepository>(), firestore: sl<FirebaseFirestore>()),
   );
 
   // Repository

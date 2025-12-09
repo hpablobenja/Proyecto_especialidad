@@ -1,0 +1,209 @@
+// test/login_screen_test.dart
+/*
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+import 'package:mockito/mockito.dart';
+import 'package:mockito/annotations.dart';
+
+import 'package:redmaestra1/presentation/providers/auth_provider.dart';
+import 'package:redmaestra1/presentation/screens/auth/login_screen.dart';
+import 'package:redmaestra1/domain/usecases/auth/login_usecase.dart';
+import 'package:redmaestra1/domain/usecases/auth/register_usecase.dart';
+import 'package:redmaestra1/domain/usecases/auth/get_current_user_usecase.dart';
+import 'package:redmaestra1/domain/entities/user_entity.dart';
+
+// Generar mocks con: flutter pub run build_runner build
+@GenerateMocks([LoginUsecase, RegisterUsecase, GetCurrentUserUsecase])
+import 'login_screen_test.mocks.dart';
+
+void main() {
+  late MockLoginUsecase mockLoginUsecase;
+  late MockRegisterUsecase mockRegisterUsecase;
+  late MockGetCurrentUserUsecase mockGetCurrentUserUsecase;
+  late AuthProvider authProvider;
+
+  setUp(() {
+    mockLoginUsecase = MockLoginUsecase();
+    mockRegisterUsecase = MockRegisterUsecase();
+    mockGetCurrentUserUsecase = MockGetCurrentUserUsecase();
+    
+    authProvider = AuthProvider(
+      loginUsecase: mockLoginUsecase,
+      registerUsecase: mockRegisterUsecase,
+      getCurrentUserUsecase: mockGetCurrentUserUsecase,
+    );
+  });
+
+  Widget createTestWidget() {
+    return MaterialApp(
+      home: ChangeNotifierProvider<AuthProvider>.value(
+        value: authProvider,
+        child: LoginScreen(),
+      ),
+    );
+  }
+
+  // Test 1: Verificar que el formulario de inicio de sesión se renderiza correctamente
+  testWidgets('LoginScreen muestra el formulario correctamente', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(createTestWidget());
+
+    // Verificar que los campos de texto estén presentes
+    expect(find.byType(TextFormField), findsNWidgets(2)); // Email y contraseña
+    expect(find.text('Correo Electrónico'), findsOneWidget);
+    expect(find.text('Contraseña'), findsOneWidget);
+    expect(find.text('Iniciar Sesión'), findsOneWidget);
+    expect(find.text('RedMaestra'), findsOneWidget);
+  });
+
+  // Test 2: Verificar el flujo de inicio de sesión exitoso
+  testWidgets('Login exitoso con credenciales válidas', (
+    WidgetTester tester,
+  ) async {
+    // Configurar el mock para simular un inicio de sesión exitoso
+    final mockUser = UserEntity(
+      uid: 'test_uid',
+      email: 'test@example.com',
+      role: 'maestro',
+    );
+
+    when(mockLoginUsecase.call(any)).thenAnswer((_) async => mockUser);
+
+    await tester.pumpWidget(createTestWidget());
+
+    // Llenar el formulario con credenciales válidas
+    await tester.enterText(
+      find.byType(TextFormField).first,
+      'test@example.com',
+    );
+    await tester.enterText(find.byType(TextFormField).last, 'password123');
+
+    // Presionar el botón de inicio de sesión
+    await tester.tap(find.text('Iniciar Sesión'));
+    await tester.pump(); // Procesar el evento de tap
+    await tester.pump(); // Procesar el estado de carga
+
+    // Verificar que se llamó al usecase
+    verify(mockLoginUsecase.call(any)).called(1);
+  });
+
+  // Test 3: Verificar validación de email vacío
+  testWidgets('Muestra error cuando el email está vacío', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(createTestWidget());
+
+    // Presionar el botón sin llenar el formulario
+    await tester.tap(find.text('Iniciar Sesión'));
+    await tester.pump();
+
+    // Verificar que se muestra un mensaje de error de validación
+    expect(find.text('Por favor ingresa un correo electrónico'), findsOneWidget);
+  });
+
+  // Test 4: Verificar validación de email inválido
+  testWidgets('Muestra error cuando el email es inválido', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(createTestWidget());
+
+    // Ingresar un email inválido
+    await tester.enterText(find.byType(TextFormField).first, 'emailinvalido');
+    await tester.tap(find.text('Iniciar Sesión'));
+    await tester.pump();
+
+    // Verificar que se muestra un mensaje de error de validación
+    expect(
+      find.text('Por favor ingresa un correo electrónico válido'),
+      findsOneWidget,
+    );
+  });
+
+  // Test 5: Verificar validación de contraseña vacía
+  testWidgets('Muestra error cuando la contraseña está vacía', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(createTestWidget());
+
+    // Ingresar solo el email
+    await tester.enterText(
+      find.byType(TextFormField).first,
+      'test@example.com',
+    );
+    await tester.tap(find.text('Iniciar Sesión'));
+    await tester.pump();
+
+    // Verificar que se muestra un mensaje de error de validación
+    expect(find.text('Por favor ingresa una contraseña'), findsOneWidget);
+  });
+
+  // Test 6: Verificar manejo de errores en el login
+  testWidgets('Muestra mensaje de error con credenciales inválidas', (
+    WidgetTester tester,
+  ) async {
+    // Configurar el mock para lanzar un error
+    when(mockLoginUsecase.call(any)).thenThrow(
+      Exception('Usuario o contraseña incorrectos'),
+    );
+
+    await tester.pumpWidget(createTestWidget());
+
+    // Llenar el formulario con credenciales incorrectas
+    await tester.enterText(
+      find.byType(TextFormField).first,
+      'wrong@example.com',
+    );
+    await tester.enterText(find.byType(TextFormField).last, 'wrongpass');
+
+    // Presionar el botón de inicio de sesión
+    await tester.tap(find.text('Iniciar Sesión'));
+    await tester.pump(); // Procesar el evento de tap
+    await tester.pumpAndSettle(); // Esperar a que se complete la operación
+
+    // Verificar que se muestra un mensaje de error
+    expect(
+      find.text('Exception: Usuario o contraseña incorrectos'),
+      findsOneWidget,
+    );
+  });
+
+  // Test 7: Verificar que muestra el indicador de carga durante el login
+  testWidgets('Muestra indicador de carga durante el login', (
+    WidgetTester tester,
+  ) async {
+    // Configurar el mock para simular un delay
+    final mockUser = UserEntity(
+      uid: 'test_uid',
+      email: 'test@example.com',
+      role: 'maestro',
+    );
+
+    when(mockLoginUsecase.call(any)).thenAnswer((_) async {
+      await Future.delayed(const Duration(milliseconds: 100));
+      return mockUser;
+    });
+
+    await tester.pumpWidget(createTestWidget());
+
+    // Llenar el formulario
+    await tester.enterText(
+      find.byType(TextFormField).first,
+      'test@example.com',
+    );
+    await tester.enterText(find.byType(TextFormField).last, 'password123');
+
+    // Presionar el botón de inicio de sesión
+    await tester.tap(find.text('Iniciar Sesión'));
+    await tester.pump(); // Procesar el evento de tap
+
+    // Verificar que se muestra el indicador de carga
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+    // Esperar a que termine la operación
+    await tester.pumpAndSettle();
+  });
+}
+
+*/

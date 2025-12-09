@@ -39,14 +39,18 @@ class CourseProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> createCourse(String title, String description) async {
+  Future<bool> createCourse(String title, String description, {String targetAudience = 'General'}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
       final created = await createCourseUsecase.call(
-        CreateCourseParams(title: title, description: description),
+        CreateCourseParams(
+          title: title, 
+          description: description,
+          targetAudience: targetAudience,
+        ),
       );
       _courses = List.of(_courses)..add(created);
       return true;

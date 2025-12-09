@@ -9,6 +9,7 @@ import '../../providers/comments_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/app_drawer.dart';
 import '../../widgets/youtube_video_manager.dart';
+import 'quiz_management_screen.dart';
 import '../../../domain/entities/module_entity.dart';
 import '../../../domain/entities/lesson_entity.dart';
 import '../../../domain/entities/media_resource.dart';
@@ -310,6 +311,214 @@ class _CourseContentScreenState extends State<CourseContentScreen> {
     }
   }
 
+  Future<void> _manageStrategies({
+    required ModuleEntity module,
+    required LessonEntity lesson,
+  }) async {
+    final strategies = List<Map<String, String>>.from(lesson.strategies);
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text('Estrategias: ${lesson.title}'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (strategies.isEmpty)
+                      const Text('No hay estrategias definidas.')
+                    else
+                      Flexible(
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: strategies.length,
+                          itemBuilder: (context, index) {
+                            final s = strategies[index];
+                            return ListTile(
+                              title: Text(s['title'] ?? ''),
+                              subtitle: Text(
+                                s['description'] ?? '',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit),
+                                    onPressed: () async {
+                                      final result = await _editStrategyDialog(
+                                        context,
+                                        title: s['title'],
+                                        description: s['description'],
+                                      );
+                                      if (result != null) {
+                                        setState(() {
+                                          strategies[index] = result;
+                                        });
+                                      }
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete),
+                                    onPressed: () {
+                                      setState(() {
+                                        strategies.removeAt(index);
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final result = await _editStrategyDialog(context);
+                        if (result != null) {
+                          setState(() {
+                            strategies.add(result);
+                          });
+                        }
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text('Agregar Estrategia'),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    try {
+                      final admin = Provider.of<AdminContentProvider>(
+                        context,
+                        listen: false,
+                      );
+                      final updated = LessonEntity(
+                        id: lesson.id,
+                        courseId: lesson.courseId,
+                        moduleId: lesson.moduleId,
+                        title: lesson.title,
+                        contentDelta: lesson.contentDelta,
+                        objectives: lesson.objectives,
+                        media: lesson.media,
+                        downloadableResources: lesson.downloadableResources,
+                        strategies: strategies,
+                        orderIndex: lesson.orderIndex,
+                        dripUnlockAt: lesson.dripUnlockAt,
+                      );
+                      final success = await admin.updateLesson(updated);
+                      if (success) {
+                        await _loadLessons(module.id);
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Estrategias actualizadas'),
+                          ),
+                        );
+                      } else if (admin.error != null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(admin.error!),
+                            backgroundColor: AppColors.errorColor,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error al actualizar estrategias: $e'),
+                          backgroundColor: AppColors.errorColor,
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text('Guardar Cambios'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<Map<String, String>?> _editStrategyDialog(
+    BuildContext context, {
+    String? title,
+    String? description,
+  }) async {
+    final titleCtrl = TextEditingController(text: title);
+    final descCtrl = TextEditingController(text: description);
+    final formKey = GlobalKey<FormState>();
+
+    return showDialog<Map<String, String>>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text(
+              title == null ? 'Nueva Estrategia' : 'Editar Estrategia',
+            ),
+            content: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: titleCtrl,
+                    decoration: const InputDecoration(labelText: 'Título'),
+                    validator:
+                        (v) =>
+                            (v == null || v.trim().isEmpty)
+                                ? 'Requerido'
+                                : null,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: descCtrl,
+                    decoration: const InputDecoration(labelText: 'Descripción'),
+                    maxLines: 5,
+                    validator:
+                        (v) =>
+                            (v == null || v.trim().isEmpty)
+                                ? 'Requerido'
+                                : null,
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  if (formKey.currentState!.validate()) {
+                    Navigator.pop(context, {
+                      'title': titleCtrl.text.trim(),
+                      'description': descCtrl.text.trim(),
+                    });
+                  }
+                },
+                child: const Text('Guardar'),
+              ),
+            ],
+          ),
+    );
+  }
+
   Future<void> _attachVideoToLesson({
     required ModuleEntity module,
     required LessonEntity lesson,
@@ -478,7 +687,7 @@ class _CourseContentScreenState extends State<CourseContentScreen> {
     }
   }
 
-  Future<void> _onLessonUpdated(LessonEntity updatedLesson) async {
+  Future<void> _onLessonUpdated(LessonEntity updatedLesson, {BuildContext? dialogContext}) async {
     try {
       final admin = Provider.of<AdminContentProvider>(context, listen: false);
       final success = await admin.updateLesson(updatedLesson);
@@ -487,6 +696,10 @@ class _CourseContentScreenState extends State<CourseContentScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Lección actualizada correctamente')),
         );
+        // Cerrar el diálogo si se proporcionó el contexto
+        if (dialogContext != null && dialogContext.mounted) {
+          Navigator.of(dialogContext).pop();
+        }
       } else if (admin.error != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -736,47 +949,104 @@ class _CourseContentScreenState extends State<CourseContentScreen> {
                         )
                       else
                         ...lessons.map(
-                          (l) => ListTile(
-                            dense: true,
-                            leading: const Icon(Icons.play_lesson_outlined),
-                            title: Text(l.title),
-                            subtitle:
-                                l.objectives != null
-                                    ? Text(
-                                      l.objectives!,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    )
-                                    : null,
-                            trailing: Wrap(
-                              spacing: 4,
-                              children: [
-                                IconButton(
-                                  tooltip: 'Editar lección',
-                                  onPressed: () => _editLesson(m, l),
-                                  icon: const Icon(Icons.edit_outlined),
-                                ),
-                                IconButton(
-                                  tooltip: 'Eliminar lección',
-                                  onPressed: () => _deleteLesson(m, l),
-                                  icon: const Icon(Icons.delete_outline),
-                                ),
-                                IconButton(
-                                  tooltip: 'Gestionar videos',
-                                  onPressed:
-                                      () => _openVideoManager(
-                                        module: m,
-                                        lesson: l,
+                          (l) => Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Ícono + título en una fila
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.play_lesson_outlined),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          l.title,
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ),
-                                  icon: const Icon(Icons.video_library),
-                                ),
-                                IconButton(
-                                  tooltip: 'Comentarios',
-                                  onPressed:
-                                      () => _openComments(module: m, lesson: l),
-                                  icon: const Icon(Icons.comment_outlined),
-                                ),
-                              ],
+                                    ],
+                                  ),
+                                  if (l.objectives != null)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4.0),
+                                      child: Text(
+                                        l.objectives!,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  const SizedBox(height: 8),
+                                  // Botones debajo del título
+                                  Wrap(
+                                    spacing: 4,
+                                    alignment: WrapAlignment.end,
+                                    children: [
+                                      IconButton(
+                                        tooltip: 'Editar lección',
+                                        onPressed: () => _editLesson(m, l),
+                                        icon: const Icon(Icons.edit_outlined),
+                                      ),
+                                      IconButton(
+                                        tooltip: 'Eliminar lección',
+                                        onPressed: () => _deleteLesson(m, l),
+                                        icon: const Icon(Icons.delete_outline),
+                                      ),
+                                      IconButton(
+                                        tooltip: 'Gestionar videos',
+                                        onPressed:
+                                            () => _openVideoManager(
+                                              module: m,
+                                              lesson: l,
+                                            ),
+                                        icon: const Icon(Icons.video_library),
+                                      ),
+                                      IconButton(
+                                        tooltip: 'Comentarios',
+                                        onPressed:
+                                            () => _openComments(
+                                              module: m,
+                                              lesson: l,
+                                            ),
+                                        icon: const Icon(
+                                          Icons.comment_outlined,
+                                        ),
+                                      ),
+                                      IconButton(
+                                        tooltip: 'Gestionar cuestionario',
+                                        onPressed: () {
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder:
+                                                  (_) => QuizManagementScreen(
+                                                    lesson: l,
+                                                  ),
+                                            ),
+                                          );
+                                        },
+                                        icon: const Icon(Icons.quiz),
+                                      ),
+                                      IconButton(
+                                        tooltip: 'Gestionar estrategias',
+                                        onPressed:
+                                            () => _manageStrategies(
+                                              module: m,
+                                              lesson: l,
+                                            ),
+                                        icon: const Icon(
+                                          Icons.lightbulb_outline,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -808,7 +1078,7 @@ class _CourseContentScreenState extends State<CourseContentScreen> {
     await showDialog<void>(
       context: context,
       builder:
-          (context) => Dialog(
+          (dialogContext) => Dialog(
             child: Container(
               width: MediaQuery.of(context).size.width * 0.9,
               height: MediaQuery.of(context).size.height * 0.8,
@@ -829,7 +1099,7 @@ class _CourseContentScreenState extends State<CourseContentScreen> {
                         ),
                       ),
                       IconButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () => Navigator.pop(dialogContext),
                         icon: const Icon(Icons.close),
                       ),
                     ],
@@ -838,7 +1108,7 @@ class _CourseContentScreenState extends State<CourseContentScreen> {
                   Expanded(
                     child: YouTubeVideoManager(
                       lesson: lesson,
-                      onLessonUpdated: _onLessonUpdated,
+                      onLessonUpdated: (updatedLesson) => _onLessonUpdated(updatedLesson, dialogContext: dialogContext),
                       isAdmin: true,
                     ),
                   ),

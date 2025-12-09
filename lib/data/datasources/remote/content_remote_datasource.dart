@@ -72,6 +72,7 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
   Map<String, dynamic> _courseToMap(CourseEntity c) => {
         'title': c.title,
         'description': c.description,
+        'targetAudience': c.targetAudience,
       };
 
   CourseEntity _courseFromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -80,6 +81,7 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
       id: doc.id,
       title: (d['title'] ?? '') as String,
       description: (d['description'] ?? '') as String,
+      targetAudience: (d['targetAudience'] ?? 'Inicial') as String,
     );
   }
 
@@ -156,6 +158,7 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
         'objectives': l.objectives,
         'media': l.media.map(_mediaToMap).toList(),
         'downloadableResources': l.downloadableResources.map(_mediaToMap).toList(),
+        'strategies': l.strategies,
         'orderIndex': l.orderIndex,
         'dripUnlockAt': l.dripUnlockAt,
       };
@@ -164,6 +167,8 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
     final d = doc.data() ?? {};
     final mediaList = (d['media'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     final resList = (d['downloadableResources'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final strategiesList = (d['strategies'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final strategies = strategiesList.map((s) => s.cast<String, String>()).toList();
     return LessonEntity(
       id: doc.id,
       courseId: (d['courseId'] ?? '') as String,
@@ -173,6 +178,7 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
       objectives: d['objectives'] as String?,
       media: mediaList.map(_mediaFromMap).toList(),
       downloadableResources: resList.map(_mediaFromMap).toList(),
+      strategies: strategies,
       orderIndex: (d['orderIndex'] ?? 0) as int,
       dripUnlockAt: (d['dripUnlockAt'] as Timestamp?)?.toDate(),
     );

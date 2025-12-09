@@ -22,6 +22,7 @@ class CourseRepositoryImpl implements CourseRepository {
       id: course.id,
       title: course.title,
       description: course.description,
+      targetAudience: course.targetAudience,
     );
     final newCourseModel = await remoteDataSource.createCourse(courseModel);
     return newCourseModel;

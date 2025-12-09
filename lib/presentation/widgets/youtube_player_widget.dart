@@ -1,7 +1,7 @@
 // lib/presentation/widgets/youtube_player_widget.dart
 
 import 'package:flutter/material.dart';
-import 'package:youtube_player_iframe/youtube_player_iframe.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 class YouTubePlayerWidget extends StatefulWidget {
   final String videoId;
@@ -21,43 +21,60 @@ class YouTubePlayerWidget extends StatefulWidget {
 
 class _YouTubePlayerWidgetState extends State<YouTubePlayerWidget> {
   late final YoutubePlayerController _controller;
+  late final bool _isValidId;
 
   @override
   void initState() {
     super.initState();
-    _controller = YoutubePlayerController.fromVideoId(
-      videoId: widget.videoId,
-      params: YoutubePlayerParams(
-        showControls: true,
+    _isValidId = RegExp(r'^[A-Za-z0-9_-]{11}$').hasMatch(widget.videoId);
+    if (!_isValidId) return;
+
+    _controller = YoutubePlayerController(
+      initialVideoId: widget.videoId,
+      flags: YoutubePlayerFlags(
+        autoPlay: widget.autoPlay,
         mute: false,
         enableCaption: true,
-        showFullscreenButton: true,
-        playsInline: true,
+        hideControls: false,
+        controlsVisibleAtStart: true,
       ),
     );
 
-    // Detect end of video
-    _controller.listen((value) {
-      if (value.playerState == PlayerState.ended) {
-        widget.onEnded?.call();
-      }
-    });
-    if (widget.autoPlay) {
-      // Defer to ensure the controller is ready
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _controller.playVideo();
-      });
+    _controller.addListener(_handlePlayerState);
+  }
+
+  void _handlePlayerState() {
+    if (_controller.value.playerState == PlayerState.ended) {
+      widget.onEnded?.call();
     }
   }
 
   @override
   void dispose() {
-    _controller.close();
+    if (_isValidId) {
+      _controller.removeListener(_handlePlayerState);
+      _controller.dispose();
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return YoutubePlayer(controller: _controller, aspectRatio: 16 / 9);
+    if (!_isValidId) {
+      return const AspectRatio(
+        aspectRatio: 16 / 9,
+        child: Center(child: Text('Video de YouTube no válido.')),
+      );
+    }
+
+    return YoutubePlayerBuilder(
+      player: YoutubePlayer(
+        controller: _controller,
+        showVideoProgressIndicator: true,
+        progressIndicatorColor: Theme.of(context).colorScheme.primary,
+      ),
+      builder:
+          (context, player) => AspectRatio(aspectRatio: 16 / 9, child: player),
+    );
   }
 }

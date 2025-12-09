@@ -9,11 +9,13 @@ abstract class AuthRemoteDataSource {
   Future<UserModel> registerWithEmailAndPassword(
     String email,
     String password,
+    String name,
     String role,
   );
   Future<UserModel> signInWithEmailAndPassword(String email, String password);
   Future<void> signOut();
   Future<UserModel?> getCurrentUser();
+  Future<void> updateUser(UserModel user);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -26,6 +28,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<UserModel> registerWithEmailAndPassword(
     String email,
     String password,
+    String name,
     String role,
   ) async {
     try {
@@ -36,7 +39,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       final uid = userCredential.user!.uid;
 
       // Crea un documento de usuario en Firestore para almacenar el rol y otros datos
-      final userModel = UserModel(uid: uid, email: email, role: role);
+      final userModel = UserModel(
+        uid: uid,
+        email: email,
+        name: name,
+        role: role,
+      );
 
       await firestore.collection('users').doc(uid).set(userModel.toMap());
 
@@ -78,7 +86,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       final doc = await userRef.get();
       if (!doc.exists) {
         // Si no existe el doc de Firestore, lo creamos con datos mínimos
-        final userModel = UserModel(uid: uid, email: user.email ?? email, role: 'user');
+        final userModel = UserModel(
+          uid: uid, 
+          email: user.email ?? email, 
+          name: user.displayName ?? 'Usuario',
+          role: 'user'
+        );
         await userRef.set(userModel.toMap());
         return userModel;
       }
@@ -117,5 +130,21 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
     }
     return null;
+  }
+
+  @override
+  Future<void> updateUser(UserModel user) async {
+    try {
+      await firestore.collection('users').doc(user.uid).update(user.toMap());
+      
+      // También podríamos actualizar el perfil de FirebaseAuth si es necesario (nombre, foto)
+      final currentUser = firebaseAuth.currentUser;
+      if (currentUser != null && currentUser.uid == user.uid) {
+         await currentUser.updateDisplayName(user.name);
+      }
+
+    } on FirebaseException catch (e) {
+      throw Exception('Error al actualizar usuario: ${e.message ?? e.code}');
+    }
   }
 }

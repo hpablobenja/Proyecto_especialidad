@@ -21,6 +21,14 @@ class _CourseManagementScreenState extends State<CourseManagementScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  String _selectedTargetAudience = 'Inicial';
+  final List<String> _targetAudiences = [
+    'Inicial',
+    'Primaria',
+    'Secundaria',
+    'Alternativa',
+    'Otro(Especificar)',
+  ];
 
   void _createCourse() async {
     if (_formKey.currentState!.validate()) {
@@ -38,6 +46,7 @@ class _CourseManagementScreenState extends State<CourseManagementScreen> {
           CreateCourseParams(
             title: _titleController.text,
             description: _descriptionController.text,
+            targetAudience: _selectedTargetAudience,
           ),
         );
         // Muestra una notificación de éxito
@@ -50,8 +59,13 @@ class _CourseManagementScreenState extends State<CourseManagementScreen> {
         // Limpia el formulario
         _titleController.clear();
         _descriptionController.clear();
+        setState(() {
+          _selectedTargetAudience = 'Inicial';
+        });
         // Recarga la lista de cursos para reflejar el cambio
         Provider.of<CourseProvider>(context, listen: false).loadCourses();
+        // Recarga ContentProvider para actualizar la UI automáticamente
+        Provider.of<ContentProvider>(context, listen: false).loadCourses();
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -123,6 +137,26 @@ class _CourseManagementScreenState extends State<CourseManagementScreen> {
                     return 'Por favor, ingrese una descripción.';
                   }
                   return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: _selectedTargetAudience,
+                decoration: InputDecoration(
+                  labelText: 'Público Objetivo',
+                  border: OutlineInputBorder(),
+                ),
+                items:
+                    _targetAudiences.map((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                onChanged: (newValue) {
+                  setState(() {
+                    _selectedTargetAudience = newValue!;
+                  });
                 },
               ),
               const SizedBox(height: 24),
@@ -243,54 +277,88 @@ class _CourseManagementScreenState extends State<CourseManagementScreen> {
   Future<void> _editCourse(BuildContext context, CourseEntity course) async {
     final titleCtrl = TextEditingController(text: course.title);
     final descCtrl = TextEditingController(text: course.description);
+    String selectedAudience =
+        course.targetAudience.isEmpty
+            ? 'Otro(Especificar)'
+            : course.targetAudience;
+    // Ensure the selected audience is in the list, otherwise default to 'Otro(Especificar)'
+    if (!_targetAudiences.contains(selectedAudience)) {
+      selectedAudience = 'Otro(Especificar)';
+    }
+
     final formKey = GlobalKey<FormState>();
 
     final ok = await showDialog<bool>(
       context: context,
       builder:
-          (_) => AlertDialog(
-            title: const Text('Editar curso'),
-            content: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: titleCtrl,
-                    decoration: const InputDecoration(labelText: 'Título'),
-                    validator:
-                        (v) =>
-                            (v == null || v.trim().isEmpty)
-                                ? 'Requerido'
-                                : null,
+          (_) => StatefulBuilder(
+            builder: (context, setState) {
+              return AlertDialog(
+                title: const Text('Editar curso'),
+                content: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        controller: titleCtrl,
+                        decoration: const InputDecoration(labelText: 'Título'),
+                        validator:
+                            (v) =>
+                                (v == null || v.trim().isEmpty)
+                                    ? 'Requerido'
+                                    : null,
+                      ),
+                      TextFormField(
+                        controller: descCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Descripción',
+                        ),
+                        minLines: 2,
+                        maxLines: 5,
+                        validator:
+                            (v) =>
+                                (v == null || v.trim().isEmpty)
+                                    ? 'Requerido'
+                                    : null,
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: selectedAudience,
+                        decoration: InputDecoration(
+                          labelText: 'Público Objetivo',
+                        ),
+                        items:
+                            _targetAudiences.map((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value),
+                              );
+                            }).toList(),
+                        onChanged: (newValue) {
+                          setState(() {
+                            selectedAudience = newValue!;
+                          });
+                        },
+                      ),
+                    ],
                   ),
-                  TextFormField(
-                    controller: descCtrl,
-                    decoration: const InputDecoration(labelText: 'Descripción'),
-                    minLines: 2,
-                    maxLines: 5,
-                    validator:
-                        (v) =>
-                            (v == null || v.trim().isEmpty)
-                                ? 'Requerido'
-                                : null,
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Cancelar'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (formKey.currentState!.validate())
+                        Navigator.pop(context, true);
+                    },
+                    child: const Text('Guardar'),
                   ),
                 ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  if (formKey.currentState!.validate())
-                    Navigator.pop(context, true);
-                },
-                child: const Text('Guardar'),
-              ),
-            ],
+              );
+            },
           ),
     );
 
@@ -300,6 +368,7 @@ class _CourseManagementScreenState extends State<CourseManagementScreen> {
       id: course.id,
       title: titleCtrl.text.trim(),
       description: descCtrl.text.trim(),
+      targetAudience: selectedAudience,
     );
 
     final contentProvider = Provider.of<ContentProvider>(

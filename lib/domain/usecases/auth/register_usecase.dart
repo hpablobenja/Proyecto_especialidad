@@ -14,6 +14,7 @@ class RegisterUsecase implements Usecase<UserEntity, RegisterParams> {
     return await repository.registerWithEmailAndPassword(
       params.email,
       params.password,
+      params.name,
       params.role,
     );
   }
@@ -22,11 +23,13 @@ class RegisterUsecase implements Usecase<UserEntity, RegisterParams> {
 class RegisterParams {
   final String email;
   final String password;
+  final String name;
   final String role;
 
   RegisterParams({
     required this.email,
     required this.password,
+    required this.name,
     required this.role,
   });
 }

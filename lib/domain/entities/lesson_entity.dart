@@ -13,6 +13,7 @@ class LessonEntity extends Equatable {
   final String? objectives;
   final List<MediaResource> media;
   final List<MediaResource> downloadableResources;
+  final List<Map<String, String>> strategies;
   final int orderIndex;
   final DateTime? dripUnlockAt;
 
@@ -25,6 +26,7 @@ class LessonEntity extends Equatable {
     this.objectives,
     this.media = const [],
     this.downloadableResources = const [],
+    this.strategies = const [],
     required this.orderIndex,
     this.dripUnlockAt,
   });
@@ -39,6 +41,7 @@ class LessonEntity extends Equatable {
         objectives,
         media,
         downloadableResources,
+        strategies,
         orderIndex,
         dripUnlockAt,
       ];

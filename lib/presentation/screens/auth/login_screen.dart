@@ -100,7 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Microformaciones en video para docentes',
+                          'Microformaciones para docentes',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: Colors.black87,
                             fontWeight: FontWeight.w500,

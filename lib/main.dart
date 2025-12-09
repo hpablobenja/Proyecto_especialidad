@@ -15,6 +15,7 @@ import 'presentation/providers/admin_content_provider.dart';
 import 'presentation/providers/comments_provider.dart';
 import 'presentation/providers/theme_provider.dart';
 import 'presentation/providers/favorites_provider.dart';
+import 'presentation/providers/connectivity_provider.dart';
 import 'presentation/screens/auth/login_screen.dart';
 import 'presentation/screens/home/home_screen.dart';
 import 'firebase_options.dart';
@@ -45,6 +46,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => di.sl<CommentsProvider>()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => FavoritesProvider()..load()),
+        ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

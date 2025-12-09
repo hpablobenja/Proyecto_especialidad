@@ -9,19 +9,21 @@ import '../screens/auth/login_screen.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
+  final Color? titleColor;
 
-  const CustomAppBar({Key? key, required this.title}) : super(key: key);
+  const CustomAppBar({Key? key, required this.title, this.titleColor})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     return AppBar(
-      title: Text(title),
+      title: Text(title, style: TextStyle(color: titleColor ?? Colors.white)),
       backgroundColor: AppColors.primaryColor,
       actions: [
         IconButton(
-          icon: Icon(Icons.logout),
+          icon: Icon(Icons.logout, color: Colors.white),
           onPressed: () {
             authProvider.signOut();
             Navigator.of(context).pushAndRemoveUntil(
