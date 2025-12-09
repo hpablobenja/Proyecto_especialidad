@@ -17,7 +17,8 @@ migrate_working_dir/
 *.ipr
 *.iws
 .idea/
-
+DESIGN_UPGRADE_README.md
+VIDEO_CRUD_README.md
 # The .vscode folder contains launch configuration and tasks you configure in
 # VS Code which you may wish to be included in version control, so this line
 # is commented out by default.
