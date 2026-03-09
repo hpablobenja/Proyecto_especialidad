@@ -26,7 +26,11 @@ abstract class ContentRemoteDataSource {
   Future<LessonEntity> createLesson(LessonEntity lesson);
   Future<void> updateLesson(LessonEntity lesson);
   Future<void> deleteLesson(String courseId, String moduleId, String lessonId);
-  Future<void> reorderLessons(String courseId, String moduleId, List<String> orderedLessonIds);
+  Future<void> reorderLessons(
+    String courseId,
+    String moduleId,
+    List<String> orderedLessonIds,
+  );
 
   Future<MediaResource> uploadMedia({
     required String courseId,
@@ -61,19 +65,23 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
   final FirebaseStorage storage;
   ContentRemoteDataSourceImpl(this.firestore, this.storage);
 
-  CollectionReference<Map<String, dynamic>> get _coursesCol => firestore.collection('courses');
+  CollectionReference<Map<String, dynamic>> get _coursesCol =>
+      firestore.collection('courses');
   CollectionReference<Map<String, dynamic>> _modulesCol(String courseId) =>
       _coursesCol.doc(courseId).collection('modules');
   CollectionReference<Map<String, dynamic>> get _rootLessonsCol =>
       firestore.collection('lecciones');
-  CollectionReference<Map<String, dynamic>> _commentsCol(String courseId, String moduleId, String lessonId) =>
-      _rootLessonsCol.doc(lessonId).collection('comments');
+  CollectionReference<Map<String, dynamic>> _commentsCol(
+    String courseId,
+    String moduleId,
+    String lessonId,
+  ) => _rootLessonsCol.doc(lessonId).collection('comments');
 
   Map<String, dynamic> _courseToMap(CourseEntity c) => {
-        'title': c.title,
-        'description': c.description,
-        'targetAudience': c.targetAudience,
-      };
+    'title': c.title,
+    'description': c.description,
+    'targetAudience': c.targetAudience,
+  };
 
   CourseEntity _courseFromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data() ?? {};
@@ -81,20 +89,20 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
       id: doc.id,
       title: (d['title'] ?? '') as String,
       description: (d['description'] ?? '') as String,
-      targetAudience: (d['targetAudience'] ?? 'Inicial') as String,
+      targetAudience: (d['targetAudience'] ?? 'Ciencias Naturales') as String,
     );
   }
 
   Map<String, dynamic> _commentToMap(CommentEntity c) => {
-        'courseId': c.courseId,
-        'moduleId': c.moduleId,
-        'lessonId': c.lessonId,
-        'userId': c.userId,
-        'userName': c.userName,
-        'text': c.text,
-        'createdAt': Timestamp.fromDate(c.createdAt),
-        'updatedAt': c.updatedAt != null ? Timestamp.fromDate(c.updatedAt!) : null,
-      };
+    'courseId': c.courseId,
+    'moduleId': c.moduleId,
+    'lessonId': c.lessonId,
+    'userId': c.userId,
+    'userName': c.userName,
+    'text': c.text,
+    'createdAt': Timestamp.fromDate(c.createdAt),
+    'updatedAt': c.updatedAt != null ? Timestamp.fromDate(c.updatedAt!) : null,
+  };
 
   CommentEntity _commentFromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data() ?? {};
@@ -112,11 +120,11 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
   }
 
   Map<String, dynamic> _moduleToMap(ModuleEntity m) => {
-        'courseId': m.courseId,
-        'title': m.title,
-        'description': m.description,
-        'orderIndex': m.orderIndex,
-      };
+    'courseId': m.courseId,
+    'title': m.title,
+    'description': m.description,
+    'orderIndex': m.orderIndex,
+  };
 
   ModuleEntity _moduleFromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data() ?? {};
@@ -130,45 +138,51 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
   }
 
   Map<String, dynamic> _mediaToMap(MediaResource m) => {
-        'id': m.id,
-        'url': m.url,
-        'filename': m.filename,
-        'mimeType': m.mimeType,
-        'sizeBytes': m.sizeBytes,
-        'durationSeconds': m.duration?.inSeconds,
-        'metadata': m.metadata,
-      };
+    'id': m.id,
+    'url': m.url,
+    'filename': m.filename,
+    'mimeType': m.mimeType,
+    'sizeBytes': m.sizeBytes,
+    'durationSeconds': m.duration?.inSeconds,
+    'metadata': m.metadata,
+  };
 
   MediaResource _mediaFromMap(Map<String, dynamic> d) => MediaResource(
-        id: (d['id'] ?? '') as String,
-        url: (d['url'] ?? '') as String,
-        filename: (d['filename'] ?? '') as String,
-        mimeType: (d['mimeType'] ?? '') as String,
-        sizeBytes: (d['sizeBytes'] ?? 0) as int,
-        duration:
-            d['durationSeconds'] != null ? Duration(seconds: (d['durationSeconds'] as num).toInt()) : null,
-        metadata: (d['metadata'] as Map?)?.cast<String, dynamic>(),
-      );
+    id: (d['id'] ?? '') as String,
+    url: (d['url'] ?? '') as String,
+    filename: (d['filename'] ?? '') as String,
+    mimeType: (d['mimeType'] ?? '') as String,
+    sizeBytes: (d['sizeBytes'] ?? 0) as int,
+    duration:
+        d['durationSeconds'] != null
+            ? Duration(seconds: (d['durationSeconds'] as num).toInt())
+            : null,
+    metadata: (d['metadata'] as Map?)?.cast<String, dynamic>(),
+  );
 
   Map<String, dynamic> _lessonToMap(LessonEntity l) => {
-        'courseId': l.courseId,
-        'moduleId': l.moduleId,
-        'title': l.title,
-        'contentDelta': l.contentDelta,
-        'objectives': l.objectives,
-        'media': l.media.map(_mediaToMap).toList(),
-        'downloadableResources': l.downloadableResources.map(_mediaToMap).toList(),
-        'strategies': l.strategies,
-        'orderIndex': l.orderIndex,
-        'dripUnlockAt': l.dripUnlockAt,
-      };
+    'courseId': l.courseId,
+    'moduleId': l.moduleId,
+    'title': l.title,
+    'contentDelta': l.contentDelta,
+    'objectives': l.objectives,
+    'media': l.media.map(_mediaToMap).toList(),
+    'downloadableResources': l.downloadableResources.map(_mediaToMap).toList(),
+    'strategies': l.strategies,
+    'orderIndex': l.orderIndex,
+    'dripUnlockAt': l.dripUnlockAt,
+  };
 
   LessonEntity _lessonFromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data() ?? {};
     final mediaList = (d['media'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-    final resList = (d['downloadableResources'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-    final strategiesList = (d['strategies'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-    final strategies = strategiesList.map((s) => s.cast<String, String>()).toList();
+    final resList =
+        (d['downloadableResources'] as List?)?.cast<Map<String, dynamic>>() ??
+        [];
+    final strategiesList =
+        (d['strategies'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final strategies =
+        strategiesList.map((s) => s.cast<String, String>()).toList();
     return LessonEntity(
       id: doc.id,
       courseId: (d['courseId'] ?? '') as String,
@@ -213,11 +227,15 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
   }
 
   @override
-  Future<List<LessonEntity>> listLessons(String courseId, String moduleId) async {
-    final qs = await _rootLessonsCol
-        .where('courseId', isEqualTo: courseId)
-        .where('moduleId', isEqualTo: moduleId)
-        .get();
+  Future<List<LessonEntity>> listLessons(
+    String courseId,
+    String moduleId,
+  ) async {
+    final qs =
+        await _rootLessonsCol
+            .where('courseId', isEqualTo: courseId)
+            .where('moduleId', isEqualTo: moduleId)
+            .get();
     final list = qs.docs.map(_lessonFromDoc).toList();
     list.sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
     return list;
@@ -230,7 +248,11 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
   }
 
   @override
-  Future<void> deleteLesson(String courseId, String moduleId, String lessonId) async {
+  Future<void> deleteLesson(
+    String courseId,
+    String moduleId,
+    String lessonId,
+  ) async {
     await _rootLessonsCol.doc(lessonId).delete();
   }
 
@@ -257,7 +279,11 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
   }
 
   @override
-  Future<void> reorderLessons(String courseId, String moduleId, List<String> orderedLessonIds) async {
+  Future<void> reorderLessons(
+    String courseId,
+    String moduleId,
+    List<String> orderedLessonIds,
+  ) async {
     final batch = firestore.batch();
     for (var i = 0; i < orderedLessonIds.length; i++) {
       final id = orderedLessonIds[i];
@@ -268,7 +294,10 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
   }
 
   @override
-  Future<void> reorderModules(String courseId, List<String> orderedModuleIds) async {
+  Future<void> reorderModules(
+    String courseId,
+    List<String> orderedModuleIds,
+  ) async {
     final batch = firestore.batch();
     for (var i = 0; i < orderedModuleIds.length; i++) {
       final id = orderedModuleIds[i];
@@ -292,7 +321,9 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
 
   @override
   Future<void> updateModule(ModuleEntity module) async {
-    await _modulesCol(module.courseId).doc(module.id).update(_moduleToMap(module));
+    await _modulesCol(
+      module.courseId,
+    ).doc(module.id).update(_moduleToMap(module));
   }
 
   @override
@@ -304,14 +335,12 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
   }) async {
     final safeModule = moduleId ?? '_root';
     final safeLesson = lessonId ?? '_root';
-    final fileName = '${DateTime.now().millisecondsSinceEpoch}_${request.filename}';
+    final fileName =
+        '${DateTime.now().millisecondsSinceEpoch}_${request.filename}';
     final path = 'content/$courseId/$safeModule/$safeLesson/$fileName';
     final ref = storage.ref(path);
     final meta = SettableMetadata(contentType: request.mimeType);
-    final task = await ref.putData(
-      Uint8List.fromList(request.bytes),
-      meta,
-    );
+    final task = await ref.putData(Uint8List.fromList(request.bytes), meta);
     final url = await task.ref.getDownloadURL();
     return MediaResource(
       id: path, // use storage path as id for easier deletion
@@ -329,9 +358,12 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
     required String moduleId,
     required String lessonId,
   }) async {
-    final qs = await _commentsCol(courseId, moduleId, lessonId)
-        .orderBy('createdAt', descending: true)
-        .get();
+    final qs =
+        await _commentsCol(
+          courseId,
+          moduleId,
+          lessonId,
+        ).orderBy('createdAt', descending: true).get();
     return qs.docs.map(_commentFromDoc).toList();
   }
 
@@ -354,7 +386,11 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
       updatedAt: now,
     );
     final data = _commentToMap(toStore);
-    final col = _commentsCol(comment.courseId, comment.moduleId, comment.lessonId);
+    final col = _commentsCol(
+      comment.courseId,
+      comment.moduleId,
+      comment.lessonId,
+    );
     final doc = await col.add(data);
     final snap = await doc.get();
     return _commentFromDoc(snap);

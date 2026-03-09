@@ -39,73 +39,110 @@ class GetCourseProgressUsecase implements Usecase<UserProgress, String> {
 
   @override
   Future<UserProgress> call(String userId) async {
-    final allCourses = await repository.getCourses();
-    
-    // Obtener el progreso del usuario
-    final progressSnapshot = await firestore
-        .collection('userProgress')
-        .where('userId', isEqualTo: userId)
-        .get();
+    // 1. Ejecutar en paralelo: cursos + progreso del usuario
+    final results = await Future.wait([
+      repository.getCourses(),
+      firestore
+          .collection('userProgress')
+          .where('userId', isEqualTo: userId)
+          .get(),
+    ]);
 
-    final progressMap = <String, LessonProgressEntity>{};
+    final allCourses = results[0] as List<CourseEntity>;
+    final progressSnapshot = results[1] as QuerySnapshot<Map<String, dynamic>>;
+
+    // Mapear progreso por (courseId -> moduleId -> lessonId)
+    final courseProgressMap =
+        <String, Map<String, Map<String, LessonProgressEntity>>>{};
     for (var doc in progressSnapshot.docs) {
-      final data = doc.data();
-      progressMap[doc.id] = LessonProgressEntity.fromMap(data);
+      final progress = LessonProgressEntity.fromMap(doc.data());
+      courseProgressMap
+          .putIfAbsent(progress.courseId, () => {})
+          .putIfAbsent(progress.moduleId, () => {})[progress.lessonId] =
+          progress;
     }
 
-    final courseProgressMap = <String, Map<String, Map<String, LessonProgressEntity>>>{};
-    for (var progress in progressMap.values) {
-      if (!courseProgressMap.containsKey(progress.courseId)) {
-        courseProgressMap[progress.courseId] = {};
-      }
-      if (!courseProgressMap[progress.courseId]!.containsKey(progress.moduleId)) {
-        courseProgressMap[progress.courseId]![progress.moduleId] = {};
-      }
-      courseProgressMap[progress.courseId]![progress.moduleId]![progress.lessonId] = progress;
-    }
+    // 2. Filtrar solo cursos con progreso y cargar sus módulos EN PARALELO
+    final coursesWithProgress =
+        allCourses.where((c) => courseProgressMap.containsKey(c.id)).toList();
 
-    List<CourseProgressDetail> allStructuredCourses = [];
+    final modulesSnapshots = await Future.wait(
+      coursesWithProgress.map(
+        (course) => firestore
+            .collection('courses')
+            .doc(course.id)
+            .collection('modules')
+            .get(),
+      ),
+    );
 
-    for (var course in allCourses) {
-      if (!courseProgressMap.containsKey(course.id)) continue;
-      
-      final moduleTitles = <String, String>{};
-      final lessonTitles = <String, Map<String, String>>{};
-      
-      // Modules still live nested under courses/{courseId}/modules
-      final modulesSnapshot = await firestore
-          .collection('courses')
-          .doc(course.id)
-          .collection('modules')
-          .get();
+    // 3. Construir lista de consultas de lecciones TODAS en paralelo
+    // Primero recolectamos qué lecciones necesitamos consultar
+    final lessonQueries = <({String courseId, String moduleId, Future<QuerySnapshot<Map<String, dynamic>>> query})>[];
 
-      final sortedModules = modulesSnapshot.docs.toList()
+    final courseModuleMap = <String, List<QueryDocumentSnapshot<Map<String, dynamic>>>>{};
+    for (var i = 0; i < coursesWithProgress.length; i++) {
+      final course = coursesWithProgress[i];
+      final sortedModules = modulesSnapshots[i].docs.toList()
         ..sort((a, b) =>
             ((a.data()['orderIndex'] as num?) ?? 0)
                 .compareTo((b.data()['orderIndex'] as num?) ?? 0));
-          
-      for (var moduleDoc in sortedModules) {
-        final moduleId = moduleDoc.id;
-        moduleTitles[moduleId] = moduleDoc.data()['title'] as String? ?? 'Sin título';
-        
-        // Lessons are now in the root /lecciones collection
-        final lessonsSnapshot = await firestore
-            .collection('lecciones')
-            .where('courseId', isEqualTo: course.id)
-            .where('moduleId', isEqualTo: moduleId)
-            .get();
+      courseModuleMap[course.id] = sortedModules;
 
-        final sortedLessons = lessonsSnapshot.docs.toList()
-          ..sort((a, b) =>
-              ((a.data()['orderIndex'] as num?) ?? 0)
-                  .compareTo((b.data()['orderIndex'] as num?) ?? 0));
-            
-        lessonTitles[moduleId] = {};
-        for (var lessonDoc in sortedLessons) {
-          lessonTitles[moduleId]![lessonDoc.id] = lessonDoc.data()['title'] as String? ?? 'Sin título';
+      for (var moduleDoc in sortedModules) {
+        lessonQueries.add((
+          courseId: course.id,
+          moduleId: moduleDoc.id,
+          query: firestore
+              .collection('lecciones')
+              .where('courseId', isEqualTo: course.id)
+              .where('moduleId', isEqualTo: moduleDoc.id)
+              .get(),
+        ));
+      }
+    }
+
+    // Ejecutar TODAS las consultas de lecciones en paralelo
+    final lessonSnapshots = await Future.wait(
+      lessonQueries.map((q) => q.query),
+    );
+
+    // Indexar resultados de lecciones por (courseId, moduleId)
+    final lessonResultMap =
+        <String, Map<String, QuerySnapshot<Map<String, dynamic>>>>{};
+    for (var i = 0; i < lessonQueries.length; i++) {
+      final q = lessonQueries[i];
+      lessonResultMap
+          .putIfAbsent(q.courseId, () => {})[q.moduleId] = lessonSnapshots[i];
+    }
+
+    // 4. Armar CourseProgressDetail para cada curso
+    final List<CourseProgressDetail> allStructuredCourses = [];
+
+    for (var course in coursesWithProgress) {
+      final moduleTitles = <String, String>{};
+      final lessonTitles = <String, Map<String, String>>{};
+
+      for (var moduleDoc in courseModuleMap[course.id]!) {
+        final moduleId = moduleDoc.id;
+        moduleTitles[moduleId] =
+            moduleDoc.data()['title'] as String? ?? 'Sin título';
+
+        final lessonsSnap = lessonResultMap[course.id]?[moduleId];
+        if (lessonsSnap != null) {
+          final sortedLessons = lessonsSnap.docs.toList()
+            ..sort((a, b) =>
+                ((a.data()['orderIndex'] as num?) ?? 0)
+                    .compareTo((b.data()['orderIndex'] as num?) ?? 0));
+          lessonTitles[moduleId] = {
+            for (var doc in sortedLessons)
+              doc.id: doc.data()['title'] as String? ?? 'Sin título',
+          };
+        } else {
+          lessonTitles[moduleId] = {};
         }
       }
-      
+
       allStructuredCourses.add(CourseProgressDetail(
         course: course,
         moduleTitles: moduleTitles,
@@ -113,26 +150,25 @@ class GetCourseProgressUsecase implements Usecase<UserProgress, String> {
         progress: courseProgressMap[course.id]!,
       ));
     }
-    
-    List<CourseProgressDetail> completed = [];
-    List<CourseProgressDetail> inProgress = [];
-    
+
+    // 5. Clasificar en completados vs en curso
+    final List<CourseProgressDetail> completed = [];
+    final List<CourseProgressDetail> inProgress = [];
+
     for (var cp in allStructuredCourses) {
       bool allLessonsCompleted = true;
       bool hasAnyProgress = false;
-      
+
       for (var moduleId in cp.lessonTitles.keys) {
         for (var lessonId in cp.lessonTitles[moduleId]!.keys) {
-           final prog = cp.progress[moduleId]?[lessonId];
-           if (prog == null || prog.status != LessonProgressStatus.completed) {
-             allLessonsCompleted = false;
-           }
-           if (prog != null) {
-             hasAnyProgress = true;
-           }
+          final prog = cp.progress[moduleId]?[lessonId];
+          if (prog == null || prog.status != LessonProgressStatus.completed) {
+            allLessonsCompleted = false;
+          }
+          if (prog != null) hasAnyProgress = true;
         }
       }
-      
+
       if (allLessonsCompleted && hasAnyProgress && cp.moduleTitles.isNotEmpty) {
         completed.add(cp);
       } else if (hasAnyProgress || cp.progress.isNotEmpty) {

@@ -60,7 +60,7 @@ class _CourseManagementScreenState extends State<CourseManagementScreen> {
         _titleController.clear();
         _descriptionController.clear();
         setState(() {
-          _selectedTargetAudience = 'Inicial';
+          _selectedTargetAudience = 'Ciencias Naturales';
         });
         // Recarga la lista de cursos para reflejar el cambio
         Provider.of<CourseProvider>(context, listen: false).loadCourses();

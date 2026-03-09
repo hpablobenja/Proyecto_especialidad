@@ -21,6 +21,7 @@ class ProgressProvider extends ChangeNotifier {
   List<CourseProgressDetail> _completedCourses = [];
   List<CourseProgressDetail> _inProgressCourses = [];
   bool _hasViewedAnyLesson = false; // session flag
+  String? _lastLoadedUserId; // cache: evita recargar si ya está cargado
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -28,7 +29,10 @@ class ProgressProvider extends ChangeNotifier {
   List<CourseProgressDetail> get inProgressCourses => _inProgressCourses;
   bool get hasViewedAnyLesson => _hasViewedAnyLesson;
 
-  Future<void> loadUserProgress(String userId) async {
+  Future<void> loadUserProgress(String userId, {bool forceReload = false}) async {
+    // Si ya cargamos para este usuario y no es forzado, no repetir la carga
+    if (!forceReload && _lastLoadedUserId == userId && !_isLoading) return;
+
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -37,6 +41,7 @@ class ProgressProvider extends ChangeNotifier {
       final userProgress = await getCourseProgressUsecase.call(userId);
       _completedCourses = userProgress.completedCourses;
       _inProgressCourses = userProgress.inProgressCourses;
+      _lastLoadedUserId = userId;
     } catch (e) {
       _errorMessage = 'No se pudo cargar el progreso del usuario. $e';
     } finally {
@@ -76,6 +81,7 @@ class ProgressProvider extends ChangeNotifier {
       };
 
       await progressRef.set(progressData, SetOptions(merge: true));
+      _lastLoadedUserId = null; // invalidar caché para próxima visita a Progreso
     } catch (e) {
       debugPrint('Error al marcar lección en progreso: $e');
     }
@@ -113,6 +119,7 @@ class ProgressProvider extends ChangeNotifier {
       }
 
       await progressRef.set(progressData, SetOptions(merge: true));
+      _lastLoadedUserId = null; // invalidar caché para próxima visita a Progreso
     } catch (e) {
       debugPrint('Error al marcar lección completada: $e');
     }

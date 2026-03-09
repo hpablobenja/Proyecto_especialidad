@@ -24,7 +24,8 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
         id: doc.id,
         title: (data['title'] ?? '') as String,
         description: (data['description'] ?? '') as String,
-        targetAudience: (data['targetAudience'] ?? 'Inicial') as String,
+        targetAudience:
+            (data['targetAudience'] ?? 'Ciencias Naturales') as String,
       );
     }).toList();
   }
