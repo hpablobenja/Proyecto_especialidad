@@ -37,13 +37,8 @@ class _QuizManagementScreenState extends State<QuizManagementScreen> {
     try {
       final firestore = FirebaseFirestore.instance;
       final quizDoc = await firestore
-          .collection('courses')
-          .doc(widget.lesson.courseId)
-          .collection('modules')
-          .doc(widget.lesson.moduleId)
-          .collection('lessons')
-          .doc(widget.lesson.id)
-          .collection('quiz')
+          .collection('quizzes')
+          .where('lessonId', isEqualTo: widget.lesson.id)
           .limit(1)
           .get();
 
@@ -80,13 +75,7 @@ class _QuizManagementScreenState extends State<QuizManagementScreen> {
     try {
       final firestore = FirebaseFirestore.instance;
       final quizRef = firestore
-          .collection('courses')
-          .doc(widget.lesson.courseId)
-          .collection('modules')
-          .doc(widget.lesson.moduleId)
-          .collection('lessons')
-          .doc(widget.lesson.id)
-          .collection('quiz')
+          .collection('quizzes')
           .doc(quiz.id);
 
       await quizRef.set(quiz.toMap());
@@ -137,13 +126,7 @@ class _QuizManagementScreenState extends State<QuizManagementScreen> {
     try {
       final firestore = FirebaseFirestore.instance;
       await firestore
-          .collection('courses')
-          .doc(widget.lesson.courseId)
-          .collection('modules')
-          .doc(widget.lesson.moduleId)
-          .collection('lessons')
-          .doc(widget.lesson.id)
-          .collection('quiz')
+          .collection('quizzes')
           .doc(_quiz!.id)
           .delete();
 

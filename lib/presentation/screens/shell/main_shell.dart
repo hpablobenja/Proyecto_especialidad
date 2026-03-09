@@ -173,9 +173,9 @@ class _GalleryScreenState extends State<_GalleryScreen> {
   String _selectedAudience = 'Todos';
   final List<String> _audiences = [
     'Todos',
-    'Inicial',
-    'Primaria',
-    'Secundaria',
+    'Ciencias Sociales',
+    'Ciencias Naturales',
+    'Comunicación y Lenguaje',
     'Alternativa',
     'Otro(Especificar)',
   ];
@@ -281,6 +281,7 @@ class _GalleryScreenState extends State<_GalleryScreen> {
               delegate: SliverChildBuilderDelegate((context, index) {
                 final course = filteredCourses[index];
                 return CourseVideoTile(
+                  key: ValueKey(course.id),
                   course: course,
                   onTap: () {
                     context.read<FavoritesProvider>().markCourseStarted(
@@ -423,6 +424,7 @@ class _SearchBodyState extends State<_SearchBody> {
                 vertical: 8.0,
               ),
               child: CourseVideoTile(
+                key: ValueKey(course.id),
                 course: course,
                 onTap: () {
                   context.read<FavoritesProvider>().markCourseStarted(
@@ -479,6 +481,7 @@ class _FavoritesScreen extends StatelessWidget {
       itemBuilder: (context, index) {
         final course = items[index];
         return CourseVideoTile(
+          key: ValueKey(course.id),
           course: course,
           onTap: () {
             Navigator.of(context).push(

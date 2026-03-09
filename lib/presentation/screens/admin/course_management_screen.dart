@@ -21,11 +21,11 @@ class _CourseManagementScreenState extends State<CourseManagementScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  String _selectedTargetAudience = 'Inicial';
+  String _selectedTargetAudience = 'Ciencias Naturales';
   final List<String> _targetAudiences = [
-    'Inicial',
-    'Primaria',
-    'Secundaria',
+    'Ciencias Sociales',
+    'Ciencias Naturales',
+    'Comunicación y Lenguaje',
     'Alternativa',
     'Otro(Especificar)',
   ];

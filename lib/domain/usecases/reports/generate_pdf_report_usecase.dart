@@ -69,39 +69,45 @@ class GeneratePdfReportUsecase implements Usecase<List<int>, String> {
       if (!courseProgressMap.containsKey(course.id)) continue;
       courseTitles[course.id] = course.title;
 
-      // Obtener módulos
+      // Obtener módulos (still nested under courses)
       final modulesSnapshot = await firestore
           .collection('courses')
           .doc(course.id)
           .collection('modules')
-          .orderBy('orderIndex')
           .get();
 
       if (!moduleTitles.containsKey(course.id)) {
         moduleTitles[course.id] = {};
       }
 
-      for (var moduleDoc in modulesSnapshot.docs) {
+      final sortedModules = modulesSnapshot.docs.toList()
+        ..sort((a, b) =>
+            ((a.data()['orderIndex'] as num?) ?? 0)
+                .compareTo((b.data()['orderIndex'] as num?) ?? 0));
+
+      for (var moduleDoc in sortedModules) {
         final moduleData = moduleDoc.data();
         final moduleId = moduleDoc.id;
         final moduleTitle = moduleData['title'] as String? ?? 'Sin título';
         moduleTitles[course.id]![moduleId] = moduleTitle;
 
-        // Obtener lecciones
+        // Lecciones están ahora en la colección raíz /lecciones
         final lessonsSnapshot = await firestore
-            .collection('courses')
-            .doc(course.id)
-            .collection('modules')
-            .doc(moduleId)
-            .collection('lessons')
-            .orderBy('orderIndex')
+            .collection('lecciones')
+            .where('courseId', isEqualTo: course.id)
+            .where('moduleId', isEqualTo: moduleId)
             .get();
 
         if (!lessonTitles.containsKey(moduleId)) {
           lessonTitles[moduleId] = {};
         }
 
-        for (var lessonDoc in lessonsSnapshot.docs) {
+        final sortedLessons = lessonsSnapshot.docs.toList()
+          ..sort((a, b) =>
+              ((a.data()['orderIndex'] as num?) ?? 0)
+                  .compareTo((b.data()['orderIndex'] as num?) ?? 0));
+
+        for (var lessonDoc in sortedLessons) {
           final lessonData = lessonDoc.data();
           final lessonId = lessonDoc.id;
           final lessonTitle = lessonData['title'] as String? ?? 'Sin título';

@@ -18,14 +18,14 @@ class ProgressProvider extends ChangeNotifier {
 
   bool _isLoading = false;
   String? _errorMessage;
-  List<CourseEntity> _completedCourses = [];
-  List<CourseEntity> _inProgressCourses = [];
+  List<CourseProgressDetail> _completedCourses = [];
+  List<CourseProgressDetail> _inProgressCourses = [];
   bool _hasViewedAnyLesson = false; // session flag
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-  List<CourseEntity> get completedCourses => _completedCourses;
-  List<CourseEntity> get inProgressCourses => _inProgressCourses;
+  List<CourseProgressDetail> get completedCourses => _completedCourses;
+  List<CourseProgressDetail> get inProgressCourses => _inProgressCourses;
   bool get hasViewedAnyLesson => _hasViewedAnyLesson;
 
   Future<void> loadUserProgress(String userId) async {
@@ -87,6 +87,8 @@ class ProgressProvider extends ChangeNotifier {
     required String courseId,
     required String moduleId,
     required String lessonId,
+    int? score,
+    int? maxScore,
   }) async {
     try {
       final progressId = '$userId-$courseId-$moduleId-$lessonId';
@@ -103,9 +105,34 @@ class ProgressProvider extends ChangeNotifier {
         'lastUpdated': FieldValue.serverTimestamp(),
       };
 
+      if (score != null) {
+        progressData['quizScore'] = score;
+      }
+      if (maxScore != null) {
+        progressData['maxQuizScore'] = maxScore;
+      }
+
       await progressRef.set(progressData, SetOptions(merge: true));
     } catch (e) {
       debugPrint('Error al marcar lección completada: $e');
     }
+  }
+
+  Future<LessonProgressEntity?> getLessonProgress({
+    required String userId,
+    required String courseId,
+    required String moduleId,
+    required String lessonId,
+  }) async {
+    try {
+      final progressId = '$userId-$courseId-$moduleId-$lessonId';
+      final progressDoc = await firestore.collection('userProgress').doc(progressId).get();
+      if (progressDoc.exists) {
+        return LessonProgressEntity.fromMap(progressDoc.data()!);
+      }
+    } catch (e) {
+      debugPrint('Error al obtener progreso de la lección: $e');
+    }
+    return null;
   }
 }

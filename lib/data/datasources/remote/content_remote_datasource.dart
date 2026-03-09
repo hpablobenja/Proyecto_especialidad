@@ -64,10 +64,10 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
   CollectionReference<Map<String, dynamic>> get _coursesCol => firestore.collection('courses');
   CollectionReference<Map<String, dynamic>> _modulesCol(String courseId) =>
       _coursesCol.doc(courseId).collection('modules');
-  CollectionReference<Map<String, dynamic>> _lessonsCol(String courseId, String moduleId) =>
-      _modulesCol(courseId).doc(moduleId).collection('lessons');
+  CollectionReference<Map<String, dynamic>> get _rootLessonsCol =>
+      firestore.collection('lecciones');
   CollectionReference<Map<String, dynamic>> _commentsCol(String courseId, String moduleId, String lessonId) =>
-      _lessonsCol(courseId, moduleId).doc(lessonId).collection('comments');
+      _rootLessonsCol.doc(lessonId).collection('comments');
 
   Map<String, dynamic> _courseToMap(CourseEntity c) => {
         'title': c.title,
@@ -207,16 +207,20 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
 
   @override
   Future<LessonEntity> createLesson(LessonEntity lesson) async {
-    final col = _lessonsCol(lesson.courseId, lesson.moduleId);
-    final doc = await col.add(_lessonToMap(lesson));
+    final doc = await _rootLessonsCol.add(_lessonToMap(lesson));
     final snap = await doc.get();
     return _lessonFromDoc(snap);
   }
 
   @override
   Future<List<LessonEntity>> listLessons(String courseId, String moduleId) async {
-    final qs = await _lessonsCol(courseId, moduleId).orderBy('orderIndex').get();
-    return qs.docs.map(_lessonFromDoc).toList();
+    final qs = await _rootLessonsCol
+        .where('courseId', isEqualTo: courseId)
+        .where('moduleId', isEqualTo: moduleId)
+        .get();
+    final list = qs.docs.map(_lessonFromDoc).toList();
+    list.sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
+    return list;
   }
 
   @override
@@ -227,7 +231,7 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
 
   @override
   Future<void> deleteLesson(String courseId, String moduleId, String lessonId) async {
-    await _lessonsCol(courseId, moduleId).doc(lessonId).delete();
+    await _rootLessonsCol.doc(lessonId).delete();
   }
 
   @override
@@ -257,7 +261,7 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
     final batch = firestore.batch();
     for (var i = 0; i < orderedLessonIds.length; i++) {
       final id = orderedLessonIds[i];
-      final ref = _lessonsCol(courseId, moduleId).doc(id);
+      final ref = _rootLessonsCol.doc(id);
       batch.update(ref, {'orderIndex': i});
     }
     await batch.commit();
@@ -283,7 +287,7 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
 
   @override
   Future<void> updateLesson(LessonEntity lesson) async {
-    await _lessonsCol(lesson.courseId, lesson.moduleId).doc(lesson.id).update(_lessonToMap(lesson));
+    await _rootLessonsCol.doc(lesson.id).update(_lessonToMap(lesson));
   }
 
   @override

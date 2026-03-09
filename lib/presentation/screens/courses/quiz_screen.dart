@@ -28,6 +28,8 @@ class _QuizScreenState extends State<QuizScreen> {
   bool _isSubmitting = false;
   bool _showResults = false;
   int _score = 0;
+  int? _previousScore;
+  bool _showingPreviousScore = false;
 
   @override
   void initState() {
@@ -44,13 +46,8 @@ class _QuizScreenState extends State<QuizScreen> {
     try {
       final firestore = FirebaseFirestore.instance;
       final quizDoc = await firestore
-          .collection('courses')
-          .doc(widget.lesson.courseId)
-          .collection('modules')
-          .doc(widget.lesson.moduleId)
-          .collection('lessons')
-          .doc(widget.lesson.id)
-          .collection('quiz')
+          .collection('quizzes')
+          .where('lessonId', isEqualTo: widget.lesson.id)
           .limit(1)
           .get();
 
@@ -69,6 +66,25 @@ class _QuizScreenState extends State<QuizScreen> {
           .map((q) => QuestionEntity.fromMap(q as Map<String, dynamic>))
           .toList();
 
+      int? fetchedScore;
+      bool hasPrevious = false;
+      
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final progress = Provider.of<ProgressProvider>(context, listen: false);
+      
+      if (auth.currentUser != null) {
+        final lessonProgress = await progress.getLessonProgress(
+          userId: auth.currentUser!.uid,
+          courseId: widget.lesson.courseId,
+          moduleId: widget.lesson.moduleId,
+          lessonId: widget.lesson.id,
+        );
+        if (lessonProgress != null && lessonProgress.quizScore != null) {
+          fetchedScore = lessonProgress.quizScore;
+          hasPrevious = true;
+        }
+      }
+
       setState(() {
         _quiz = QuizEntity(
           id: quizDoc.docs.first.id,
@@ -77,6 +93,10 @@ class _QuizScreenState extends State<QuizScreen> {
           moduleId: widget.lesson.moduleId,
           questions: questions,
         );
+        if (hasPrevious) {
+          _previousScore = fetchedScore;
+          _showingPreviousScore = true;
+        }
         _loading = false;
       });
     } catch (e) {
@@ -121,7 +141,7 @@ class _QuizScreenState extends State<QuizScreen> {
       _isSubmitting = false;
     });
 
-    // Marcar lección como completada
+    // Marcar lección como completada y guardar respuestas
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final progress = Provider.of<ProgressProvider>(context, listen: false);
     if (auth.currentUser != null) {
@@ -130,7 +150,41 @@ class _QuizScreenState extends State<QuizScreen> {
         courseId: widget.lesson.courseId,
         moduleId: widget.lesson.moduleId,
         lessonId: widget.lesson.id,
+        score: _score,
+        maxScore: _quiz!.questions.length,
       );
+
+      // Guardar respuestas detalladas en quizRespuestas
+      try {
+        final firestore = FirebaseFirestore.instance;
+        final List<Map<String, dynamic>> answerDetails = [];
+        for (int i = 0; i < _quiz!.questions.length; i++) {
+          final q = _quiz!.questions[i];
+          final selected = _selectedAnswers[i];
+          answerDetails.add({
+            'questionText': q.text,
+            'selectedAnswerIndex': selected,
+            'selectedAnswerText': selected != null ? q.options[selected] : null,
+            'correctAnswerIndex': q.correctAnswerIndex,
+            'correctAnswerText': q.options[q.correctAnswerIndex],
+            'isCorrect': selected == q.correctAnswerIndex,
+          });
+        }
+
+        await firestore.collection('quizRespuestas').add({
+          'userId': auth.currentUser!.uid,
+          'quizId': _quiz!.id,
+          'lessonId': widget.lesson.id,
+          'moduleId': widget.lesson.moduleId,
+          'courseId': widget.lesson.courseId,
+          'score': _score,
+          'maxScore': _quiz!.questions.length,
+          'answers': answerDetails,
+          'submittedAt': FieldValue.serverTimestamp(),
+        });
+      } catch (e) {
+        debugPrint('Error al guardar respuestas del quiz: $e');
+      }
     }
 
     if (!mounted) return;
@@ -192,6 +246,47 @@ class _QuizScreenState extends State<QuizScreen> {
         ),
         body: const Center(
           child: Text('No hay preguntas disponibles.'),
+        ),
+      );
+    }
+
+    if (_showingPreviousScore) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(widget.lesson.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.history, size: 64, color: Theme.of(context).primaryColor),
+                const SizedBox(height: 16),
+                Text(
+                  'Último intento: $_previousScore / ${_quiz!.questions.length}',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _showingPreviousScore = false;
+                      _selectedAnswers.clear();
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryColor,
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  ),
+                  child: const Text('Volver a intentar el cuestionario', style: TextStyle(fontSize: 16)),
+                ),
+              ],
+            ),
+          ),
         ),
       );
     }

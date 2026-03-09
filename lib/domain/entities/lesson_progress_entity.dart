@@ -18,6 +18,8 @@ class LessonProgressEntity extends Equatable {
   final DateTime? lastUpdated;
   final bool hasViewedVideo;
   final bool hasCompletedQuiz;
+  final int? quizScore;
+  final int? maxQuizScore;
 
   const LessonProgressEntity({
     required this.userId,
@@ -28,6 +30,8 @@ class LessonProgressEntity extends Equatable {
     this.lastUpdated,
     this.hasViewedVideo = false,
     this.hasCompletedQuiz = false,
+    this.quizScore,
+    this.maxQuizScore,
   });
 
   @override
@@ -40,6 +44,8 @@ class LessonProgressEntity extends Equatable {
         lastUpdated,
         hasViewedVideo,
         hasCompletedQuiz,
+        quizScore,
+        maxQuizScore,
       ];
 
   Map<String, dynamic> toMap() {
@@ -52,6 +58,8 @@ class LessonProgressEntity extends Equatable {
       'lastUpdated': lastUpdated?.toIso8601String(),
       'hasViewedVideo': hasViewedVideo,
       'hasCompletedQuiz': hasCompletedQuiz,
+      'quizScore': quizScore,
+      'maxQuizScore': maxQuizScore,
     };
   }
 
@@ -74,6 +82,8 @@ class LessonProgressEntity extends Equatable {
           : null,
       hasViewedVideo: map['hasViewedVideo'] as bool? ?? false,
       hasCompletedQuiz: map['hasCompletedQuiz'] as bool? ?? false,
+      quizScore: map['quizScore'] as int?,
+      maxQuizScore: map['maxQuizScore'] as int?,
     );
   }
 }

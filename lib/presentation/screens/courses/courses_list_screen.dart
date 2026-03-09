@@ -15,9 +15,9 @@ class _CoursesListScreenState extends State<CoursesListScreen> {
   String _selectedAudience = 'Todos';
   final List<String> _audiences = [
     'Todos',
-    'Inicial',
-    'Primaria',
-    'Secundaria',
+    'Ciencias Sociales',
+    'Ciencias Naturales',
+    'Comunicación y Lenguaje',
     'Alternativa',
     'Otro(Especificar)',
   ];

@@ -37,6 +37,16 @@ class _CourseVideoTileState extends State<CourseVideoTile> {
     });
   }
 
+  @override
+  void didUpdateWidget(covariant CourseVideoTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.course.id != widget.course.id) {
+      setState(() {
+        _future = _resolveFirstLessonMedia(widget.course);
+      });
+    }
+  }
+
   Future<MediaResource> _resolveFirstLessonMedia(CourseEntity course) async {
     if (_cache.containsKey(course.id)) {
       return _cache[course.id]!;

@@ -13,6 +13,8 @@ import '../../providers/auth_provider.dart';
 import '../../../core/injection_container.dart' as di;
 import '../../../domain/usecases/reports/generate_pdf_report_usecase.dart';
 import '../../widgets/app_drawer.dart';
+import '../../../domain/usecases/courses/get_course_progress_usecase.dart';
+import '../../../domain/entities/lesson_progress_entity.dart';
 
 class MyProgressScreen extends StatefulWidget {
   @override
@@ -84,6 +86,7 @@ class _MyProgressScreenState extends State<MyProgressScreen> {
     final progressProvider = Provider.of<ProgressProvider>(context);
 
     return Scaffold(
+      appBar: AppBar(title: const Text('Mi Progreso')),
       drawer: const AppDrawer(),
       body:
           progressProvider.isLoading
@@ -93,50 +96,21 @@ class _MyProgressScreenState extends State<MyProgressScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    // Sección de Cursos Completados
-                    Text(
-                      'Microformaciones Completadas',
-                      style: AppStyles.headline1,
-                    ),
-                    const SizedBox(height: 16),
-
-                    if (progressProvider.completedCourses.isEmpty)
-                      _buildEmptyState(),
-
-                    ...progressProvider.completedCourses.map(
-                      (course) => ListTile(
-                        leading: Icon(
-                          Icons.check_circle,
-                          color: AppColors.successColor,
-                        ),
-                        title: Text(
-                          course.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                    if (progressProvider.completedCourses.isEmpty && progressProvider.inProgressCourses.isEmpty)
+                      _buildEmptyState()
+                    else ...[
+                      _buildCourseProgressSection(
+                        progressProvider.completedCourses,
+                        'Microformaciones Completadas',
+                        Icons.emoji_events,
                       ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Sección de Cursos en Curso
-                    Text(
-                      'Microformaciones en Curso',
-                      style: AppStyles.headline1,
-                    ),
-                    const SizedBox(height: 16),
-                    ...progressProvider.inProgressCourses.map(
-                      (course) => ListTile(
-                        leading: Icon(
-                          Icons.access_time,
-                          color: AppColors.accentColor,
-                        ),
-                        title: Text(
-                          course.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                      _buildCourseProgressSection(
+                        progressProvider.inProgressCourses,
+                        'Microformaciones en Curso',
+                        Icons.trending_up,
                       ),
-                    ),
+                    ],
+                    
                     const SizedBox(height: 32),
 
                     // Botón de Generar Reporte
@@ -174,6 +148,136 @@ class _MyProgressScreenState extends State<MyProgressScreen> {
                   ],
                 ),
               ),
+    );
+  }
+
+  Widget _buildCourseProgressSection(List<CourseProgressDetail> courses, String title, IconData headerIcon) {
+    if (courses.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(headerIcon, color: AppColors.primaryColor, size: 28),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                title,
+                style: AppStyles.headline1,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        ...courses.map((courseDetail) => _buildCourseItem(courseDetail)),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _buildCourseItem(CourseProgressDetail detail) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ExpansionTile(
+        title: Text(
+          detail.course.title,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        leading: const Icon(Icons.school, color: AppColors.primaryColor),
+        children: detail.moduleTitles.entries.map((moduleEntry) {
+          final moduleId = moduleEntry.key;
+          final moduleTitle = moduleEntry.value;
+          final lessons = detail.lessonTitles[moduleId] ?? {};
+
+          if (lessons.isEmpty) return const SizedBox.shrink();
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  moduleTitle,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
+                ),
+                const SizedBox(height: 8),
+                ...lessons.entries.map((lessonEntry) {
+                  final lessonId = lessonEntry.key;
+                  final lessonTitle = lessonEntry.value;
+                  final progress = detail.progress[moduleId]?[lessonId];
+
+                  String statusText = 'No Iniciado';
+                  IconData statusIcon = Icons.radio_button_unchecked;
+                  Color statusColor = Colors.grey;
+
+                  if (progress != null) {
+                    if (progress.status == LessonProgressStatus.completed) {
+                      statusText = 'Completado';
+                      statusIcon = Icons.check_circle;
+                      statusColor = AppColors.successColor;
+                    } else if (progress.status == LessonProgressStatus.inProgress) {
+                      statusText = 'En Curso';
+                      statusIcon = Icons.access_time;
+                      statusColor = AppColors.accentColor;
+                    }
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.only(left: 16.0, bottom: 12.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(statusIcon, color: statusColor, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                lessonTitle,
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                              Row(
+                                children: [
+                                  Text(
+                                    statusText,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: statusColor,
+                                    ),
+                                  ),
+                                  if (progress?.quizScore != null) ...[
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      progress!.maxQuizScore != null
+                                          ? '• Nota: ${progress!.quizScore} / ${progress!.maxQuizScore}'
+                                          : '• Nota: ${progress!.quizScore}',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blueGrey[700],
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+                const Divider(),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 
