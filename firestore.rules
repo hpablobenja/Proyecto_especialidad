@@ -2,33 +2,42 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // (Asegúrate de fusionar esto con tus reglas existentes si las tienes en la consola de Firebase)
+    // Función para obtener el rol del usuario
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      // Los usuarios no pueden actualizar su propio rol; solo el admin puede hacerlo.
+      allow update: if request.auth != null && (request.auth.uid == userId 
+                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) 
+                    || isAdmin());
+    }
 
     match /courses/{courseId} {
-      // Tus reglas actuales para cursos
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && isAdmin();
       
       match /modules/{moduleId} {
-        allow read, write: if request.auth != null;
-        // La antigua ruta de lecciones anidadas ya no se usa.
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && isAdmin();
       }
     }
 
-    // NUEVAS COLECCIONES RAÍZ (FLAT STRUCTURE)
     match /lecciones/{leccionId} {
-      // Validando el ID de referencia al módulo
       allow read: if request.auth != null;
-      allow create, update: if request.auth != null 
+      allow create, update: if request.auth != null && isAdmin()
                             && request.resource.data.keys().hasAll(['courseId', 'moduleId']);
-      allow delete: if request.auth != null;
+      allow delete: if request.auth != null && isAdmin();
     }
 
     match /quizzes/{quizId} {
-      // Validando el ID de referencia a la lección
       allow read: if request.auth != null;
-      allow create, update: if request.auth != null 
+      allow create, update: if request.auth != null && isAdmin()
                             && request.resource.data.keys().hasAll(['lessonId', 'courseId', 'moduleId']);
-      allow delete: if request.auth != null;
+      allow delete: if request.auth != null && isAdmin();
     }
   }
 }

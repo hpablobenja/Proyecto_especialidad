@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../../core/utils/logger_service.dart';
 import '../../domain/entities/course_entity.dart';
 import '../../domain/usecases/courses/get_courses_usecase.dart';
 import '../../domain/usecases/courses/create_course_usecase.dart';
@@ -31,7 +32,8 @@ class CourseProvider extends ChangeNotifier {
 
     try {
       _courses = await getCoursesUsecase.call(NoParams());
-    } catch (e) {
+    } catch (e, stackTrace) {
+      LoggerService.logError('Error al cargar cursos', e, stackTrace);
       _errorMessage = 'No se pudieron cargar los cursos. $e';
     } finally {
       _isLoading = false;
@@ -54,7 +56,8 @@ class CourseProvider extends ChangeNotifier {
       );
       _courses = List.of(_courses)..add(created);
       return true;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      LoggerService.logError('Error al crear el curso', e, stackTrace);
       _errorMessage = 'Error al crear el curso. $e';
       return false;
     } finally {

@@ -1,7 +1,7 @@
 // lib/presentation/providers/auth_provider.dart
 
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 
 import '../../domain/entities/user_entity.dart';
@@ -42,10 +42,10 @@ class AuthProvider extends ChangeNotifier {
       _currentUser = await loginUsecase.call(
         LoginParams(email: email, password: password),
       );
-      
+
       // Cache credentials for offline login (last 2 users)
       await _cacheUserCredentials(email, password, _currentUser!);
-      
+
       _isLoading = false;
       notifyListeners();
       return true;
@@ -59,7 +59,7 @@ class AuthProvider extends ChangeNotifier {
         notifyListeners();
         return true;
       }
-      
+
       _errorMessage =
           e.toString(); // Manejar errores específicos de Firebase aquí
       _isLoading = false;
@@ -68,34 +68,40 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _cacheUserCredentials(String email, String password, UserEntity user) async {
+  final _secureStorage = const FlutterSecureStorage();
+
+  Future<void> _cacheUserCredentials(
+    String email,
+    String password,
+    UserEntity user,
+  ) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      
       // Get existing cached users
-      final cachedUsersJson = prefs.getStringList('cached_users') ?? [];
-      final cachedUsers = cachedUsersJson.map((json) => jsonDecode(json)).toList();
-      
+      final cachedUsersString = await _secureStorage.read(key: 'cached_users');
+      List<dynamic> cachedUsers = [];
+      if (cachedUsersString != null) {
+        cachedUsers = jsonDecode(cachedUsersString);
+      }
+
       // Remove if user already exists
       cachedUsers.removeWhere((u) => u['email'] == email);
-      
+
       // Add new user at the beginning
       cachedUsers.insert(0, {
         'email': email,
-        'password': password, // In production, use encryption!
+        'password': password, 
         'uid': user.uid,
         'name': user.name,
         'role': user.role,
       });
-      
+
       // Keep only last 2 users
       if (cachedUsers.length > 2) {
         cachedUsers.removeRange(2, cachedUsers.length);
       }
-      
-      // Save back to preferences
-      final updatedJson = cachedUsers.map((u) => jsonEncode(u)).toList();
-      await prefs.setStringList('cached_users', updatedJson);
+
+      // Save back to secure storage
+      await _secureStorage.write(key: 'cached_users', value: jsonEncode(cachedUsers));
     } catch (e) {
       // Silently fail - caching is not critical
       debugPrint('Error caching credentials: $e');
@@ -104,11 +110,12 @@ class AuthProvider extends ChangeNotifier {
 
   Future<UserEntity?> _tryOfflineLogin(String email, String password) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final cachedUsersJson = prefs.getStringList('cached_users') ?? [];
+      final cachedUsersString = await _secureStorage.read(key: 'cached_users');
+      if (cachedUsersString == null) return null;
       
-      for (final userJson in cachedUsersJson) {
-        final userData = jsonDecode(userJson);
+      final cachedUsers = jsonDecode(cachedUsersString) as List<dynamic>;
+
+      for (final userData in cachedUsers) {
         if (userData['email'] == email && userData['password'] == password) {
           return UserEntity(
             uid: userData['uid'],
@@ -118,7 +125,7 @@ class AuthProvider extends ChangeNotifier {
           );
         }
       }
-      
+
       return null;
     } catch (e) {
       debugPrint('Error during offline login: $e');
@@ -177,7 +184,7 @@ class AuthProvider extends ChangeNotifier {
         // If offline, signOut from Firebase will fail, but we still want to clear local state
         debugPrint('Firebase signOut failed (possibly offline): $e');
       }
-      
+
       _currentUser = null;
       _isLoading = false;
       notifyListeners();
@@ -206,7 +213,7 @@ class AuthProvider extends ChangeNotifier {
 
       await updateUserUsecase.call(updatedUser);
       _currentUser = updatedUser;
-      
+
       _isLoading = false;
       notifyListeners();
       return true;

@@ -32,6 +32,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     String role,
   ) async {
     try {
+      // Prevención de escalada de privilegios
+      final safeRole = (role.toLowerCase() == 'admin') ? 'maestro' : role;
+
       final userCredential = await firebaseAuth.createUserWithEmailAndPassword(
         email: email,
         password: password,
@@ -43,7 +46,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         uid: uid,
         email: email,
         name: name,
-        role: role,
+        role: safeRole,
       );
 
       await firestore.collection('users').doc(uid).set(userModel.toMap());
