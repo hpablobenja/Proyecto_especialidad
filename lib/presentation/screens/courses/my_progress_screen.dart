@@ -2,36 +2,30 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_styles.dart';
-import '../../providers/progress_provider.dart';
-import '../../providers/auth_provider.dart';
-import '../../../core/injection_container.dart' as di;
-import '../../../domain/usecases/reports/generate_pdf_report_usecase.dart';
+import '../../../core/di/riverpod_providers.dart';
 import '../../widgets/app_drawer.dart';
-import '../../../domain/usecases/courses/get_course_progress_usecase.dart';
 import '../../../domain/entities/lesson_progress_entity.dart';
+import '../../../domain/usecases/courses/get_course_progress_usecase.dart';
 
-class MyProgressScreen extends StatefulWidget {
+class MyProgressScreen extends ConsumerStatefulWidget {
   @override
-  _MyProgressScreenState createState() => _MyProgressScreenState();
+  ConsumerState<MyProgressScreen> createState() => _MyProgressScreenState();
 }
 
-class _MyProgressScreenState extends State<MyProgressScreen> {
+class _MyProgressScreenState extends ConsumerState<MyProgressScreen> {
   @override
   void initState() {
     super.initState();
     // Cargar el progreso del usuario al iniciar la pantalla
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final progressProvider = Provider.of<ProgressProvider>(
-        context,
-        listen: false,
-      );
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final progressProvider = ref.read(progressStateProvider);
+      final authProvider = ref.read(authStateProvider);
       if (authProvider.currentUser != null) {
         progressProvider.loadUserProgress(authProvider.currentUser!.uid);
       }
@@ -39,8 +33,8 @@ class _MyProgressScreenState extends State<MyProgressScreen> {
   }
 
   Future<void> _generateReport() async {
-    final generatePdfReportUsecase = di.sl<GeneratePdfReportUsecase>();
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final generatePdfReportUsecase = ref.read(generatePdfReportUsecaseProvider);
+    final authProvider = ref.read(authStateProvider);
 
     // Mostrar indicador de carga
     final scaffoldMessenger = ScaffoldMessenger.of(context);
@@ -83,7 +77,7 @@ class _MyProgressScreenState extends State<MyProgressScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final progressProvider = Provider.of<ProgressProvider>(context);
+    final progressProvider = ref.watch(progressStateProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Mi Progreso')),

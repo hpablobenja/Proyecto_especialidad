@@ -1,12 +1,10 @@
 // lib/presentation/screens/admin/course_content_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
-import '../../providers/admin_content_provider.dart';
-import '../../providers/comments_provider.dart';
-import '../../providers/auth_provider.dart';
+import '../../../core/di/riverpod_providers.dart';
 import '../../widgets/app_drawer.dart';
 import '../../widgets/youtube_video_manager.dart';
 import 'quiz_management_screen.dart';
@@ -14,7 +12,7 @@ import '../../../domain/entities/module_entity.dart';
 import '../../../domain/entities/lesson_entity.dart';
 import '../../../domain/entities/media_resource.dart';
 
-class CourseContentScreen extends StatefulWidget {
+class CourseContentScreen extends ConsumerStatefulWidget {
   final String courseId;
   final String courseTitle;
   const CourseContentScreen({
@@ -24,10 +22,10 @@ class CourseContentScreen extends StatefulWidget {
   });
 
   @override
-  State<CourseContentScreen> createState() => _CourseContentScreenState();
+  ConsumerState<CourseContentScreen> createState() => _CourseContentScreenState();
 }
 
-class _CourseContentScreenState extends State<CourseContentScreen> {
+class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
   bool _loading = true;
   String? _error;
   List<ModuleEntity> _modules = [];
@@ -94,7 +92,7 @@ class _CourseContentScreenState extends State<CourseContentScreen> {
     if (ok != true) return;
 
     try {
-      final admin = Provider.of<AdminContentProvider>(context, listen: false);
+      final admin = ref.read(adminContentStateProvider);
       final updated = LessonEntity(
         id: lesson.id,
         courseId: lesson.courseId,
@@ -150,7 +148,7 @@ class _CourseContentScreenState extends State<CourseContentScreen> {
     if (confirm != true) return;
 
     try {
-      final admin = Provider.of<AdminContentProvider>(context, listen: false);
+      final admin = ref.read(adminContentStateProvider);
       final ok = await admin.deleteLesson(
         courseId: widget.courseId,
         moduleId: module.id,
@@ -228,7 +226,7 @@ class _CourseContentScreenState extends State<CourseContentScreen> {
     if (ok != true) return;
 
     try {
-      final admin = Provider.of<AdminContentProvider>(context, listen: false);
+      final admin = ref.read(adminContentStateProvider);
       final updated = ModuleEntity(
         id: module.id,
         courseId: module.courseId,
@@ -283,7 +281,7 @@ class _CourseContentScreenState extends State<CourseContentScreen> {
     if (confirm != true) return;
 
     try {
-      final admin = Provider.of<AdminContentProvider>(context, listen: false);
+      final admin = ref.read(adminContentStateProvider);
       final ok = await admin.deleteModule(
         courseId: widget.courseId,
         moduleId: module.id,
@@ -401,10 +399,7 @@ class _CourseContentScreenState extends State<CourseContentScreen> {
                 ElevatedButton(
                   onPressed: () async {
                     try {
-                      final admin = Provider.of<AdminContentProvider>(
-                        context,
-                        listen: false,
-                      );
+                      final admin = ref.read(adminContentStateProvider);
                       final updated = LessonEntity(
                         id: lesson.id,
                         courseId: lesson.courseId,
@@ -611,7 +606,7 @@ class _CourseContentScreenState extends State<CourseContentScreen> {
         metadata: {'provider': 'youtube', 'videoId': id},
       );
 
-      final admin = Provider.of<AdminContentProvider>(context, listen: false);
+      final admin = ref.read(adminContentStateProvider);
       final updated = LessonEntity(
         id: lesson.id,
         courseId: lesson.courseId,
@@ -655,7 +650,7 @@ class _CourseContentScreenState extends State<CourseContentScreen> {
       _error = null;
     });
     try {
-      final admin = Provider.of<AdminContentProvider>(context, listen: false);
+      final admin = ref.read(adminContentStateProvider);
       final mods = await admin.fetchModules(widget.courseId);
       setState(() {
         _modules = mods;
@@ -669,7 +664,7 @@ class _CourseContentScreenState extends State<CourseContentScreen> {
 
   Future<void> _loadLessons(String moduleId) async {
     try {
-      final admin = Provider.of<AdminContentProvider>(context, listen: false);
+      final admin = ref.read(adminContentStateProvider);
       final list = await admin.fetchLessons(
         courseId: widget.courseId,
         moduleId: moduleId,
@@ -689,7 +684,7 @@ class _CourseContentScreenState extends State<CourseContentScreen> {
 
   Future<void> _onLessonUpdated(LessonEntity updatedLesson, {BuildContext? dialogContext}) async {
     try {
-      final admin = Provider.of<AdminContentProvider>(context, listen: false);
+      final admin = ref.read(adminContentStateProvider);
       final success = await admin.updateLesson(updatedLesson);
       if (success) {
         await _loadLessons(updatedLesson.moduleId);
@@ -772,7 +767,7 @@ class _CourseContentScreenState extends State<CourseContentScreen> {
     if (ok != true) return;
 
     try {
-      final admin = Provider.of<AdminContentProvider>(context, listen: false);
+      final admin = ref.read(adminContentStateProvider);
       final module = ModuleEntity(
         id: '',
         courseId: widget.courseId,
@@ -848,7 +843,7 @@ class _CourseContentScreenState extends State<CourseContentScreen> {
     if (ok != true) return;
 
     try {
-      final admin = Provider.of<AdminContentProvider>(context, listen: false);
+      final admin = ref.read(adminContentStateProvider);
       final current = _lessonsByModule[module.id] ?? [];
       final lesson = LessonEntity(
         id: '',
@@ -1123,7 +1118,7 @@ class _CourseContentScreenState extends State<CourseContentScreen> {
     required ModuleEntity module,
     required LessonEntity lesson,
   }) async {
-    final comments = Provider.of<CommentsProvider>(context, listen: false);
+    final comments = ref.read(commentsStateProvider);
     await comments.load(
       courseId: widget.courseId,
       moduleId: module.id,
@@ -1136,7 +1131,7 @@ class _CourseContentScreenState extends State<CourseContentScreen> {
     // Helper to add comment
     Future<void> _submit() async {
       if (!formKey.currentState!.validate()) return;
-      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final auth = ref.read(authStateProvider);
       final user = auth.currentUser;
       if (user == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1195,8 +1190,9 @@ class _CourseContentScreenState extends State<CourseContentScreen> {
                     ),
                   ),
                   Expanded(
-                    child: Consumer<CommentsProvider>(
-                      builder: (context, cp, _) {
+                    child: Consumer(
+                      builder: (context, ref, _) {
+                        final cp = ref.watch(commentsStateProvider);
                         if (cp.isLoading) {
                           return const Center(
                             child: CircularProgressIndicator(),

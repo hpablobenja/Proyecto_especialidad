@@ -1,22 +1,22 @@
 // lib/presentation/screens/courses/lesson_documentation_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/di/riverpod_providers.dart';
 import '../../../domain/entities/lesson_entity.dart';
-import '../../../core/services/pdf_generator_service.dart';
-import '../../../core/services/offline_cache_service.dart';
 
-class LessonDocumentationScreen extends StatefulWidget {
+class LessonDocumentationScreen extends ConsumerStatefulWidget {
   final LessonEntity lesson;
 
   const LessonDocumentationScreen({super.key, required this.lesson});
 
   @override
-  State<LessonDocumentationScreen> createState() =>
+  ConsumerState<LessonDocumentationScreen> createState() =>
       _LessonDocumentationScreenState();
 }
 
-class _LessonDocumentationScreenState extends State<LessonDocumentationScreen> {
+class _LessonDocumentationScreenState extends ConsumerState<LessonDocumentationScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
@@ -29,8 +29,7 @@ class _LessonDocumentationScreenState extends State<LessonDocumentationScreen> {
 
   Future<void> _cacheLesson() async {
     try {
-      final cacheService = OfflineCacheService();
-      await cacheService.cacheLastLesson(widget.lesson);
+      await ref.read(offlineCacheServiceProvider).cacheLastLesson(widget.lesson);
     } catch (e) {
       // Silently fail - caching is not critical
     }
@@ -57,8 +56,9 @@ class _LessonDocumentationScreenState extends State<LessonDocumentationScreen> {
                 const SnackBar(content: Text('Generando PDF...')),
               );
               try {
-                final pdfService = PdfGeneratorService();
-                final filePath = await pdfService.generateLessonPdf(widget.lesson);
+                final filePath = await ref
+                    .read(pdfGeneratorServiceProvider)
+                    .generateLessonPdf(widget.lesson);
                 
                 if (!mounted) return;
                 

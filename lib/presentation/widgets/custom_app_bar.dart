@@ -1,13 +1,13 @@
 // lib/presentation/widgets/custom_app_bar.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../providers/auth_provider.dart';
+import '../../core/di/riverpod_providers.dart';
 import '../screens/auth/login_screen.dart';
 
-class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
+class CustomAppBar extends ConsumerWidget implements PreferredSizeWidget {
   final String title;
   final Color? titleColor;
 
@@ -15,9 +15,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
+  Widget build(BuildContext context, WidgetRef ref) {
     return AppBar(
       title: Text(title, style: TextStyle(color: titleColor ?? Colors.white)),
       backgroundColor: AppColors.primaryColor,
@@ -25,7 +23,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         IconButton(
           icon: Icon(Icons.logout, color: Colors.white),
           onPressed: () {
-            authProvider.signOut();
+            ref.read(authStateProvider).signOut();
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(builder: (context) => LoginScreen()),
               (route) => false,

@@ -2,25 +2,24 @@
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/entities/lesson_entity.dart';
 import '../../../domain/entities/quiz_entity.dart';
 import '../../../domain/entities/question_entity.dart';
-import '../../providers/progress_provider.dart';
-import '../../providers/auth_provider.dart';
+import '../../../core/di/riverpod_providers.dart';
 import '../../../core/constants/app_colors.dart';
 
-class QuizScreen extends StatefulWidget {
+class QuizScreen extends ConsumerStatefulWidget {
   final LessonEntity lesson;
 
   const QuizScreen({super.key, required this.lesson});
 
   @override
-  State<QuizScreen> createState() => _QuizScreenState();
+  ConsumerState<QuizScreen> createState() => _QuizScreenState();
 }
 
-class _QuizScreenState extends State<QuizScreen> {
+class _QuizScreenState extends ConsumerState<QuizScreen> {
   QuizEntity? _quiz;
   bool _loading = true;
   String? _error;
@@ -44,7 +43,7 @@ class _QuizScreenState extends State<QuizScreen> {
     });
 
     try {
-      final firestore = FirebaseFirestore.instance;
+      final firestore = ref.read(firestoreProvider);
       final quizDoc = await firestore
           .collection('quizzes')
           .where('lessonId', isEqualTo: widget.lesson.id)
@@ -69,8 +68,8 @@ class _QuizScreenState extends State<QuizScreen> {
       int? fetchedScore;
       bool hasPrevious = false;
       
-      final auth = Provider.of<AuthProvider>(context, listen: false);
-      final progress = Provider.of<ProgressProvider>(context, listen: false);
+      final auth = ref.read(authStateProvider);
+      final progress = ref.read(progressStateProvider);
       
       if (auth.currentUser != null) {
         final lessonProgress = await progress.getLessonProgress(
@@ -142,8 +141,8 @@ class _QuizScreenState extends State<QuizScreen> {
     });
 
     // Marcar lección como completada y guardar respuestas
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    final progress = Provider.of<ProgressProvider>(context, listen: false);
+    final auth = ref.read(authStateProvider);
+    final progress = ref.read(progressStateProvider);
     if (auth.currentUser != null) {
       await progress.markLessonCompleted(
         userId: auth.currentUser!.uid,
@@ -156,7 +155,7 @@ class _QuizScreenState extends State<QuizScreen> {
 
       // Guardar respuestas detalladas en quizRespuestas
       try {
-        final firestore = FirebaseFirestore.instance;
+        final firestore = ref.read(firestoreProvider);
         final List<Map<String, dynamic>> answerDetails = [];
         for (int i = 0; i < _quiz!.questions.length; i++) {
           final q = _quiz!.questions[i];

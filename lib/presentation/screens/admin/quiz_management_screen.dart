@@ -1,23 +1,24 @@
 // lib/presentation/screens/admin/quiz_management_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/di/riverpod_providers.dart';
 import '../../../domain/entities/lesson_entity.dart';
 import '../../../domain/entities/quiz_entity.dart';
 import '../../../domain/entities/question_entity.dart';
 import '../../../core/constants/app_colors.dart';
 
-class QuizManagementScreen extends StatefulWidget {
+class QuizManagementScreen extends ConsumerStatefulWidget {
   final LessonEntity lesson;
 
   const QuizManagementScreen({super.key, required this.lesson});
 
   @override
-  State<QuizManagementScreen> createState() => _QuizManagementScreenState();
+  ConsumerState<QuizManagementScreen> createState() => _QuizManagementScreenState();
 }
 
-class _QuizManagementScreenState extends State<QuizManagementScreen> {
+class _QuizManagementScreenState extends ConsumerState<QuizManagementScreen> {
   QuizEntity? _quiz;
   bool _loading = true;
   String? _error;
@@ -35,7 +36,7 @@ class _QuizManagementScreenState extends State<QuizManagementScreen> {
     });
 
     try {
-      final firestore = FirebaseFirestore.instance;
+      final firestore = ref.read(firestoreProvider);
       final quizDoc = await firestore
           .collection('quizzes')
           .where('lessonId', isEqualTo: widget.lesson.id)
@@ -73,7 +74,7 @@ class _QuizManagementScreenState extends State<QuizManagementScreen> {
 
   Future<void> _saveQuiz(QuizEntity quiz) async {
     try {
-      final firestore = FirebaseFirestore.instance;
+      final firestore = ref.read(firestoreProvider);
       final quizRef = firestore
           .collection('quizzes')
           .doc(quiz.id);
@@ -124,7 +125,7 @@ class _QuizManagementScreenState extends State<QuizManagementScreen> {
     if (confirm != true) return;
 
     try {
-      final firestore = FirebaseFirestore.instance;
+      final firestore = ref.read(firestoreProvider);
       await firestore
           .collection('quizzes')
           .doc(_quiz!.id)

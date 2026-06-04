@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/usecases/courses/get_course_progress_usecase.dart';
-import '../../domain/entities/course_entity.dart';
 import '../../domain/entities/lesson_progress_entity.dart';
 
 class ProgressProvider extends ChangeNotifier {
@@ -13,8 +12,8 @@ class ProgressProvider extends ChangeNotifier {
 
   ProgressProvider({
     required this.getCourseProgressUsecase,
-    FirebaseFirestore? firestore,
-  }) : firestore = firestore ?? FirebaseFirestore.instance;
+    required this.firestore,
+  });
 
   bool _isLoading = false;
   String? _errorMessage;

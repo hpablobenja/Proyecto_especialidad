@@ -1,10 +1,10 @@
 // lib/presentation/widgets/app_drawer.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../providers/auth_provider.dart';
+import '../../core/di/riverpod_providers.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/courses/my_progress_screen.dart';
 import '../screens/auth/login_screen.dart';
@@ -13,12 +13,12 @@ import '../screens/admin/course_management_screen.dart';
 import '../screens/admin/admin_reports_screen.dart';
 import '../screens/courses/courses_list_screen.dart';
 
-class AppDrawer extends StatelessWidget {
+class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final auth = Provider.of<AuthProvider>(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authStateProvider);
     final user = auth.currentUser;
 
     final isAdmin = (user?.role ?? '').toLowerCase() == 'admin';
@@ -132,10 +132,7 @@ class AppDrawer extends StatelessWidget {
               iconColor: Colors.red,
               onTap: () async {
                 Navigator.of(context).pop();
-                await Provider.of<AuthProvider>(
-                  context,
-                  listen: false,
-                ).signOut();
+                await ref.read(authStateProvider).signOut();
                 // Ir al login y limpiar la pila
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (_) => LoginScreen()),

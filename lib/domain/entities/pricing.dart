@@ -1,5 +1,5 @@
 // lib/domain/entities/pricing.dart
-
+/*
 enum PricingType { free, oneTime, subscription, bundle }
 
 class Pricing {
@@ -15,3 +15,4 @@ class Pricing {
     this.bundleCourseIds = const [],
   });
 }
+*/

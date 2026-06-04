@@ -1,5 +1,5 @@
 // lib/domain/entities/drip_config.dart
-
+/*
 enum DripType { none, byDate, byProgress }
 
 class DripConfig {
@@ -13,3 +13,4 @@ class DripConfig {
     this.minProgressPercent,
   });
 }
+*/

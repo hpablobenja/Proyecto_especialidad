@@ -1,33 +1,30 @@
 // lib/presentation/screens/profile/profile_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_styles.dart';
-import '../../providers/auth_provider.dart';
+import '../../../core/di/riverpod_providers.dart';
 import '../../widgets/custom_app_bar.dart';
 import 'edit_profile_screen.dart';
 
-class ProfileScreen extends StatefulWidget {
-  @override
-  _ProfileScreenState createState() => _ProfileScreenState();
-}
+class ProfileScreen extends ConsumerWidget {
+  const ProfileScreen({super.key});
 
-class _ProfileScreenState extends State<ProfileScreen> {
   @override
-  Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authProvider = ref.watch(authStateProvider);
     final user = authProvider.currentUser;
 
     if (user == null) {
       return Scaffold(
         appBar: AppBar(
-          title: Text('Mi Perfil'),
+          title: const Text('Mi Perfil'),
           backgroundColor: AppColors.primaryColor,
           centerTitle: true,
         ),
-        body: Center(
+        body: const Center(
           child: Text('No se pudo cargar la información del usuario.'),
         ),
       );
@@ -48,7 +45,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               CircleAvatar(
                 radius: 60,
                 backgroundColor: AppColors.primaryColor,
-                child: Icon(Icons.person, size: 80, color: Colors.white),
+                child: const Icon(Icons.person, size: 80, color: Colors.white),
               ),
               const SizedBox(height: 20),
               Text(
@@ -76,18 +73,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 30),
               ListTile(
-                leading: Icon(Icons.person, color: AppColors.primaryColor),
-                title: Text('Nombre Completo'),
+                leading: const Icon(Icons.person, color: AppColors.primaryColor),
+                title: const Text('Nombre Completo'),
                 subtitle: Text(user.name),
               ),
               ListTile(
-                leading: Icon(Icons.email, color: AppColors.primaryColor),
-                title: Text('Correo Electrónico'),
+                leading: const Icon(Icons.email, color: AppColors.primaryColor),
+                title: const Text('Correo Electrónico'),
                 subtitle: Text(user.email),
               ),
               ListTile(
-                leading: Icon(Icons.security, color: AppColors.primaryColor),
-                title: Text('ID de Usuario'),
+                leading: const Icon(Icons.security, color: AppColors.primaryColor),
+                title: const Text('ID de Usuario'),
                 subtitle: Text(user.uid),
               ),
               const SizedBox(height: 40),
@@ -100,11 +97,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   );
                 },
-                icon: Icon(Icons.edit),
-                label: Text('Editar Perfil'),
+                icon: const Icon(Icons.edit),
+                label: const Text('Editar Perfil'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.accentColor,
-                  padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -148,10 +145,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                           try {
                             // Wait for signOut to complete
-                            await authProvider.signOut();
-
-                            // Only navigate after signOut completes successfully
-                            if (!mounted) return;
+                            await ref.read(authStateProvider).signOut();
 
                             // Use root navigator to escape nested navigator in MainShell
                             Navigator.of(context, rootNavigator: true)
@@ -160,8 +154,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               (route) => false,
                             );
                           } catch (e) {
-                            if (!mounted) return;
-
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text('Error al cerrar sesión: $e'),
@@ -190,7 +182,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
-                  padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),

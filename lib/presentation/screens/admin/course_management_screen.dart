@@ -1,23 +1,22 @@
 // lib/presentation/screens/admin/course_management_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_styles.dart';
-import '../../providers/course_provider.dart';
+import '../../../core/di/riverpod_providers.dart';
 import '../../../domain/usecases/courses/create_course_usecase.dart'; // Importar el use case
 import '../../widgets/app_drawer.dart';
-import '../../providers/content_provider.dart';
 import 'course_content_screen.dart';
 import '../../../domain/entities/course_entity.dart';
 
-class CourseManagementScreen extends StatefulWidget {
+class CourseManagementScreen extends ConsumerStatefulWidget {
   @override
   _CourseManagementScreenState createState() => _CourseManagementScreenState();
 }
 
-class _CourseManagementScreenState extends State<CourseManagementScreen> {
+class _CourseManagementScreenState extends ConsumerState<CourseManagementScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -35,11 +34,7 @@ class _CourseManagementScreenState extends State<CourseManagementScreen> {
       // Accede al use case de creación a través del inyector de dependencias
       // En una aplicación real, el provider manejaría esta lógica.
       // Para este ejemplo, lo hacemos directamente para mantener la simplicidad.
-      final createCourseUsecase =
-          Provider.of<CourseProvider>(
-            context,
-            listen: false,
-          ).createCourseUsecase;
+      final createCourseUsecase = ref.read(createCourseUsecaseProvider);
 
       try {
         await createCourseUsecase.call(
@@ -52,7 +47,7 @@ class _CourseManagementScreenState extends State<CourseManagementScreen> {
         // Muestra una notificación de éxito
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Microformación creada exitosamente.'),
+            content: const Text('Microformación creada exitosamente.'),
             backgroundColor: AppColors.successColor,
           ),
         );
@@ -63,9 +58,9 @@ class _CourseManagementScreenState extends State<CourseManagementScreen> {
           _selectedTargetAudience = 'Ciencias Naturales';
         });
         // Recarga la lista de cursos para reflejar el cambio
-        Provider.of<CourseProvider>(context, listen: false).loadCourses();
+        ref.read(courseStateProvider).loadCourses();
         // Recarga ContentProvider para actualizar la UI automáticamente
-        Provider.of<ContentProvider>(context, listen: false).loadCourses();
+        ref.read(contentStateProvider).loadCourses();
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -82,12 +77,13 @@ class _CourseManagementScreenState extends State<CourseManagementScreen> {
     super.initState();
     // Cargar cursos existentes para gestionarlos
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<ContentProvider>(context, listen: false).loadCourses();
+      ref.read(contentStateProvider).loadCourses();
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final content = ref.watch(contentStateProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -182,91 +178,85 @@ class _CourseManagementScreenState extends State<CourseManagementScreen> {
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 12),
-              Consumer<ContentProvider>(
-                builder: (context, content, _) {
-                  if (content.isLoading && content.courses.isEmpty) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (content.errorMessage != null) {
-                    return Text(
-                      content.errorMessage!,
-                      style: TextStyle(color: AppColors.errorColor),
+              if (content.isLoading && content.courses.isEmpty)
+                const Center(child: CircularProgressIndicator())
+              else if (content.errorMessage != null)
+                Text(
+                  content.errorMessage!,
+                  style: TextStyle(color: AppColors.errorColor),
+                )
+              else if (content.courses.isEmpty)
+                const Text('No hay microformaciones aún.')
+              else
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: content.courses.length,
+                  separatorBuilder: (_, __) => const Divider(),
+                  itemBuilder: (context, index) {
+                    final c = content.courses[index];
+                    return ListTile(
+                      leading: const Icon(Icons.menu_book_outlined),
+                      title: Text(
+                        c.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(
+                        c.description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (value) {
+                          switch (value) {
+                            case 'edit':
+                              _editCourse(context, c);
+                              break;
+                            case 'delete':
+                              _deleteCourse(context, c);
+                              break;
+                            case 'manage':
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder:
+                                      (_) => CourseContentScreen(
+                                        courseId: c.id,
+                                        courseTitle: c.title,
+                                      ),
+                                ),
+                              );
+                              break;
+                          }
+                        },
+                        itemBuilder:
+                            (context) => [
+                              const PopupMenuItem(
+                                value: 'manage',
+                                child: ListTile(
+                                  leading: Icon(Icons.folder_open),
+                                  title: Text('Gestionar contenido'),
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: 'edit',
+                                child: ListTile(
+                                  leading: Icon(Icons.edit_outlined),
+                                  title: Text('Editar curso'),
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: 'delete',
+                                child: ListTile(
+                                  leading: Icon(Icons.delete_outline),
+                                  title: Text('Eliminar curso'),
+                                ),
+                              ),
+                            ],
+                      ),
                     );
-                  }
-                  if (content.courses.isEmpty) {
-                    return const Text('No hay microformaciones aún.');
-                  }
-                  return ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: content.courses.length,
-                    separatorBuilder: (_, __) => const Divider(),
-                    itemBuilder: (context, index) {
-                      final c = content.courses[index];
-                      return ListTile(
-                        leading: const Icon(Icons.menu_book_outlined),
-                        title: Text(
-                          c.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        subtitle: Text(
-                          c.description,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        trailing: PopupMenuButton<String>(
-                          onSelected: (value) {
-                            switch (value) {
-                              case 'edit':
-                                _editCourse(context, c);
-                                break;
-                              case 'delete':
-                                _deleteCourse(context, c);
-                                break;
-                              case 'manage':
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder:
-                                        (_) => CourseContentScreen(
-                                          courseId: c.id,
-                                          courseTitle: c.title,
-                                        ),
-                                  ),
-                                );
-                                break;
-                            }
-                          },
-                          itemBuilder:
-                              (context) => [
-                                const PopupMenuItem(
-                                  value: 'manage',
-                                  child: ListTile(
-                                    leading: Icon(Icons.folder_open),
-                                    title: Text('Gestionar contenido'),
-                                  ),
-                                ),
-                                const PopupMenuItem(
-                                  value: 'edit',
-                                  child: ListTile(
-                                    leading: Icon(Icons.edit_outlined),
-                                    title: Text('Editar curso'),
-                                  ),
-                                ),
-                                const PopupMenuItem(
-                                  value: 'delete',
-                                  child: ListTile(
-                                    leading: Icon(Icons.delete_outline),
-                                    title: Text('Eliminar curso'),
-                                  ),
-                                ),
-                              ],
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
+                  },
+                ),
             ],
           ),
         ),
@@ -325,7 +315,7 @@ class _CourseManagementScreenState extends State<CourseManagementScreen> {
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
                         value: selectedAudience,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Público Objetivo',
                         ),
                         items:
@@ -351,8 +341,9 @@ class _CourseManagementScreenState extends State<CourseManagementScreen> {
                   ),
                   ElevatedButton(
                     onPressed: () {
-                      if (formKey.currentState!.validate())
+                      if (formKey.currentState!.validate()) {
                         Navigator.pop(context, true);
+                      }
                     },
                     child: const Text('Guardar'),
                   ),
@@ -371,10 +362,7 @@ class _CourseManagementScreenState extends State<CourseManagementScreen> {
       targetAudience: selectedAudience,
     );
 
-    final contentProvider = Provider.of<ContentProvider>(
-      context,
-      listen: false,
-    );
+    final contentProvider = ref.read(contentStateProvider);
     final res = await contentProvider.updateCourse(updated);
     if (res == null && contentProvider.errorMessage != null) {
       ScaffoldMessenger.of(
@@ -407,10 +395,7 @@ class _CourseManagementScreenState extends State<CourseManagementScreen> {
 
     if (confirm != true) return;
 
-    final contentProvider = Provider.of<ContentProvider>(
-      context,
-      listen: false,
-    );
+    final contentProvider = ref.read(contentStateProvider);
     final ok = await contentProvider.deleteCourse(course.id);
     if (!ok && contentProvider.errorMessage != null) {
       ScaffoldMessenger.of(

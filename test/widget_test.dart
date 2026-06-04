@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
-import 'package:provider/provider.dart';
 
 import 'package:redmaestra1/presentation/providers/theme_provider.dart';
 
@@ -15,31 +14,24 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: ListenableProvider<ThemeProvider>.value(
-            value: themeProvider,
-            child: Builder(
-              builder: (context) {
-                return Scaffold(
-                  body: Text(
-                    'Theme: ${themeProvider.themeMode}',
-                    key: Key('theme_text'),
-                  ),
-                );
-              },
+          home: Scaffold(
+            body: Text(
+              'Theme: ${themeProvider.themeMode}',
+              key: const Key('theme_text'),
             ),
           ),
         ),
       );
 
       // Verify initial theme
-      expect(find.byKey(Key('theme_text')), findsOneWidget);
+      expect(find.byKey(const Key('theme_text')), findsOneWidget);
 
       // Toggle theme
       themeProvider.toggleTheme();
       await tester.pump();
 
       // Verify theme changed
-      expect(find.byKey(Key('theme_text')), findsOneWidget);
+      expect(find.byKey(const Key('theme_text')), findsOneWidget);
     });
 
     testWidgets('ThemeProvider setThemeMode funciona', (
@@ -49,17 +41,10 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: ListenableProvider<ThemeProvider>.value(
-            value: themeProvider,
-            child: Builder(
-              builder: (context) {
-                return Scaffold(
-                  body: Text(
-                    'Theme: ${themeProvider.themeMode}',
-                    key: Key('theme_text'),
-                  ),
-                );
-              },
+          home: Scaffold(
+            body: Text(
+              'Theme: ${themeProvider.themeMode}',
+              key: const Key('theme_text'),
             ),
           ),
         ),
@@ -69,7 +54,7 @@ void main() {
       themeProvider.setThemeMode(ThemeMode.dark);
       await tester.pump();
 
-      expect(find.byKey(Key('theme_text')), findsOneWidget);
+      expect(find.byKey(const Key('theme_text')), findsOneWidget);
       expect(themeProvider.isDarkMode, true);
     });
   });

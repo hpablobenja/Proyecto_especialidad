@@ -1,5 +1,5 @@
 // lib/domain/entities/access_config.dart
-
+/*
 enum AccessType { public, private, oneTime, subscription }
 
 class AccessConfig {
@@ -11,3 +11,4 @@ class AccessConfig {
     this.allowedRoles = const [],
   });
 }
+*/

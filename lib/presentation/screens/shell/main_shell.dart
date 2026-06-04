@@ -1,26 +1,24 @@
 // lib/presentation/screens/shell/main_shell.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_styles.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../providers/course_provider.dart';
-import '../../providers/auth_provider.dart';
+import '../../../core/di/riverpod_providers.dart';
 import '../courses/my_progress_screen.dart';
 import '../profile/profile_screen.dart';
 import '../../widgets/app_drawer.dart';
 import '../../widgets/course_video_tile.dart';
 import '../../widgets/offline_banner.dart';
-import '../../providers/favorites_provider.dart';
 import '../courses/course_details_screen.dart';
 
-class MainShell extends StatefulWidget {
+class MainShell extends ConsumerStatefulWidget {
   @override
-  State<MainShell> createState() => _MainShellState();
+  ConsumerState<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> {
+class _MainShellState extends ConsumerState<MainShell> {
   int _currentIndex = 0;
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
@@ -29,7 +27,7 @@ class _MainShellState extends State<MainShell> {
     super.initState();
     // Pre-cargar contenido para la galería
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CourseProvider>().loadCourses();
+      ref.read(courseStateProvider).loadCourses();
     });
   }
 
@@ -45,7 +43,7 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
+    final authProvider = ref.watch(authStateProvider);
     final isMaestro = authProvider.currentUser?.role == 'maestro';
 
     return PopScope(
@@ -162,14 +160,14 @@ class _MainShellState extends State<MainShell> {
 }
 
 // ===== Gallery =====
-class _GalleryScreen extends StatefulWidget {
+class _GalleryScreen extends ConsumerStatefulWidget {
   const _GalleryScreen();
 
   @override
-  State<_GalleryScreen> createState() => _GalleryScreenState();
+  ConsumerState<_GalleryScreen> createState() => _GalleryScreenState();
 }
 
-class _GalleryScreenState extends State<_GalleryScreen> {
+class _GalleryScreenState extends ConsumerState<_GalleryScreen> {
   String _selectedAudience = 'Todos';
   final List<String> _audiences = [
     'Todos',
@@ -182,7 +180,7 @@ class _GalleryScreenState extends State<_GalleryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final courseProvider = context.watch<CourseProvider>();
+    final courseProvider = ref.watch(courseStateProvider);
 
     if (courseProvider.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -284,7 +282,7 @@ class _GalleryScreenState extends State<_GalleryScreen> {
                   key: ValueKey(course.id),
                   course: course,
                   onTap: () {
-                    context.read<FavoritesProvider>().markCourseStarted(
+                    ref.read(favoritesStateProvider).markCourseStarted(
                       course.id,
                     );
                     Navigator.of(context).push(
@@ -313,12 +311,12 @@ class _SearchScreen extends StatelessWidget {
   }
 }
 
-class _SearchBody extends StatefulWidget {
+class _SearchBody extends ConsumerStatefulWidget {
   @override
-  State<_SearchBody> createState() => _SearchBodyState();
+  ConsumerState<_SearchBody> createState() => _SearchBodyState();
 }
 
-class _SearchBodyState extends State<_SearchBody> {
+class _SearchBodyState extends ConsumerState<_SearchBody> {
   String query = '';
   final Set<String> chips = {};
 
@@ -389,70 +387,67 @@ class _SearchBodyState extends State<_SearchBody> {
   }
 
   Widget _buildSearchResults() {
-    return Consumer<CourseProvider>(
-      builder: (context, courseProvider, _) {
-        final courses = courseProvider.courses;
-        final filtered =
-            courses.where((c) {
-              final q = query.trim().toLowerCase();
-              final matchesQuery =
-                  q.isEmpty ||
-                  c.title.toLowerCase().contains(q) ||
-                  c.description.toLowerCase().contains(q);
-              final matchesChip =
-                  chips.isEmpty ||
-                  chips.any(
-                    (chip) =>
-                        c.title.toLowerCase().contains(chip) ||
-                        c.description.toLowerCase().contains(chip),
-                  );
-              return matchesQuery && matchesChip;
-            }).toList();
+    final courseProvider = ref.watch(courseStateProvider);
+    final courses = courseProvider.courses;
+    final filtered =
+        courses.where((c) {
+          final q = query.trim().toLowerCase();
+          final matchesQuery =
+              q.isEmpty ||
+              c.title.toLowerCase().contains(q) ||
+              c.description.toLowerCase().contains(q);
+          final matchesChip =
+              chips.isEmpty ||
+              chips.any(
+                (chip) =>
+                    c.title.toLowerCase().contains(chip) ||
+                    c.description.toLowerCase().contains(chip),
+              );
+          return matchesQuery && matchesChip;
+        }).toList();
 
-        if (filtered.isEmpty) {
-          return const SliverFillRemaining(
-            child: Center(child: Text('No se encontraron resultados')),
-          );
-        }
+    if (filtered.isEmpty) {
+      return const SliverFillRemaining(
+        child: Center(child: Text('No se encontraron resultados')),
+      );
+    }
 
-        return SliverList(
-          delegate: SliverChildBuilderDelegate((context, index) {
-            final course = filtered[index];
-            return Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 8.0,
-              ),
-              child: CourseVideoTile(
-                key: ValueKey(course.id),
-                course: course,
-                onTap: () {
-                  context.read<FavoritesProvider>().markCourseStarted(
-                    course.id,
-                  );
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => CourseDetailsScreen(course: course),
-                    ),
-                  );
-                },
-              ),
-            );
-          }, childCount: filtered.length),
+    return SliverList(
+      delegate: SliverChildBuilderDelegate((context, index) {
+        final course = filtered[index];
+        return Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16.0,
+            vertical: 8.0,
+          ),
+          child: CourseVideoTile(
+            key: ValueKey(course.id),
+            course: course,
+            onTap: () {
+              ref.read(favoritesStateProvider).markCourseStarted(
+                course.id,
+              );
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => CourseDetailsScreen(course: course),
+                ),
+              );
+            },
+          ),
         );
-      },
+      }, childCount: filtered.length),
     );
   }
 }
 
 // ===== Favorites =====
-class _FavoritesScreen extends StatelessWidget {
+class _FavoritesScreen extends ConsumerWidget {
   const _FavoritesScreen();
 
   @override
-  Widget build(BuildContext context) {
-    final courseProvider = context.watch<CourseProvider>();
-    final favs = context.watch<FavoritesProvider>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final courseProvider = ref.watch(courseStateProvider);
+    final favs = ref.watch(favoritesStateProvider);
     final started = favs.startedCourseIds.toSet();
     final items =
         courseProvider.courses.where((c) => started.contains(c.id)).toList();

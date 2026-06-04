@@ -1,20 +1,20 @@
 // lib/presentation/screens/home/home_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../providers/auth_provider.dart';
+import '../../../core/di/riverpod_providers.dart';
 import '../shell/main_shell.dart';
 import '../admin/admin_dashboard_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authProvider = ref.watch(authStateProvider);
 
     // Muestra una pantalla de carga si el usuario no ha sido cargado aún
     if (authProvider.currentUser == null) {
-      return Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     // Decide qué pantalla mostrar basándose en el rol del usuario

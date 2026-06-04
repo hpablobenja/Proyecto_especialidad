@@ -2,10 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 
+import 'package:redmaestra1/core/di/riverpod_providers.dart';
 import 'package:redmaestra1/presentation/providers/auth_provider.dart';
 import 'package:redmaestra1/presentation/screens/auth/login_screen.dart';
 import 'package:redmaestra1/domain/usecases/auth/login_usecase.dart';
@@ -41,6 +42,8 @@ void main() {
       mockGetCurrentUserUsecase = MockGetCurrentUserUsecase();
       mockUpdateUserUsecase = MockUpdateUserUsecase();
 
+      when(mockGetCurrentUserUsecase.call(any)).thenAnswer((_) async => null);
+
       authProvider = AuthProvider(
         loginUsecase: mockLoginUsecase,
         registerUsecase: mockRegisterUsecase,
@@ -50,11 +53,11 @@ void main() {
     });
 
     Widget createTestWidget() {
-      return MaterialApp(
-        home: ChangeNotifierProvider<AuthProvider>.value(
-          value: authProvider,
-          child: LoginScreen(),
-        ),
+      return ProviderScope(
+        overrides: [
+          authStateProvider.overrideWith((ref) => authProvider),
+        ],
+        child: MaterialApp(home: LoginScreen()),
       );
     }
 

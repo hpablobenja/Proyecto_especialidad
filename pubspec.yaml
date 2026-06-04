@@ -37,8 +37,7 @@ dependencies:
   firebase_storage: ^13.0.0
 
   # Utilidades y arquitectura
-  provider: ^6.1.0
-  get_it: ^8.2.0
+  flutter_riverpod: ^2.5.1
   equatable: ^2.0.5
 
   # Funcionalidades específicas
@@ -51,13 +50,11 @@ dependencies:
   connectivity_plus: ^5.0.0
   path_provider: ^2.1.1
   open_filex: ^4.7.0
+  cupertino_icons: ^1.0.8
+
 # Override temporal para evitar conflictos con el paquete 'web'
 dependency_overrides:
   web: ^0.5.1
-
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
 
 dev_dependencies:
   flutter_test:

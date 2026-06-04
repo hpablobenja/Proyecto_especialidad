@@ -1,22 +1,21 @@
 // lib/presentation/screens/courses/course_details_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/entities/course_entity.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/services/offline_cache_service.dart';
-import '../../providers/connectivity_provider.dart';
+import '../../../core/di/riverpod_providers.dart';
 import 'course_content_view_screen.dart';
 import 'lesson_documentation_screen.dart';
 
-class CourseDetailsScreen extends StatelessWidget {
+class CourseDetailsScreen extends ConsumerWidget {
   final CourseEntity course;
 
   const CourseDetailsScreen({Key? key, required this.course}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
         title: Text(course.title, maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -49,9 +48,9 @@ class CourseDetailsScreen extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () async {
-                  final cacheService = OfflineCacheService();
-                  final connectivity = Provider.of<ConnectivityProvider>(context, listen: false);
-                  
+                  final cacheService = ref.read(offlineCacheServiceProvider);
+                  final connectivity = ref.read(connectivityStateProvider);
+
                   // Cache course for offline access
                   await cacheService.cacheLastCourse(course);
                   

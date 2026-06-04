@@ -1,28 +1,26 @@
-// lib/presentation/widgets/course_video_tile.dart
-
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/entities/course_entity.dart';
 import '../../domain/entities/module_entity.dart';
 import '../../domain/entities/lesson_entity.dart';
 import '../../domain/entities/media_resource.dart';
-import '../providers/admin_content_provider.dart';
+import '../../core/di/riverpod_providers.dart';
 import 'video_preview_card.dart';
 
 /// Fetches and shows the thumbnail for the first lesson's first video of a course.
 /// Results are cached in-memory to avoid repeated network calls.
-class CourseVideoTile extends StatefulWidget {
+class CourseVideoTile extends ConsumerStatefulWidget {
   final CourseEntity course;
   final VoidCallback? onTap;
 
   const CourseVideoTile({super.key, required this.course, this.onTap});
 
   @override
-  State<CourseVideoTile> createState() => _CourseVideoTileState();
+  ConsumerState<CourseVideoTile> createState() => _CourseVideoTileState();
 }
 
-class _CourseVideoTileState extends State<CourseVideoTile> {
+class _CourseVideoTileState extends ConsumerState<CourseVideoTile> {
   static final Map<String, MediaResource> _cache = {};
   Future<MediaResource>? _future;
 
@@ -52,7 +50,7 @@ class _CourseVideoTileState extends State<CourseVideoTile> {
       return _cache[course.id]!;
     }
 
-    final admin = Provider.of<AdminContentProvider>(context, listen: false);
+    final admin = ref.read(adminContentStateProvider);
     final List<ModuleEntity> modules = await admin.fetchModules(course.id);
     if (modules.isEmpty) {
       return _fallbackMedia(course);

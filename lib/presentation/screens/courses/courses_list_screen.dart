@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../providers/course_provider.dart';
+import '../../../core/di/riverpod_providers.dart';
 import '../../widgets/course_card.dart';
 import '../../widgets/app_drawer.dart';
 
-class CoursesListScreen extends StatefulWidget {
+class CoursesListScreen extends ConsumerStatefulWidget {
   @override
-  State<CoursesListScreen> createState() => _CoursesListScreenState();
+  ConsumerState<CoursesListScreen> createState() => _CoursesListScreenState();
 }
 
-class _CoursesListScreenState extends State<CoursesListScreen> {
+class _CoursesListScreenState extends ConsumerState<CoursesListScreen> {
   String _selectedAudience = 'Todos';
   final List<String> _audiences = [
     'Todos',
@@ -27,7 +27,7 @@ class _CoursesListScreenState extends State<CoursesListScreen> {
     super.initState();
     _loadSavedFilter();
     // Cargar los cursos una sola vez al entrar a la pantalla
-    Future.microtask(() => context.read<CourseProvider>().loadCourses());
+    Future.microtask(() => ref.read(courseStateProvider).loadCourses());
   }
 
   Future<void> _loadSavedFilter() async {
@@ -46,12 +46,12 @@ class _CoursesListScreenState extends State<CoursesListScreen> {
   }
 
   Future<void> _onRefresh() async {
-    await context.read<CourseProvider>().loadCourses();
+    await ref.read(courseStateProvider).loadCourses();
   }
 
   @override
   Widget build(BuildContext context) {
-    final courseProvider = Provider.of<CourseProvider>(context);
+    final courseProvider = ref.watch(courseStateProvider);
     for (var c in courseProvider.courses) {
       print('Course: ${c.title}, audience: ${c.targetAudience}');
     }

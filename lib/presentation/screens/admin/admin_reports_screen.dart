@@ -1,29 +1,39 @@
 // lib/presentation/screens/admin/admin_reports_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_filex/open_filex.dart';
 
-import '../../../core/injection_container.dart' as di;
+import '../../../core/di/riverpod_providers.dart';
 import '../../../domain/usecases/reports/generate_all_users_report_usecase.dart';
-import '../../providers/auth_provider.dart';
 
-class AdminReportsScreen extends StatefulWidget {
+class AdminReportsScreen extends ConsumerStatefulWidget {
   const AdminReportsScreen({super.key});
 
   @override
-  State<AdminReportsScreen> createState() => _AdminReportsScreenState();
+  ConsumerState<AdminReportsScreen> createState() => _AdminReportsScreenState();
 }
 
-class _AdminReportsScreenState extends State<AdminReportsScreen> {
+class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
   bool _isGenerating = false;
 
   Future<void> _generateAllUsersReport(BuildContext context) async {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final auth = ref.read(authStateProvider);
     final user = auth.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Debes iniciar sesión para generar reportes.')),
+        const SnackBar(
+          content: Text('Debes iniciar sesión para generar reportes.'),
+        ),
+      );
+      return;
+    }
+
+    if (auth.currentUser?.role != 'admin') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No tienes permisos para realizar esta acción.'),
+        ),
       );
       return;
     }
@@ -33,11 +43,11 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
     });
 
     try {
-      final usecase = di.sl<GenerateAllUsersReportUsecase>();
+      final usecase = ref.read(generateAllUsersReportUsecaseProvider);
       final filePath = await usecase.call(NoParams());
-      
+
       if (!mounted) return;
-      
+
       setState(() {
         _isGenerating = false;
       });
@@ -47,17 +57,16 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Reporte generado y abierto exitosamente.\nGuardado en: $filePath'),
-          duration: const Duration(seconds: 5),
-          action: SnackBarAction(
-            label: 'OK',
-            onPressed: () {},
+          content: Text(
+            'Reporte generado y abierto exitosamente.\nGuardado en: $filePath',
           ),
+          duration: const Duration(seconds: 5),
+          action: SnackBarAction(label: 'OK', onPressed: () {}),
         ),
       );
     } catch (e) {
       if (!mounted) return;
-      
+
       setState(() {
         _isGenerating = false;
       });
@@ -89,7 +98,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
               'Genera un reporte PDF completo con el progreso de todos los usuarios en las microformaciones.',
             ),
             const SizedBox(height: 24),
-            
+
             if (_isGenerating)
               const Center(
                 child: Column(
@@ -106,14 +115,17 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                 label: const Text('Generar reporte de todos los usuarios'),
                 onPressed: () => _generateAllUsersReport(context),
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 16,
+                  ),
                 ),
               ),
-            
+
             const SizedBox(height: 24),
             const Divider(),
             const SizedBox(height: 16),
-            
+
             Text(
               'Información del Reporte',
               style: Theme.of(context).textTheme.titleMedium,

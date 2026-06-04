@@ -1,24 +1,22 @@
 // lib/presentation/screens/courses/lesson_options_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/entities/lesson_entity.dart';
-import '../../providers/progress_provider.dart';
-import '../../providers/auth_provider.dart';
-import '../../providers/connectivity_provider.dart';
+import '../../../core/di/riverpod_providers.dart';
 import 'lesson_player_screen.dart';
 import 'lesson_documentation_screen.dart';
 import 'quiz_screen.dart';
 
-class LessonOptionsScreen extends StatelessWidget {
+class LessonOptionsScreen extends ConsumerWidget {
   final LessonEntity lesson;
 
   const LessonOptionsScreen({super.key, required this.lesson});
 
   @override
-  Widget build(BuildContext context) {
-    final connectivity = Provider.of<ConnectivityProvider>(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final connectivity = ref.watch(connectivityStateProvider);
     final isOffline = !connectivity.isOnline;
 
     return Scaffold(
@@ -60,11 +58,8 @@ class LessonOptionsScreen extends StatelessWidget {
               isEnabled: !isOffline,
               onTap: () {
                 // Marcar como "en curso" cuando se selecciona reproducir video
-                final auth = Provider.of<AuthProvider>(context, listen: false);
-                final progress = Provider.of<ProgressProvider>(
-                  context,
-                  listen: false,
-                );
+                final auth = ref.read(authStateProvider);
+                final progress = ref.read(progressStateProvider);
                 if (auth.currentUser != null) {
                   progress.markLessonInProgress(
                     userId: auth.currentUser!.uid,

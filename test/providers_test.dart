@@ -11,6 +11,7 @@ import 'package:redmaestra1/domain/usecases/auth/register_usecase.dart';
 import 'package:redmaestra1/domain/usecases/auth/get_current_user_usecase.dart';
 import 'package:redmaestra1/domain/usecases/auth/update_user_usecase.dart';
 import 'package:redmaestra1/domain/entities/user_entity.dart';
+import 'package:redmaestra1/domain/usecases/usecase.dart';
 
 @GenerateMocks([
   LoginUsecase,
@@ -38,6 +39,8 @@ void main() {
       mockGetCurrentUserUsecase = MockGetCurrentUserUsecase();
       mockUpdateUserUsecase = MockUpdateUserUsecase();
 
+      when(mockGetCurrentUserUsecase.call(any)).thenAnswer((_) async => null);
+
       authProvider = AuthProvider(
         loginUsecase: mockLoginUsecase,
         registerUsecase: mockRegisterUsecase,
@@ -46,14 +49,18 @@ void main() {
       );
     });
 
-    test('Estado inicial es correcto', () {
+    test('Estado inicial es correcto', () async {
+      await Future<void>.delayed(Duration.zero);
       expect(authProvider.isLoading, false);
       expect(authProvider.isLoggedIn, false);
       expect(authProvider.currentUser, null);
       expect(authProvider.errorMessage, null);
+      verify(mockGetCurrentUserUsecase.call(any)).called(1);
     });
 
     test('Login exitoso actualiza el estado', () async {
+      await Future<void>.delayed(Duration.zero);
+
       final mockUser = UserEntity(
         uid: 'test_uid',
         email: 'test@example.com',
@@ -77,6 +84,8 @@ void main() {
     });
 
     test('Login fallido maneja errores', () async {
+      await Future<void>.delayed(Duration.zero);
+
       when(
         mockLoginUsecase.call(any),
       ).thenThrow(Exception('Credenciales inválidas'));
@@ -94,6 +103,8 @@ void main() {
     });
 
     test('Logout limpia el estado', () async {
+      await Future<void>.delayed(Duration.zero);
+
       // Primero hacer login
       final mockUser = UserEntity(
         uid: 'test_uid',

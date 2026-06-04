@@ -22,9 +22,11 @@ class AuthProvider extends ChangeNotifier {
     required this.registerUsecase,
     required this.getCurrentUserUsecase,
     required this.updateUserUsecase,
-  });
+  }) {
+    checkCurrentUser();
+  }
 
-  bool _isLoading = false;
+  bool _isLoading = true;
   String? _errorMessage;
   UserEntity? _currentUser;
 

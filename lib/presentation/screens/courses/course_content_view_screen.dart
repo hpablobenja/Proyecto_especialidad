@@ -1,35 +1,33 @@
 // lib/presentation/screens/courses/course_content_view_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/entities/module_entity.dart';
 import '../../../domain/entities/lesson_entity.dart';
+import '../../../core/di/riverpod_providers.dart';
 import '../../../core/services/offline_cache_service.dart';
 import '../../widgets/app_drawer.dart';
 import '../../widgets/no_internet_message.dart';
 import '../courses/lesson_options_screen.dart';
-import '../../providers/admin_content_provider.dart';
-import '../../providers/connectivity_provider.dart';
-import '../../providers/auth_provider.dart';
 import '../../../core/constants/app_colors.dart';
 
-class CourseContentViewScreen extends StatefulWidget {
+class CourseContentViewScreen extends ConsumerStatefulWidget {
   final String courseId;
   final String courseTitle;
 
   const CourseContentViewScreen({super.key, required this.courseId, required this.courseTitle});
 
   @override
-  State<CourseContentViewScreen> createState() => _CourseContentViewScreenState();
+  ConsumerState<CourseContentViewScreen> createState() => _CourseContentViewScreenState();
 }
 
-class _CourseContentViewScreenState extends State<CourseContentViewScreen> {
+class _CourseContentViewScreenState extends ConsumerState<CourseContentViewScreen> {
   bool _loading = true;
   String? _error;
   List<ModuleEntity> _modules = [];
   final Map<String, List<LessonEntity>> _lessonsByModule = {};
-  final OfflineCacheService _cacheService = OfflineCacheService();
+  OfflineCacheService get _cacheService => ref.read(offlineCacheServiceProvider);
 
   String? _youtubeIdFromLesson(LessonEntity lesson) {
     // Find a youtube media or fallback to first media
@@ -74,7 +72,7 @@ class _CourseContentViewScreenState extends State<CourseContentViewScreen> {
 
   Future<void> _loadModules() async {
     // Check if online
-    final connectivity = Provider.of<ConnectivityProvider>(context, listen: false);
+    final connectivity = ref.read(connectivityStateProvider);
     if (!connectivity.isOnline) {
       // Try to load cached data
       final cachedModules = await _cacheService.getCachedModules(widget.courseId);
@@ -104,7 +102,7 @@ class _CourseContentViewScreenState extends State<CourseContentViewScreen> {
       _error = null;
     });
     try {
-      final admin = Provider.of<AdminContentProvider>(context, listen: false);
+      final admin = ref.read(adminContentStateProvider);
       final mods = await admin.fetchModules(widget.courseId);
       setState(() => _modules = mods);
       
@@ -119,7 +117,7 @@ class _CourseContentViewScreenState extends State<CourseContentViewScreen> {
 
   Future<void> _loadLessons(String moduleId) async {
     try {
-      final admin = Provider.of<AdminContentProvider>(context, listen: false);
+      final admin = ref.read(adminContentStateProvider);
       final list = await admin.fetchLessons(courseId: widget.courseId, moduleId: moduleId);
       setState(() {
         _lessonsByModule[moduleId] = list;
@@ -134,7 +132,7 @@ class _CourseContentViewScreenState extends State<CourseContentViewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
+    final authProvider = ref.watch(authStateProvider);
     final isMaestro = authProvider.currentUser?.role == 'maestro';
 
     return Scaffold(
