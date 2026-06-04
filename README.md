@@ -5,7 +5,7 @@ Desarrollo de aplicación móvil Full Stack orientado a la gestión de microapre
 ## Descripción Breve explicación del problema que resuelve el sistema y qué hace el producto. 
 El objeto de estudio de este proyecto es el proceso de gestión y distribución de microaprendizaje mediante mediante el desarrollo de una aplicación móvil Full Stack, orientado específicamente a la actualización pedagógica de docentes de educación secundaria. Este estudio se centra en el diseño e implementación de una infraestructura tecnológica desacoplada que supere las limitaciones de los sistemas de gestión de aprendizaje (LMS) tradicionales, como la rigidez operativa y la necesidad de conexión para el acceso al contenido. Se analiza cómo la integración de una arquitectura limpia (Clean Architecture) y el uso de servicios en la nube con capacidades de persistencia local facilitan una entrega de contenido granular; esto permite al usuario acceder a videos de las clases, cuestionarios de conocimientos y material de lectura descargable directamente en el dispositivo, logrando una solución eficiente y adaptable a la realidad tecnológica del magisterio boliviano.
 
-## Objetivo general - (1 línea) Qué se busca lograr con este proyecto. 
+## Objetivo general - Qué se busca lograr con este proyecto. 
 
 Desarrollar una aplicación móvil Full Stack basada en una arquitectura limpia (Clean Architecture) y prácticas de seguridad avanzada alineada a recomendaciones OWASP, que permita a los docentes de secundaria en Bolivia acceder a un modelo de gestión de microaprendizaje personalizado, facilitando la actualización de competencias pedagógicas mediante el consumo de contenidos granulares.
 
