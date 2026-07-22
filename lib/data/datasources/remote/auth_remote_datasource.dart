@@ -11,11 +11,14 @@ abstract class AuthRemoteDataSource {
     String password,
     String name,
     String role,
+    String? workArea,
+    String? specialty,
   );
   Future<UserModel> signInWithEmailAndPassword(String email, String password);
   Future<void> signOut();
   Future<UserModel?> getCurrentUser();
   Future<void> updateUser(UserModel user);
+  Future<void> resetPassword(String email);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -30,6 +33,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     String password,
     String name,
     String role,
+    String? workArea,
+    String? specialty,
   ) async {
     try {
       // Prevención de escalada de privilegios
@@ -47,6 +52,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         email: email,
         name: name,
         role: safeRole,
+        workArea: workArea,
+        specialty: specialty,
       );
 
       await firestore.collection('users').doc(uid).set(userModel.toMap());
@@ -148,6 +155,24 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
     } on FirebaseException catch (e) {
       throw Exception('Error al actualizar usuario: ${e.message ?? e.code}');
+    }
+  }
+
+  @override
+  Future<void> resetPassword(String email) async {
+    try {
+      await firebaseAuth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      switch (e.code) {
+        case 'user-not-found':
+          throw Exception('No existe un usuario con este correo electrónico');
+        case 'invalid-email':
+          throw Exception('Correo electrónico inválido');
+        case 'too-many-requests':
+          throw Exception('Demasiados intentos, inténtalo más tarde');
+        default:
+          throw Exception('Error al enviar correo de restablecimiento: ${e.message ?? e.code}');
+      }
     }
   }
 }

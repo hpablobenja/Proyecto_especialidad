@@ -4,13 +4,22 @@ service cloud.firestore {
     
     // Función para obtener el rol del usuario
     function isAdmin() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      let role = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return role == 'admin' || role == 'Admin' || role == 'ADMIN';
+    }
+    
+    function isMaestro() {
+      let role = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return role == 'maestro' || role == 'Maestro' || role == 'MAESTRO';
+    }
+    
+    function isAdminOrMaestro() {
+      return isAdmin() || isMaestro();
     }
 
     match /users/{userId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null && request.auth.uid == userId;
-      // Los usuarios no pueden actualizar su propio rol; solo el admin puede hacerlo.
       allow update: if request.auth != null && (request.auth.uid == userId 
                     && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) 
                     || isAdmin());
@@ -18,26 +27,46 @@ service cloud.firestore {
 
     match /courses/{courseId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && isAdmin();
+      allow write: if request.auth != null && isAdminOrMaestro();
       
       match /modules/{moduleId} {
         allow read: if request.auth != null;
-        allow write: if request.auth != null && isAdmin();
+        allow write: if request.auth != null && isAdminOrMaestro();
       }
     }
 
     match /lecciones/{leccionId} {
       allow read: if request.auth != null;
-      allow create, update: if request.auth != null && isAdmin()
+      allow create, update: if request.auth != null && isAdminOrMaestro()
                             && request.resource.data.keys().hasAll(['courseId', 'moduleId']);
-      allow delete: if request.auth != null && isAdmin();
+      allow delete: if request.auth != null && isAdminOrMaestro();
     }
 
     match /quizzes/{quizId} {
       allow read: if request.auth != null;
-      allow create, update: if request.auth != null && isAdmin()
+      allow create, update: if request.auth != null && isAdminOrMaestro()
                             && request.resource.data.keys().hasAll(['lessonId', 'courseId', 'moduleId']);
-      allow delete: if request.auth != null && isAdmin();
+      allow delete: if request.auth != null && isAdminOrMaestro();
+    }
+
+    match /dataUser/{userId} {
+      allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
+    }
+
+    match /userProgress/{progressId} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /user_courses/{courseId} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /notifications/{notificationId} {
+        allow read: if request.auth != null 
+                    && (request.auth.uid == resource.data.userId || isAdminOrMaestro());
+        allow create: if request.auth != null;
+        allow update, delete: if request.auth != null 
+                    && (request.auth.uid == resource.data.userId || isAdminOrMaestro());
     }
   }
 }

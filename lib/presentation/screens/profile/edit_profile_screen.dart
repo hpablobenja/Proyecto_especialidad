@@ -13,6 +13,22 @@ class EditProfileScreen extends ConsumerStatefulWidget {
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
+  String? _selectedWorkArea;
+  String? _selectedSpecialty;
+
+  final List<String> _workAreas = ['Urbano', 'Rural'];
+  final List<String> _specialties = [
+    'Educación Inicial',
+    'Educación Primaria',
+    'Matemática',
+    'Biología y Geografía',
+    'Física',
+    'Química',
+    'Lengua Extranjera',
+    'Artes Plásticas',
+    'Educación Musical',
+    'Otros',
+  ];
 
   @override
   void initState() {
@@ -26,6 +42,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     if (_nameController.text.isEmpty) {
       final authProvider = ref.read(authStateProvider);
       _nameController.text = authProvider.currentUser?.name ?? '';
+      _selectedWorkArea = authProvider.currentUser?.workArea;
+      _selectedSpecialty = authProvider.currentUser?.specialty;
     }
   }
 
@@ -65,6 +83,42 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   return null;
                 },
               ),
+              const SizedBox(height: 16),
+              // Selector de área de trabajo
+              DropdownButtonFormField<String>(
+                value: _selectedWorkArea,
+                decoration: InputDecoration(
+                  labelText: 'Área de Trabajo',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.location_city),
+                ),
+                items: _workAreas.map((area) {
+                  return DropdownMenuItem(value: area, child: Text(area));
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedWorkArea = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+              // Selector de especialidad
+              DropdownButtonFormField<String>(
+                value: _selectedSpecialty,
+                decoration: InputDecoration(
+                  labelText: 'Especialidad',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.school),
+                ),
+                items: _specialties.map((specialty) {
+                  return DropdownMenuItem(value: specialty, child: Text(specialty));
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedSpecialty = value;
+                  });
+                },
+              ),
               const SizedBox(height: 20),
               if (authProvider.errorMessage != null)
                 Padding(
@@ -84,6 +138,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             if (_formKey.currentState!.validate() && mounted) {
                               final success = await authProvider.updateUser(
                                 _nameController.text,
+                                _selectedWorkArea,
+                                _selectedSpecialty,
                               );
                               if (mounted) {
                                 if (success) {

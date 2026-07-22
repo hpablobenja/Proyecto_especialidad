@@ -23,7 +23,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   QuizEntity? _quiz;
   bool _loading = true;
   String? _error;
-  final Map<int, int?> _selectedAnswers = {}; // questionIndex -> selectedOptionIndex
+  final Map<int, int?> _selectedAnswers =
+      {}; // questionIndex -> selectedOptionIndex
   bool _isSubmitting = false;
   bool _showResults = false;
   int _score = 0;
@@ -44,11 +45,12 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
 
     try {
       final firestore = ref.read(firestoreProvider);
-      final quizDoc = await firestore
-          .collection('quizzes')
-          .where('lessonId', isEqualTo: widget.lesson.id)
-          .limit(1)
-          .get();
+      final quizDoc =
+          await firestore
+              .collection('quizzes')
+              .where('lessonId', isEqualTo: widget.lesson.id)
+              .limit(1)
+              .get();
 
       if (quizDoc.docs.isEmpty) {
         setState(() {
@@ -60,17 +62,18 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
 
       final quizData = quizDoc.docs.first.data();
       final questionsData = quizData['questions'] as List? ?? [];
-      
-      final questions = questionsData
-          .map((q) => QuestionEntity.fromMap(q as Map<String, dynamic>))
-          .toList();
+
+      final questions =
+          questionsData
+              .map((q) => QuestionEntity.fromMap(q as Map<String, dynamic>))
+              .toList();
 
       int? fetchedScore;
       bool hasPrevious = false;
-      
+
       final auth = ref.read(authStateProvider);
       final progress = ref.read(progressStateProvider);
-      
+
       if (auth.currentUser != null) {
         final lessonProgress = await progress.getLessonProgress(
           userId: auth.currentUser!.uid,
@@ -202,7 +205,11 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     if (_loading) {
       return Scaffold(
         appBar: AppBar(
-          title: Text(widget.lesson.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+          title: Text(
+            widget.lesson.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
         body: const Center(child: CircularProgressIndicator()),
       );
@@ -211,7 +218,11 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     if (_error != null) {
       return Scaffold(
         appBar: AppBar(
-          title: Text(widget.lesson.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+          title: Text(
+            widget.lesson.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
         body: Center(
           child: Padding(
@@ -241,18 +252,24 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     if (_quiz == null || _quiz!.questions.isEmpty) {
       return Scaffold(
         appBar: AppBar(
-          title: Text(widget.lesson.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+          title: Text(
+            widget.lesson.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
-        body: const Center(
-          child: Text('No hay preguntas disponibles.'),
-        ),
+        body: const Center(child: Text('No hay preguntas disponibles.')),
       );
     }
 
     if (_showingPreviousScore) {
       return Scaffold(
         appBar: AppBar(
-          title: Text(widget.lesson.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+          title: Text(
+            widget.lesson.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
         body: Center(
           child: Padding(
@@ -260,13 +277,17 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.history, size: 64, color: Theme.of(context).primaryColor),
+                Icon(
+                  Icons.history,
+                  size: 64,
+                  color: Theme.of(context).primaryColor,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'Último intento: $_previousScore / ${_quiz!.questions.length}',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
@@ -279,9 +300,15 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryColor,
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 16,
+                    ),
                   ),
-                  child: const Text('Volver a intentar el cuestionario', style: TextStyle(fontSize: 16)),
+                  child: const Text(
+                    'Volver a intentar el cuestionario',
+                    style: TextStyle(fontSize: 16),
+                  ),
                 ),
               ],
             ),
@@ -292,74 +319,84 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.lesson.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+        title: Text(
+          widget.lesson.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
       ),
-      body: _showResults
-          ? _buildResults()
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Card(
-                    color: Theme.of(context).primaryColor.withOpacity(0.1),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Row(
-                        children: [
-                          Icon(Icons.quiz, color: Theme.of(context).primaryColor),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Responde las siguientes preguntas. Máximo ${_quiz!.questions.length} preguntas.',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.w500,
+      body:
+          _showResults
+              ? _buildResults()
+              : SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Card(
+                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.quiz,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Responde las siguientes preguntas. Máximo ${_quiz!.questions.length} preguntas.',
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ...List.generate(_quiz!.questions.length, (index) {
+                      final question = _quiz!.questions[index];
+                      return _QuestionCard(
+                        questionNumber: index + 1,
+                        question: question,
+                        selectedAnswer: _selectedAnswers[index],
+                        onAnswerSelected: (answerIndex) {
+                          setState(() {
+                            _selectedAnswers[index] = answerIndex;
+                          });
+                        },
+                      );
+                    }),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isSubmitting ? null : _submitQuiz,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryColor,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child:
+                            _isSubmitting
+                                ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
                                   ),
-                            ),
-                          ),
-                        ],
+                                )
+                                : const Text(
+                                  'Enviar Cuestionario',
+                                  style: TextStyle(fontSize: 16),
+                                ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  ...List.generate(_quiz!.questions.length, (index) {
-                    final question = _quiz!.questions[index];
-                    return _QuestionCard(
-                      questionNumber: index + 1,
-                      question: question,
-                      selectedAnswer: _selectedAnswers[index],
-                      onAnswerSelected: (answerIndex) {
-                        setState(() {
-                          _selectedAnswers[index] = answerIndex;
-                        });
-                      },
-                    );
-                  }),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _isSubmitting ? null : _submitQuiz,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryColor,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: _isSubmitting
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text(
-                              'Enviar Cuestionario',
-                              style: TextStyle(fontSize: 16),
-                            ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                    const SizedBox(height: 16),
+                  ],
+                ),
               ),
-            ),
     );
   }
 
@@ -370,9 +407,10 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Card(
-            color: _score == _quiz!.questions.length
-                ? AppColors.successColor.withOpacity(0.1)
-                : Colors.orange.withOpacity(0.1),
+            color:
+                _score == _quiz!.questions.length
+                    ? AppColors.successColor.withOpacity(0.1)
+                    : Colors.orange.withOpacity(0.1),
             child: Padding(
               padding: const EdgeInsets.all(24.0),
               child: Column(
@@ -382,26 +420,28 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                         ? Icons.check_circle
                         : Icons.info,
                     size: 64,
-                    color: _score == _quiz!.questions.length
-                        ? AppColors.successColor
-                        : Colors.orange,
+                    color:
+                        _score == _quiz!.questions.length
+                            ? AppColors.successColor
+                            : Colors.orange,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'Resultado del Cuestionario',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Puntaje: $_score/${_quiz!.questions.length}',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: _score == _quiz!.questions.length
+                      fontWeight: FontWeight.bold,
+                      color:
+                          _score == _quiz!.questions.length
                               ? AppColors.successColor
                               : Colors.orange,
-                        ),
+                    ),
                   ),
                 ],
               ),
@@ -410,9 +450,9 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           const SizedBox(height: 24),
           Text(
             'Revisión de Respuestas',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           ...List.generate(_quiz!.questions.length, (index) {
@@ -468,18 +508,14 @@ class _QuestionCard extends StatelessWidget {
           children: [
             Text(
               'Pregunta $questionNumber',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Text(
-              question.text,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
+            Text(question.text, style: Theme.of(context).textTheme.bodyLarge),
             const SizedBox(height: 16),
             ...List.generate(question.options.length, (index) {
-              final isSelected = selectedAnswer == index;
               return RadioListTile<int>(
                 title: Text(question.options[index]),
                 value: index,
@@ -512,9 +548,10 @@ class _ResultQuestionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      color: isCorrect
-          ? AppColors.successColor.withOpacity(0.1)
-          : AppColors.errorColor.withOpacity(0.1),
+      color:
+          isCorrect
+              ? AppColors.successColor.withOpacity(0.1)
+              : AppColors.errorColor.withOpacity(0.1),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -525,21 +562,19 @@ class _ResultQuestionCard extends StatelessWidget {
                 Text(
                   'Pregunta $questionNumber',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const Spacer(),
                 Icon(
                   isCorrect ? Icons.check_circle : Icons.cancel,
-                  color: isCorrect ? AppColors.successColor : AppColors.errorColor,
+                  color:
+                      isCorrect ? AppColors.successColor : AppColors.errorColor,
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            Text(
-              question.text,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
+            Text(question.text, style: Theme.of(context).textTheme.bodyLarge),
             const SizedBox(height: 12),
             ...List.generate(question.options.length, (index) {
               final isCorrectAnswer = index == question.correctAnswerIndex;
@@ -564,9 +599,12 @@ class _ResultQuestionCard extends StatelessWidget {
                   color: backgroundColor,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: isCorrectAnswer
-                        ? AppColors.successColor
-                        : (selectedAnswer == index ? AppColors.errorColor : Colors.grey[300]!),
+                    color:
+                        isCorrectAnswer
+                            ? AppColors.successColor
+                            : (selectedAnswer == index
+                                ? AppColors.errorColor
+                                : Colors.grey[300]!),
                     width: isCorrectAnswer || selectedAnswer == index ? 2 : 1,
                   ),
                 ),
@@ -580,7 +618,10 @@ class _ResultQuestionCard extends StatelessWidget {
                       child: Text(
                         question.options[index],
                         style: TextStyle(
-                          fontWeight: isCorrectAnswer ? FontWeight.bold : FontWeight.normal,
+                          fontWeight:
+                              isCorrectAnswer
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -602,4 +643,3 @@ class _ResultQuestionCard extends StatelessWidget {
     );
   }
 }
-

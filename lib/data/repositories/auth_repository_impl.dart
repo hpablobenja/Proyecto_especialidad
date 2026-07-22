@@ -16,12 +16,16 @@ class AuthRepositoryImpl implements AuthRepository {
     String password,
     String name,
     String role,
+    String? workArea,
+    String? specialty,
   ) async {
     final userModel = await remoteDataSource.registerWithEmailAndPassword(
       email,
       password,
       name,
       role,
+      workArea,
+      specialty,
     );
     return userModel; // UserModel hereda de UserEntity, por lo que es seguro devolverlo
   }
@@ -57,7 +61,14 @@ class AuthRepositoryImpl implements AuthRepository {
       email: user.email,
       name: user.name,
       role: user.role,
+      workArea: user.workArea,
+      specialty: user.specialty,
     );
     await remoteDataSource.updateUser(userModel);
+  }
+
+  @override
+  Future<void> resetPassword(String email) async {
+    await remoteDataSource.resetPassword(email);
   }
 }

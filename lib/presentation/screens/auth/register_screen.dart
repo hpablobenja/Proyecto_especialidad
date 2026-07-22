@@ -19,6 +19,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   String _selectedRole = 'maestro';
+  String? _selectedWorkArea;
+  String? _selectedSpecialty;
+
+  final List<String> _workAreas = ['Urbano', 'Rural'];
+  final List<String> _specialties = [
+    'Educación Inicial',
+    'Educación Primaria',
+    'Matemática',
+    'Biología y Geografía',
+    'Física',
+    'Química',
+    'Lengua Extranjera',
+    'Artes Plásticas',
+    'Educación Musical',
+    'Otros',
+  ];
 
   @override
   void dispose() {
@@ -36,6 +52,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         _passwordController.text,
         _nameController.text,
         _selectedRole,
+        _selectedWorkArea,
+        _selectedSpecialty,
       );
 
       if (!mounted) return;
@@ -58,77 +76,134 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final authProvider = ref.watch(authStateProvider);
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: Text(
           'Registro de Usuario',
-          style: TextStyle(
-            color: Colors.white, // 👈 aquí defines el color blanco
-          ),
+          style: TextStyle(color: Colors.white),
         ),
         backgroundColor: AppColors.primaryColor,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              // Nombre
-              TextFormField(
-                controller: _nameController,
-                decoration: InputDecoration(labelText: 'Nombre Completo'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor ingrese su nombre';
-                  }
-                  return null;
-                },
+      body: SafeArea(
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight:
+                    MediaQuery.of(context).size.height -
+                    MediaQuery.of(context).padding.top -
+                    MediaQuery.of(context).padding.bottom,
               ),
-              SizedBox(height: 16),
-              // Correo electrónico
-              TextFormField(
-                controller: _emailController,
-                decoration: InputDecoration(labelText: 'Correo Electrónico'),
-                keyboardType: TextInputType.emailAddress,
-                validator: ValidationUtils.validateEmail,
-              ),
-              SizedBox(height: 16),
-              // Contraseña
-              TextFormField(
-                controller: _passwordController,
-                decoration: InputDecoration(labelText: 'Contraseña'),
-                obscureText: true,
-                validator: ValidationUtils.validatePassword,
-              ),
-              // Selector de rol
-              DropdownButtonFormField<String>(
-                value: _selectedRole,
-                decoration: InputDecoration(labelText: 'Rol'),
-                items: [
-                  DropdownMenuItem(value: 'maestro', child: Text('Maestro')),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedRole = value!;
-                  });
-                },
-              ),
-              SizedBox(height: 24),
-              authProvider.isLoading
-                  ? CircularProgressIndicator()
-                  : ElevatedButton(
-                    onPressed: _register,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accentColor,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 50,
-                        vertical: 15,
-                      ),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    // Nombre
+                    TextFormField(
+                      controller: _nameController,
+                      decoration: InputDecoration(labelText: 'Nombre Completo'),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Por favor ingrese su nombre';
+                        }
+                        return null;
+                      },
                     ),
-                    child: Text('Registrarse', style: AppStyles.buttonText),
-                  ),
-            ],
+                    SizedBox(height: 16),
+                    // Correo electrónico
+                    TextFormField(
+                      controller: _emailController,
+                      decoration: InputDecoration(
+                        labelText: 'Correo Electrónico',
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                      validator: ValidationUtils.validateEmail,
+                    ),
+                    SizedBox(height: 16),
+                    // Contraseña
+                    TextFormField(
+                      controller: _passwordController,
+                      decoration: InputDecoration(labelText: 'Contraseña'),
+                      obscureText: true,
+                      validator: ValidationUtils.validatePassword,
+                    ),
+                    // Selector de rol
+                    SizedBox(height: 24),
+                    DropdownButtonFormField<String>(
+                      value: _selectedRole,
+                      decoration: InputDecoration(labelText: 'Rol'),
+                      items: [
+                        DropdownMenuItem(
+                          value: 'maestro',
+                          child: Text('Maestro'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedRole = value!;
+                        });
+                      },
+                    ),
+                    SizedBox(height: 16),
+                    // Selector de área de trabajo
+                    DropdownButtonFormField<String>(
+                      value: _selectedWorkArea,
+                      decoration: InputDecoration(labelText: 'Área de Trabajo'),
+                      items:
+                          _workAreas.map((area) {
+                            return DropdownMenuItem(
+                              value: area,
+                              child: Text(area),
+                            );
+                          }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedWorkArea = value;
+                        });
+                      },
+                    ),
+                    SizedBox(height: 16),
+                    // Selector de especialidad
+                    DropdownButtonFormField<String>(
+                      value: _selectedSpecialty,
+                      decoration: InputDecoration(labelText: 'Especialidad'),
+                      items:
+                          _specialties.map((specialty) {
+                            return DropdownMenuItem(
+                              value: specialty,
+                              child: Text(specialty),
+                            );
+                          }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedSpecialty = value;
+                        });
+                      },
+                    ),
+                    SizedBox(height: 24),
+                    authProvider.isLoading
+                        ? CircularProgressIndicator()
+                        : ElevatedButton(
+                          onPressed: _register,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.accentColor,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 50,
+                              vertical: 15,
+                            ),
+                          ),
+                          child: Text(
+                            'Registrarse',
+                            style: AppStyles.buttonText,
+                          ),
+                        ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),

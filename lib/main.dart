@@ -6,6 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/di/riverpod_providers.dart';
+import 'core/services/notification_service.dart';
+import 'core/services/session_tracking_service.dart';
+import 'core/services/session_timer_service.dart';
 import 'presentation/widgets/background_image.dart';
 import 'presentation/screens/auth/login_screen.dart';
 import 'presentation/screens/home/home_screen.dart';
@@ -18,9 +21,14 @@ void main() async {
   // Inicializa Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+  // Inicializa el servicio de notificaciones (preparado para Firebase Console en el futuro)
+  await NotificationService().initialize();
+
   runApp(
     const ProviderScope(
-      child: MyApp(),
+      child: SessionLifecycleHandler(
+        child: MyApp(),
+      ),
     ),
   );
 }
@@ -45,7 +53,7 @@ class MyApp extends ConsumerWidget {
           ? const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             )
-          : auth.isLoggedIn
+          : (auth.isLoggedIn && (auth.currentUser?.role ?? '').isNotEmpty)
               ? HomeScreen()
               : LoginScreen(),
       routes: {

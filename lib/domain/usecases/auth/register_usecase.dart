@@ -16,6 +16,8 @@ class RegisterUsecase implements Usecase<UserEntity, RegisterParams> {
       params.password,
       params.name,
       params.role,
+      params.workArea,
+      params.specialty,
     );
   }
 }
@@ -25,11 +27,15 @@ class RegisterParams {
   final String password;
   final String name;
   final String role;
+  final String? workArea;
+  final String? specialty;
 
   RegisterParams({
     required this.email,
     required this.password,
     required this.name,
     required this.role,
+    this.workArea,
+    this.specialty,
   });
 }

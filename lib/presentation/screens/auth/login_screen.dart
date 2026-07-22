@@ -8,6 +8,7 @@ import '../../../core/utils/validation_utils.dart';
 import '../../../core/di/riverpod_providers.dart';
 import '../home/home_screen.dart';
 import 'register_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   @override
@@ -146,7 +147,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               obscureText: true,
                               validator: ValidationUtils.validatePassword,
                             ),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => ForgotPasswordScreen(),
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  '¿Olvidaste tu contraseña?',
+                                  style: TextStyle(
+                                    color: theme.primaryColor,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
                             SizedBox(
                               width: double.infinity,
                               height: 48,

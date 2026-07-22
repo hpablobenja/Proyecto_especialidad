@@ -132,12 +132,16 @@ class AppDrawer extends ConsumerWidget {
               iconColor: Colors.red,
               onTap: () async {
                 Navigator.of(context).pop();
+                // Limpiar el estado de cursos iniciados antes de desloguear
+                ref.read(favoritesStateProvider).clear();
                 await ref.read(authStateProvider).signOut();
                 // Ir al login y limpiar la pila
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => LoginScreen()),
-                  (route) => false,
-                );
+                if (context.mounted) {
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => LoginScreen()),
+                    (route) => false,
+                  );
+                }
               },
             ),
           ],

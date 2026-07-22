@@ -73,7 +73,10 @@ class ProfileScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 30),
               ListTile(
-                leading: const Icon(Icons.person, color: AppColors.primaryColor),
+                leading: const Icon(
+                  Icons.person,
+                  color: AppColors.primaryColor,
+                ),
                 title: const Text('Nombre Completo'),
                 subtitle: Text(user.name),
               ),
@@ -83,7 +86,10 @@ class ProfileScreen extends ConsumerWidget {
                 subtitle: Text(user.email),
               ),
               ListTile(
-                leading: const Icon(Icons.security, color: AppColors.primaryColor),
+                leading: const Icon(
+                  Icons.security,
+                  color: AppColors.primaryColor,
+                ),
                 title: const Text('ID de Usuario'),
                 subtitle: Text(user.uid),
               ),
@@ -101,7 +107,10 @@ class ProfileScreen extends ConsumerWidget {
                 label: const Text('Editar Perfil'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.accentColor,
-                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 30,
+                    vertical: 15,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -144,22 +153,30 @@ class ProfileScreen extends ConsumerWidget {
                           if (confirm != true) return;
 
                           try {
+                            // Clear favorites provider before logging out
+                            ref.read(favoritesStateProvider).clear();
                             // Wait for signOut to complete
                             await ref.read(authStateProvider).signOut();
 
                             // Use root navigator to escape nested navigator in MainShell
-                            Navigator.of(context, rootNavigator: true)
-                                .pushNamedAndRemoveUntil(
-                              '/login',
-                              (route) => false,
-                            );
+                            if (context.mounted) {
+                              Navigator.of(
+                                context,
+                                rootNavigator: true,
+                              ).pushNamedAndRemoveUntil(
+                                '/login',
+                                (route) => false,
+                              );
+                            }
                           } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Error al cerrar sesión: $e'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error al cerrar sesión: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
                           }
                         },
                 icon:
@@ -182,7 +199,10 @@ class ProfileScreen extends ConsumerWidget {
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
-                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 30,
+                    vertical: 15,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),

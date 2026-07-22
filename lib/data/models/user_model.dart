@@ -8,7 +8,9 @@ class UserModel extends UserEntity {
     required String email,
     required String name,
     required String role,
-  }) : super(uid: uid, email: email, name: name, role: role);
+    String? workArea,
+    String? specialty,
+  }) : super(uid: uid, email: email, name: name, role: role, workArea: workArea, specialty: specialty);
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
     return UserModel(
@@ -16,10 +18,19 @@ class UserModel extends UserEntity {
       email: map['email'] as String,
       name: map['name'] as String? ?? 'Usuario',
       role: map['role'] as String,
+      workArea: map['workArea'] as String?,
+      specialty: map['specialty'] as String?,
     );
   }
 
   Map<String, dynamic> toMap() {
-    return {'uid': uid, 'email': email, 'name': name, 'role': role};
+    return {
+      'uid': uid,
+      'email': email,
+      'name': name,
+      'role': role,
+      if (workArea != null) 'workArea': workArea,
+      if (specialty != null) 'specialty': specialty,
+    };
   }
 }

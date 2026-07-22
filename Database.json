@@ -1,0 +1,131 @@
+{
+  "users": {
+    "fields": {
+      "uid": "string",
+      "email": "string",
+      "name": "string",
+      "role": "string"
+    }
+  },
+  "courses": {
+    "fields": {
+      "id": "string",
+      "title": "string",
+      "description": "string",
+      "thumbnailUrl": "string|null",
+      "targetAudience": "string"
+    },
+    "subcollections": {
+      "modules": {
+        "fields": {
+          "courseId": "string",
+          "title": "string",
+          "description": "string|null",
+          "orderIndex": "int"
+        }
+      }
+    }
+  },
+  "lecciones": {
+    "fields": {
+      "courseId": "string",
+      "moduleId": "string",
+      "title": "string",
+      "contentDelta": "array|null",
+      "objectives": "string|null",
+      "media": "array<MediaResource>",
+      "downloadableResources": "array<MediaResource>",
+      "strategies": "array<map<string,string>>",
+      "orderIndex": "int",
+      "dripUnlockAt": "timestamp|null"
+    },
+    "subcollections": {
+      "comments": {
+        "fields": {
+          "courseId": "string",
+          "moduleId": "string",
+          "lessonId": "string",
+          "userId": "string",
+          "userName": "string",
+          "text": "string",
+          "createdAt": "timestamp",
+          "updatedAt": "timestamp|null"
+        }
+      }
+    }
+  },
+  "user_courses": {
+    "fields": {
+      "userId": "String",
+      "currentSessionMinutes": "int",
+      "totalSessionMinutes":"int" , 
+      "sessionStartTime":"DateTime", 
+      "lastSessionEnd":"DateTime",
+      "categoryProgress": "Map<String, double>" ,
+      "overallProgress":"double",
+      "unlockedAchievements":"List<String>",
+      "updatedAt":"DateTime"
+   }
+  },
+  "userProgress": {
+    "fields": {
+      "userId": "string",
+      "courseId": "string",
+      "moduleId": "string",
+      "lessonId": "string",
+      "status": "string",
+      "lastUpdated": "timestamp|null",
+      "hasViewedVideo": "bool",
+      "hasCompletedQuiz": "bool",
+      "quizScore": "int|null",
+      "maxQuizScore": "int|null"
+    }
+  },
+  "quizzes": {
+    "fields": {
+      "id": "string",
+      "lessonId": "string",
+      "courseId": "string",
+      "moduleId": "string",
+      "questions": "array<Question>"
+    },
+    "Question": {
+      "id": "string",
+      "text": "string",
+      "options": "array<string>",
+      "correctAnswerIndex": "int"
+    }
+  },
+  "quizRespuestas": {
+    "fields": {
+      "userId": "string",
+      "quizId": "string",
+      "lessonId": "string",
+      "moduleId": "string",
+      "courseId": "string",
+      "score": "int",
+      "maxScore": "int",
+      "answers": "array<AnswerDetail>",
+      "submittedAt": "timestamp"
+    },
+    "AnswerDetail": {
+      "questionText": "string",
+      "selectedAnswerIndex": "int|null",
+      "selectedAnswerText": "string|null",
+      "correctAnswerIndex": "int",
+      "correctAnswerText": "string",
+      "isCorrect": "bool"
+    }
+  },
+  "notifications": {
+    "fields": {
+      "title": "string",
+      "body": "string",
+      "type": "string",
+      "courseId": "string|null",
+      "isRead": "bool",
+      "createdAt": "timestamp",
+      "readAt": "timestamp|null"
+    }
+  }
+}

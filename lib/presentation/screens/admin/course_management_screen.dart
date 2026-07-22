@@ -10,6 +10,8 @@ import '../../../domain/usecases/courses/create_course_usecase.dart'; // Importa
 import '../../widgets/app_drawer.dart';
 import 'course_content_screen.dart';
 import '../../../domain/entities/course_entity.dart';
+import '../../../data/repositories/notification_repository.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CourseManagementScreen extends ConsumerStatefulWidget {
   @override
@@ -35,22 +37,50 @@ class _CourseManagementScreenState extends ConsumerState<CourseManagementScreen>
       // En una aplicación real, el provider manejaría esta lógica.
       // Para este ejemplo, lo hacemos directamente para mantener la simplicidad.
       final createCourseUsecase = ref.read(createCourseUsecaseProvider);
+      final notificationRepository = NotificationRepository();
+      final firestore = FirebaseFirestore.instance;
 
       try {
-        await createCourseUsecase.call(
+        final course = await createCourseUsecase.call(
           CreateCourseParams(
             title: _titleController.text,
             description: _descriptionController.text,
             targetAudience: _selectedTargetAudience,
           ),
         );
+        
+        // Crear notificación para todos los usuarios (evitando duplicados)
+        final usersSnapshot = await firestore.collection('users').get();
+        for (var userDoc in usersSnapshot.docs) {
+          // Verificar si ya existe una notificación para este usuario y curso
+          final existingNotification = await firestore
+              .collection('notifications')
+              .where('userId', isEqualTo: userDoc.id)
+              .where('courseId', isEqualTo: course.id)
+              .where('type', isEqualTo: 'new_course')
+              .get();
+          
+          // Solo crear si no existe
+          if (existingNotification.docs.isEmpty) {
+            await notificationRepository.createNotification(
+              userId: userDoc.id,
+              title: '🎓 Nuevo Curso Disponible',
+              body: 'Se ha publicado un nuevo curso: ${_titleController.text}',
+              type: 'new_course',
+              courseId: course.id,
+            );
+          }
+        }
+        
         // Muestra una notificación de éxito
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Microformación creada exitosamente.'),
-            backgroundColor: AppColors.successColor,
-          ),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Microformación creada exitosamente.'),
+              backgroundColor: AppColors.successColor,
+            ),
+          );
+        }
         // Limpia el formulario
         _titleController.clear();
         _descriptionController.clear();
@@ -62,12 +92,14 @@ class _CourseManagementScreenState extends ConsumerState<CourseManagementScreen>
         // Recarga ContentProvider para actualizar la UI automáticamente
         ref.read(contentStateProvider).loadCourses();
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al crear la microformación: $e'),
-            backgroundColor: AppColors.errorColor,
-          ),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al crear la microformación: $e'),
+              backgroundColor: AppColors.errorColor,
+            ),
+          );
+        }
       }
     }
   }

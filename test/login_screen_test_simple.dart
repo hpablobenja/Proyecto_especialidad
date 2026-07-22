@@ -21,7 +21,6 @@ import 'package:redmaestra1/domain/entities/user_entity.dart';
   GetCurrentUserUsecase,
   UpdateUserUsecase,
 ])
-import 'login_screen_test_simple.dart';
 import 'login_screen_test_simple.mocks.dart';
 
 void main() {
@@ -54,9 +53,7 @@ void main() {
 
     Widget createTestWidget() {
       return ProviderScope(
-        overrides: [
-          authStateProvider.overrideWith((ref) => authProvider),
-        ],
+        overrides: [authStateProvider.overrideWith((ref) => authProvider)],
         child: MaterialApp(home: LoginScreen()),
       );
     }

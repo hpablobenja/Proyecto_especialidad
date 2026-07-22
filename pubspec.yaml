@@ -35,7 +35,7 @@ dependencies:
   firebase_auth: ^6.0.1
   cloud_firestore: ^6.0.0
   firebase_storage: ^13.0.0
-
+  firebase_messaging: 16.0.0
   # Utilidades y arquitectura
   flutter_riverpod: ^2.5.1
   equatable: ^2.0.5
@@ -51,6 +51,8 @@ dependencies:
   path_provider: ^2.1.1
   open_filex: ^4.7.0
   cupertino_icons: ^1.0.8
+  firebase_core_platform_interface: ^6.0.3
+  flutter_local_notifications: ^20.1.0
 
 # Override temporal para evitar conflictos con el paquete 'web'
 dependency_overrides:

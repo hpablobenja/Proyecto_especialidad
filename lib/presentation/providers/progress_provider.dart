@@ -2,13 +2,16 @@
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../domain/usecases/courses/get_course_progress_usecase.dart';
 import '../../domain/entities/lesson_progress_entity.dart';
+import '../../data/repositories/data_user_repository.dart';
 
 class ProgressProvider extends ChangeNotifier {
   final GetCourseProgressUsecase getCourseProgressUsecase;
   final FirebaseFirestore firestore;
+  final DataUserRepository _dataUserRepository = DataUserRepository();
 
   ProgressProvider({
     required this.getCourseProgressUsecase,
@@ -65,6 +68,14 @@ class ProgressProvider extends ChangeNotifier {
     required String lessonId,
   }) async {
     try {
+      // Verificar si el rol es 'maestro'
+      final prefs = await SharedPreferences.getInstance();
+      final userRole = prefs.getString('user_role');
+      
+      if (userRole != 'maestro') {
+        return;
+      }
+
       final progressId = '$userId-$courseId-$moduleId-$lessonId';
       final progressRef = firestore.collection('userProgress').doc(progressId);
 
@@ -81,6 +92,9 @@ class ProgressProvider extends ChangeNotifier {
 
       await progressRef.set(progressData, SetOptions(merge: true));
       _lastLoadedUserId = null; // invalidar caché para próxima visita a Progreso
+      
+      // Actualizar progreso en Firestore
+      await _updateProgressInFirestore(userId, courseId);
     } catch (e) {
       debugPrint('Error al marcar lección en progreso: $e');
     }
@@ -96,6 +110,14 @@ class ProgressProvider extends ChangeNotifier {
     int? maxScore,
   }) async {
     try {
+      // Verificar si el rol es 'maestro'
+      final prefs = await SharedPreferences.getInstance();
+      final userRole = prefs.getString('user_role');
+      
+      if (userRole != 'maestro') {
+        return;
+      }
+
       final progressId = '$userId-$courseId-$moduleId-$lessonId';
       final progressRef = firestore.collection('userProgress').doc(progressId);
 
@@ -119,8 +141,63 @@ class ProgressProvider extends ChangeNotifier {
 
       await progressRef.set(progressData, SetOptions(merge: true));
       _lastLoadedUserId = null; // invalidar caché para próxima visita a Progreso
+      
+      // Actualizar progreso en Firestore
+      await _updateProgressInFirestore(userId, courseId);
     } catch (e) {
       debugPrint('Error al marcar lección completada: $e');
+    }
+  }
+
+  // Actualizar progreso en Firestore cuando hay interacción
+  Future<void> _updateProgressInFirestore(String userId, String courseId) async {
+    try {
+      // Obtener información del curso para categoría
+      final courseDoc = await firestore.collection('courses').doc(courseId).get();
+      if (!courseDoc.exists) return;
+      
+      final courseData = courseDoc.data();
+      final category = courseData?['targetAudience'] as String?;
+      
+      if (category == null) return;
+      
+      // Obtener todos los cursos de esa categoría
+      final categoryCourses = await firestore
+          .collection('courses')
+          .where('targetAudience', isEqualTo: category)
+          .get();
+      
+      final totalCoursesInCategory = categoryCourses.docs.length;
+      
+      // Obtener progreso del usuario en esa categoría
+      final userProgressSnapshot = await firestore
+          .collection('userProgress')
+          .where('userId', isEqualTo: userId)
+          .get();
+      
+      final userCourseIds = userProgressSnapshot.docs
+          .map((doc) => doc.data()['courseId'] as String)
+          .toSet();
+      
+      // Obtener cursos de la categoría que el usuario ha iniciado
+      final categoryCourseIds = categoryCourses.docs.map((doc) => doc.id).toSet();
+      final startedInCategory = categoryCourseIds.intersection(userCourseIds);
+      
+      // Calcular progreso (cursos iniciados / total cursos en categoría)
+      final progress = totalCoursesInCategory > 0 
+          ? (startedInCategory.length / totalCoursesInCategory) * 100 
+          : 0.0;
+      
+      // Actualizar en dataUser
+      await _dataUserRepository.updateCategoryProgress(category, progress);
+      
+      // Recalcular progreso general
+      await _dataUserRepository.recalculateOverallProgress();
+      
+      // Verificar logros
+      await _dataUserRepository.checkAndUnlockAchievements();
+    } catch (e) {
+      debugPrint('Error al actualizar progreso en Firestore: $e');
     }
   }
 

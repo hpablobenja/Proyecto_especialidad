@@ -12,6 +12,8 @@ import 'package:redmaestra1/domain/usecases/auth/get_current_user_usecase.dart'
     as _i7;
 import 'package:redmaestra1/domain/usecases/auth/login_usecase.dart' as _i4;
 import 'package:redmaestra1/domain/usecases/auth/register_usecase.dart' as _i6;
+import 'package:redmaestra1/domain/usecases/auth/reset_password_usecase.dart'
+    as _i10;
 import 'package:redmaestra1/domain/usecases/auth/update_user_usecase.dart'
     as _i9;
 import 'package:redmaestra1/domain/usecases/usecase.dart' as _i8;
@@ -154,6 +156,36 @@ class MockUpdateUserUsecase extends _i1.Mock implements _i9.UpdateUserUsecase {
   _i5.Future<void> call(_i3.UserEntity? params) =>
       (super.noSuchMethod(
             Invocation.method(#call, [params]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+}
+
+/// A class which mocks [ResetPasswordUsecase].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockResetPasswordUsecase extends _i1.Mock
+    implements _i10.ResetPasswordUsecase {
+  MockResetPasswordUsecase() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  _i2.AuthRepository get repository =>
+      (super.noSuchMethod(
+            Invocation.getter(#repository),
+            returnValue: _FakeAuthRepository_0(
+              this,
+              Invocation.getter(#repository),
+            ),
+          )
+          as _i2.AuthRepository);
+
+  @override
+  _i5.Future<void> call(String? email) =>
+      (super.noSuchMethod(
+            Invocation.method(#call, [email]),
             returnValue: _i5.Future<void>.value(),
             returnValueForMissingStub: _i5.Future<void>.value(),
           )

@@ -10,7 +10,6 @@ import '../../widgets/youtube_video_manager.dart';
 import 'quiz_management_screen.dart';
 import '../../../domain/entities/module_entity.dart';
 import '../../../domain/entities/lesson_entity.dart';
-import '../../../domain/entities/media_resource.dart';
 
 class CourseContentScreen extends ConsumerStatefulWidget {
   final String courseId;
@@ -22,7 +21,8 @@ class CourseContentScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<CourseContentScreen> createState() => _CourseContentScreenState();
+  ConsumerState<CourseContentScreen> createState() =>
+      _CourseContentScreenState();
 }
 
 class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
@@ -514,136 +514,6 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
     );
   }
 
-  Future<void> _attachVideoToLesson({
-    required ModuleEntity module,
-    required LessonEntity lesson,
-  }) async {
-    final urlCtrl = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
-    String? videoIdFromUrl(String url) {
-      final u = url.trim();
-      final patterns = <RegExp>[
-        RegExp(r'^https?:\/\/(?:www\.)?youtu\.be\/([A-Za-z0-9_-]{11})'),
-        RegExp(
-          r'^https?:\/\/(?:www\.)?youtube\.com\/watch\?v=([A-Za-z0-9_-]{11})',
-        ),
-        RegExp(
-          r'^https?:\/\/(?:www\.)?youtube\.com\/embed\/([A-Za-z0-9_-]{11})',
-        ),
-        RegExp(
-          r'^https?:\/\/(?:www\.)?youtube\.com\/shorts\/([A-Za-z0-9_-]{11})',
-        ),
-      ];
-      for (final p in patterns) {
-        final m = p.firstMatch(u);
-        if (m != null) return m.group(1);
-      }
-      // Fallback: try to parse any v= param
-      final uri = Uri.tryParse(u);
-      final v = uri?.queryParameters['v'];
-      if (v != null && RegExp(r'^[A-Za-z0-9_-]{11}$').hasMatch(v)) return v;
-      return null;
-    }
-
-    final ok = await showDialog<bool>(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            title: const Text('Agregar video de YouTube'),
-            content: Form(
-              key: formKey,
-              child: TextFormField(
-                controller: urlCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'URL de YouTube',
-                  hintText: 'https://youtu.be/XXXXXXXXXXX',
-                ),
-                validator: (v) {
-                  final id = v == null ? null : videoIdFromUrl(v);
-                  if (id == null) return 'Ingrese una URL válida de YouTube';
-                  return null;
-                },
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  if (formKey.currentState!.validate())
-                    Navigator.pop(context, true);
-                },
-                child: const Text('Adjuntar'),
-              ),
-            ],
-          ),
-    );
-
-    if (ok != true) return;
-
-    final id = videoIdFromUrl(urlCtrl.text);
-    if (id == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('URL de YouTube no válida'),
-          backgroundColor: AppColors.errorColor,
-        ),
-      );
-      return;
-    }
-
-    try {
-      final media = MediaResource(
-        id: 'youtube:$id',
-        url: 'https://www.youtube.com/watch?v=$id',
-        filename: 'YouTube $id',
-        mimeType: 'video/youtube',
-        sizeBytes: 0,
-        duration: null,
-        metadata: {'provider': 'youtube', 'videoId': id},
-      );
-
-      final admin = ref.read(adminContentStateProvider);
-      final updated = LessonEntity(
-        id: lesson.id,
-        courseId: lesson.courseId,
-        moduleId: lesson.moduleId,
-        title: lesson.title,
-        contentDelta: lesson.contentDelta,
-        objectives: lesson.objectives,
-        media: [...lesson.media, media],
-        downloadableResources: lesson.downloadableResources,
-        orderIndex: lesson.orderIndex,
-        dripUnlockAt: lesson.dripUnlockAt,
-      );
-
-      final success = await admin.updateLesson(updated);
-      if (success) {
-        await _loadLessons(module.id);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Enlace de YouTube agregado correctamente'),
-          ),
-        );
-      } else {
-        final msg = admin.error ?? 'No se pudo guardar la lección con el video';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg), backgroundColor: AppColors.errorColor),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al adjuntar video: $e'),
-          backgroundColor: AppColors.errorColor,
-        ),
-      );
-    }
-  }
-
   Future<void> _loadModules() async {
     setState(() {
       _loading = true;
@@ -682,7 +552,10 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
     }
   }
 
-  Future<void> _onLessonUpdated(LessonEntity updatedLesson, {BuildContext? dialogContext}) async {
+  Future<void> _onLessonUpdated(
+    LessonEntity updatedLesson, {
+    BuildContext? dialogContext,
+  }) async {
     try {
       final admin = ref.read(adminContentStateProvider);
       final success = await admin.updateLesson(updatedLesson);
@@ -1103,7 +976,11 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
                   Expanded(
                     child: YouTubeVideoManager(
                       lesson: lesson,
-                      onLessonUpdated: (updatedLesson) => _onLessonUpdated(updatedLesson, dialogContext: dialogContext),
+                      onLessonUpdated:
+                          (updatedLesson) => _onLessonUpdated(
+                            updatedLesson,
+                            dialogContext: dialogContext,
+                          ),
                       isAdmin: true,
                     ),
                   ),

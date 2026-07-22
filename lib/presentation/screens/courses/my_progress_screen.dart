@@ -81,7 +81,6 @@ class _MyProgressScreenState extends ConsumerState<MyProgressScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Mi Progreso')),
-      drawer: const AppDrawer(),
       body:
           progressProvider.isLoading
               ? const Center(child: CircularProgressIndicator())
@@ -90,7 +89,8 @@ class _MyProgressScreenState extends ConsumerState<MyProgressScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    if (progressProvider.completedCourses.isEmpty && progressProvider.inProgressCourses.isEmpty)
+                    if (progressProvider.completedCourses.isEmpty &&
+                        progressProvider.inProgressCourses.isEmpty)
                       _buildEmptyState()
                     else ...[
                       _buildCourseProgressSection(
@@ -104,7 +104,7 @@ class _MyProgressScreenState extends ConsumerState<MyProgressScreen> {
                         Icons.trending_up,
                       ),
                     ],
-                    
+
                     const SizedBox(height: 32),
 
                     // Botón de Generar Reporte
@@ -145,7 +145,11 @@ class _MyProgressScreenState extends ConsumerState<MyProgressScreen> {
     );
   }
 
-  Widget _buildCourseProgressSection(List<CourseProgressDetail> courses, String title, IconData headerIcon) {
+  Widget _buildCourseProgressSection(
+    List<CourseProgressDetail> courses,
+    String title,
+    IconData headerIcon,
+  ) {
     if (courses.isEmpty) return const SizedBox.shrink();
 
     return Column(
@@ -155,12 +159,7 @@ class _MyProgressScreenState extends ConsumerState<MyProgressScreen> {
           children: [
             Icon(headerIcon, color: AppColors.primaryColor, size: 28),
             const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                title,
-                style: AppStyles.headline1,
-              ),
-            ),
+            Expanded(child: Text(title, style: AppStyles.headline1)),
           ],
         ),
         const SizedBox(height: 16),
@@ -181,96 +180,108 @@ class _MyProgressScreenState extends ConsumerState<MyProgressScreen> {
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         leading: const Icon(Icons.school, color: AppColors.primaryColor),
-        children: detail.moduleTitles.entries.map((moduleEntry) {
-          final moduleId = moduleEntry.key;
-          final moduleTitle = moduleEntry.value;
-          final lessons = detail.lessonTitles[moduleId] ?? {};
+        children:
+            detail.moduleTitles.entries.map((moduleEntry) {
+              final moduleId = moduleEntry.key;
+              final moduleTitle = moduleEntry.value;
+              final lessons = detail.lessonTitles[moduleId] ?? {};
 
-          if (lessons.isEmpty) return const SizedBox.shrink();
+              if (lessons.isEmpty) return const SizedBox.shrink();
 
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  moduleTitle,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
+              return Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
                 ),
-                const SizedBox(height: 8),
-                ...lessons.entries.map((lessonEntry) {
-                  final lessonId = lessonEntry.key;
-                  final lessonTitle = lessonEntry.value;
-                  final progress = detail.progress[moduleId]?[lessonId];
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      moduleTitle,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ...lessons.entries.map((lessonEntry) {
+                      final lessonId = lessonEntry.key;
+                      final lessonTitle = lessonEntry.value;
+                      final progress = detail.progress[moduleId]?[lessonId];
 
-                  String statusText = 'No Iniciado';
-                  IconData statusIcon = Icons.radio_button_unchecked;
-                  Color statusColor = Colors.grey;
+                      String statusText = 'No Iniciado';
+                      IconData statusIcon = Icons.radio_button_unchecked;
+                      Color statusColor = Colors.grey;
 
-                  if (progress != null) {
-                    if (progress.status == LessonProgressStatus.completed) {
-                      statusText = 'Completado';
-                      statusIcon = Icons.check_circle;
-                      statusColor = AppColors.successColor;
-                    } else if (progress.status == LessonProgressStatus.inProgress) {
-                      statusText = 'En Curso';
-                      statusIcon = Icons.access_time;
-                      statusColor = AppColors.accentColor;
-                    }
-                  }
+                      if (progress != null) {
+                        if (progress.status == LessonProgressStatus.completed) {
+                          statusText = 'Completado';
+                          statusIcon = Icons.check_circle;
+                          statusColor = AppColors.successColor;
+                        } else if (progress.status ==
+                            LessonProgressStatus.inProgress) {
+                          statusText = 'En Curso';
+                          statusIcon = Icons.access_time;
+                          statusColor = AppColors.accentColor;
+                        }
+                      }
 
-                  return Padding(
-                    padding: const EdgeInsets.only(left: 16.0, bottom: 12.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(statusIcon, color: statusColor, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                lessonTitle,
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                              Row(
+                      return Padding(
+                        padding: const EdgeInsets.only(
+                          left: 16.0,
+                          bottom: 12.0,
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(statusIcon, color: statusColor, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    statusText,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: statusColor,
-                                    ),
+                                    lessonTitle,
+                                    style: const TextStyle(fontSize: 14),
                                   ),
-                                  if (progress?.quizScore != null) ...[
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      progress!.maxQuizScore != null
-                                          ? '• Nota: ${progress!.quizScore} / ${progress!.maxQuizScore}'
-                                          : '• Nota: ${progress!.quizScore}',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.blueGrey[700],
+                                  Row(
+                                    children: [
+                                      Text(
+                                        statusText,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: statusColor,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                      if (progress?.quizScore != null) ...[
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          progress?.maxQuizScore != null
+                                              ? '• Nota: ${progress?.quizScore} / ${progress?.maxQuizScore}'
+                                              : '• Nota: ${progress?.quizScore}',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.blueGrey[700],
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
                                 ],
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  );
-                }),
-                const Divider(),
-              ],
-            ),
-          );
-        }).toList(),
+                      );
+                    }),
+                    const Divider(),
+                  ],
+                ),
+              );
+            }).toList(),
       ),
     );
   }

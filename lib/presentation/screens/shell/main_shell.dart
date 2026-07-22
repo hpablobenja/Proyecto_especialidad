@@ -4,13 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_styles.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/di/riverpod_providers.dart';
 import '../courses/my_progress_screen.dart';
 import '../profile/profile_screen.dart';
+import '../dashboard/teacher_dashboard_screen.dart';
 import '../../widgets/app_drawer.dart';
 import '../../widgets/course_video_tile.dart';
 import '../../widgets/offline_banner.dart';
+import '../../widgets/notification_dropdown.dart';
 import '../courses/course_details_screen.dart';
 
 class MainShell extends ConsumerStatefulWidget {
@@ -25,9 +26,10 @@ class _MainShellState extends ConsumerState<MainShell> {
   @override
   void initState() {
     super.initState();
-    // Pre-cargar contenido para la galería
+    // Pre-cargar contenido para la galería y cargar cursos iniciados del usuario
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(courseStateProvider).loadCourses();
+      ref.read(favoritesStateProvider).load();
     });
   }
 
@@ -70,6 +72,7 @@ class _MainShellState extends ConsumerState<MainShell> {
             124,
             217,
           ), //255, 74, 165, 95
+          actions: const [NotificationDropdown(), SizedBox(width: 8)],
         ),
         drawer: isMaestro ? null : const AppDrawer(),
         body: Column(
@@ -112,7 +115,10 @@ class _MainShellState extends ConsumerState<MainShell> {
               label: 'Formaciones',
             ),
             BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Buscar'),
-            BottomNavigationBarItem(icon: Icon(Icons.star), label: 'Favoritos'),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.dashboard),
+              label: 'Dashboard',
+            ),
             BottomNavigationBarItem(
               icon: Icon(Icons.bar_chart),
               label: 'Progreso',
@@ -131,7 +137,7 @@ class _MainShellState extends ConsumerState<MainShell> {
       case 1:
         return const _SearchScreen();
       case 2:
-        return const _FavoritesScreen();
+        return const TeacherDashboardScreen();
       case 3:
         return MyProgressScreen();
       case 4:
@@ -148,7 +154,7 @@ class _MainShellState extends ConsumerState<MainShell> {
       case 1:
         return 'Buscar';
       case 2:
-        return 'Favoritos';
+        return 'Dashboard';
       case 3:
         return 'Mi Progreso';
       case 4:
@@ -181,6 +187,8 @@ class _GalleryScreenState extends ConsumerState<_GalleryScreen> {
   @override
   Widget build(BuildContext context) {
     final courseProvider = ref.watch(courseStateProvider);
+    final favs = ref.watch(favoritesStateProvider);
+    final startedCourseIds = favs.startedCourseIds.toSet();
 
     if (courseProvider.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -206,6 +214,148 @@ class _GalleryScreenState extends ConsumerState<_GalleryScreen> {
                       _selectedAudience.trim().toLowerCase(),
                 )
                 .toList();
+
+    // Separate courses into started and not started when "Todos" is selected
+    List<dynamic> slivers = [];
+
+    if (_selectedAudience == 'Todos') {
+      final startedCourses =
+          filteredCourses
+              .where((c) => startedCourseIds.contains(c.id))
+              .toList();
+      final notStartedCourses =
+          filteredCourses
+              .where((c) => !startedCourseIds.contains(c.id))
+              .toList();
+
+      // Add "Continuar" section if there are started courses
+      if (startedCourses.isNotEmpty) {
+        slivers.add(
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Text(
+                'Continuar',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: const Color.fromARGB(255, 37, 58, 74),
+                ),
+              ),
+            ),
+          ),
+        );
+        slivers.add(
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            sliver: SliverGrid(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.75,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+              ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final course = startedCourses[index];
+                return CourseVideoTile(
+                  key: ValueKey(course.id),
+                  course: course,
+                  onTap: () {
+                    ref
+                        .read(favoritesStateProvider)
+                        .markCourseStarted(course.id);
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => CourseDetailsScreen(course: course),
+                      ),
+                    );
+                  },
+                );
+              }, childCount: startedCourses.length),
+            ),
+          ),
+        );
+      }
+
+      // Add "Todos los cursos" section if there are not started courses
+      if (notStartedCourses.isNotEmpty) {
+        slivers.add(
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Text(
+                'Todos los cursos',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: const Color.fromARGB(255, 37, 58, 74),
+                ),
+              ),
+            ),
+          ),
+        );
+        slivers.add(
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            sliver: SliverGrid(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.75,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+              ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final course = notStartedCourses[index];
+                return CourseVideoTile(
+                  key: ValueKey(course.id),
+                  course: course,
+                  onTap: () {
+                    ref
+                        .read(favoritesStateProvider)
+                        .markCourseStarted(course.id);
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => CourseDetailsScreen(course: course),
+                      ),
+                    );
+                  },
+                );
+              }, childCount: notStartedCourses.length),
+            ),
+          ),
+        );
+      }
+    } else {
+      // For other filters, show all courses normally
+      slivers.add(
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          sliver: SliverGrid(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 0.75,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+            ),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final course = filteredCourses[index];
+              return CourseVideoTile(
+                key: ValueKey(course.id),
+                course: course,
+                onTap: () {
+                  ref.read(favoritesStateProvider).markCourseStarted(course.id);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => CourseDetailsScreen(course: course),
+                    ),
+                  );
+                },
+              );
+            }, childCount: filteredCourses.length),
+          ),
+        ),
+      );
+    }
 
     return Container(
       color: Colors.transparent,
@@ -267,34 +417,7 @@ class _GalleryScreenState extends ConsumerState<_GalleryScreen> {
               ),
             ),
           ),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.75,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
-              ),
-              delegate: SliverChildBuilderDelegate((context, index) {
-                final course = filteredCourses[index];
-                return CourseVideoTile(
-                  key: ValueKey(course.id),
-                  course: course,
-                  onTap: () {
-                    ref.read(favoritesStateProvider).markCourseStarted(
-                      course.id,
-                    );
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => CourseDetailsScreen(course: course),
-                      ),
-                    );
-                  },
-                );
-              }, childCount: filteredCourses.length),
-            ),
-          ),
+          ...slivers,
         ],
       ),
     );
@@ -416,17 +539,12 @@ class _SearchBodyState extends ConsumerState<_SearchBody> {
       delegate: SliverChildBuilderDelegate((context, index) {
         final course = filtered[index];
         return Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16.0,
-            vertical: 8.0,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: CourseVideoTile(
             key: ValueKey(course.id),
             course: course,
             onTap: () {
-              ref.read(favoritesStateProvider).markCourseStarted(
-                course.id,
-              );
+              ref.read(favoritesStateProvider).markCourseStarted(course.id);
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => CourseDetailsScreen(course: course),

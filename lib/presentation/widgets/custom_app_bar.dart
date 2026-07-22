@@ -22,12 +22,16 @@ class CustomAppBar extends ConsumerWidget implements PreferredSizeWidget {
       actions: [
         IconButton(
           icon: Icon(Icons.logout, color: Colors.white),
-          onPressed: () {
-            ref.read(authStateProvider).signOut();
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (context) => LoginScreen()),
-              (route) => false,
-            );
+          onPressed: () async {
+            // Limpiar el estado de cursos iniciados antes de desloguear
+            ref.read(favoritesStateProvider).clear();
+            await ref.read(authStateProvider).signOut();
+            if (context.mounted) {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => LoginScreen()),
+                (route) => false,
+              );
+            }
           },
         ),
       ],
