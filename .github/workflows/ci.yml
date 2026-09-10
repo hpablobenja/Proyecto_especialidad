@@ -7,31 +7,26 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
+  analyze:
     runs-on: ubuntu-latest
-
     steps:
-      # 1. Descargar tu código
       - uses: actions/checkout@v4
-
-      # 2. Instalar Flutter (no Dart)
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.35.2' # ajusta a la versión que uses
+          flutter-version: '3.27.0'
+      - run: flutter pub get
+      - run: flutter analyze
 
-      # 3. Instalar dependencias
-      - name: Install dependencies
-        run: flutter pub get
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.0'
+      - run: flutter pub get
+      - run: flutter test
+      - run: flutter build apk --debug
 
-      # 4. Analizar código
-      - name: Analyze project source
-        run: flutter analyze
-
-      # 5. Ejecutar tests
-      - name: Run tests
-        run: flutter test
-
-      # 6. Compilar APK (opcional)
-      - name: Build APK
-        run: flutter build apk --debug
