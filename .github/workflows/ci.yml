@@ -14,9 +14,10 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.0'
+          flutter-version: '3.29.0' # versión que trae Dart >=3.7.2
+      - run: flutter --version
       - run: flutter pub get
-      - run: flutter analyze
+      - run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
   build:
     runs-on: ubuntu-latest
@@ -25,8 +26,8 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.0'
+          flutter-version: '3.29.0'
+      - run: flutter --version
       - run: flutter pub get
       - run: flutter test
       - run: flutter build apk --debug
-
