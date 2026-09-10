@@ -206,7 +206,11 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       // Stop the session timer before clearing user data
-      await SessionTrackingService().stopSessionTracking();
+      try {
+        await SessionTrackingService().stopSessionTracking();
+      } catch (e) {
+        debugPrint('Session tracking stop failed: $e');
+      }
 
       // Call the repository's signOut method to clear Firebase auth state
       try {

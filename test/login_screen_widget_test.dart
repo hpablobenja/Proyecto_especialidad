@@ -1,5 +1,3 @@
-// test/login_screen_test_simple.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -70,7 +68,6 @@ void main() {
     ) async {
       await tester.pumpWidget(createTestWidget());
 
-      // Verificar elementos básicos
       expect(find.byType(TextFormField), findsNWidgets(2));
       expect(find.byType(ElevatedButton), findsOneWidget);
       expect(find.text('Iniciar Sesión'), findsOneWidget);
@@ -81,7 +78,6 @@ void main() {
     ) async {
       await tester.pumpWidget(createTestWidget());
 
-      // Ingresar texto en los campos
       await tester.enterText(
         find.byType(TextFormField).first,
         'test@example.com',
@@ -89,7 +85,6 @@ void main() {
       await tester.enterText(find.byType(TextFormField).last, 'password123');
       await tester.pump();
 
-      // Verificar que el texto se ingresó
       expect(find.text('test@example.com'), findsOneWidget);
       expect(find.text('password123'), findsOneWidget);
     });
@@ -99,7 +94,6 @@ void main() {
     ) async {
       await tester.pumpWidget(createTestWidget());
 
-      // Configurar mock para respuesta exitosa
       final mockUser = UserEntity(
         uid: 'test_uid',
         email: 'test@example.com',
@@ -109,7 +103,6 @@ void main() {
 
       when(mockLoginUsecase.call(any)).thenAnswer((_) async => mockUser);
 
-      // Ingresar credenciales y presionar botón
       await tester.enterText(
         find.byType(TextFormField).first,
         'test@example.com',
@@ -118,7 +111,6 @@ void main() {
       await tester.tap(find.byType(ElevatedButton));
       await tester.pump();
 
-      // Verificar que se llamó al usecase
       verify(mockLoginUsecase.call(any)).called(1);
     });
 
@@ -127,10 +119,8 @@ void main() {
     ) async {
       await tester.pumpWidget(createTestWidget());
 
-      // Configurar mock para lanzar error
       when(mockLoginUsecase.call(any)).thenThrow(Exception('Error de login'));
 
-      // Ingresar credenciales y presionar botón
       await tester.enterText(
         find.byType(TextFormField).first,
         'wrong@example.com',
@@ -139,7 +129,6 @@ void main() {
       await tester.tap(find.byType(ElevatedButton));
       await tester.pump();
 
-      // Verificar que se intentó el login
       verify(mockLoginUsecase.call(any)).called(1);
     });
   });
