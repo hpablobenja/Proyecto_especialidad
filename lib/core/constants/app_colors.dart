@@ -16,8 +16,13 @@ class AppColors {
   static const Color accentPurple = Color(0xFF9B5DE5); // Soft purple
 
   // Neutral Colors (Soft and accessible)
-  static const Color backgroundLight = Color(0xFFF8F9FC); // Very light blue-gray
-  static const Color surfaceLight = Color(0xFFF1F4F8); // Light blue-gray surface
+  static const Color backgroundLight = Color(
+    0xFFF8F9FC,
+  ); // Very light blue-gray
+  static const Color surfaceLight = Color(
+    0xFFF1F4F8,
+  ); // Light blue-gray surface
+  static const Color textFieldLight = Color.fromARGB(255, 244, 243, 243);
   static const Color cardLight = Color(0xFFFFFFFF); // Pure white cards
   static const Color textPrimary = Color(0xFF2D3748); // Dark blue-gray text
   static const Color textSecondary = Color(0xFF4A5568); // Medium blue-gray text
@@ -32,13 +37,20 @@ class AppColors {
 
   // ===== DARK THEME COLORS =====
 
-  static const Color backgroundDark = Color(0xFF121212); // Dark background
-  static const Color surfaceDark = Color(0xFF1E1E1E); // Dark surface
-  static const Color cardDark = Color(0xFF2D2D2D); // Dark card
-  static const Color textPrimaryDark = Color(0xFFE0E0E0); // Light text
-  static const Color textSecondaryDark = Color(0xFFB0B0B0); // Medium light text
-  static const Color textMutedDark = Color(0xFF808080); // Muted text
-  static const Color borderDark = Color(0xFF404040); // Dark border
+  static const Color backgroundDark = Color(
+    0xFF0F172A,
+  ); // Deep slate blue background
+  static const Color surfaceDark = Color(0xFF1E293B); // Dark slate blue surface
+  static const Color cardDark = Color(0xFF1E293B); // Dark slate blue card
+  static const Color textPrimaryDark = Color(
+    0xFFF8FAFC,
+  ); // Very light gray-blue text
+  static const Color textSecondaryDark = Color(
+    0xFFCBD5E1,
+  ); // Medium light gray-blue text
+  static const Color textMutedDark = Color(0xFF94A3B8); // Muted gray-blue text
+  static const Color borderDark = Color(0xFF334155); // Dark slate border
+  static const Color textFieldDark = Color.fromARGB(255, 37, 42, 62);
 
   // ===== GRADIENT COLORS =====
 

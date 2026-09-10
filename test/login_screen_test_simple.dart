@@ -13,6 +13,7 @@ import 'package:redmaestra1/domain/usecases/auth/login_usecase.dart';
 import 'package:redmaestra1/domain/usecases/auth/register_usecase.dart';
 import 'package:redmaestra1/domain/usecases/auth/get_current_user_usecase.dart';
 import 'package:redmaestra1/domain/usecases/auth/update_user_usecase.dart';
+import 'package:redmaestra1/domain/usecases/auth/reset_password_usecase.dart';
 import 'package:redmaestra1/domain/entities/user_entity.dart';
 
 @GenerateMocks([
@@ -20,8 +21,11 @@ import 'package:redmaestra1/domain/entities/user_entity.dart';
   RegisterUsecase,
   GetCurrentUserUsecase,
   UpdateUserUsecase,
+  ResetPasswordUsecase,
 ])
 import 'login_screen_test_simple.mocks.dart';
+
+class MockResetPasswordUsecase extends Mock implements ResetPasswordUsecase {}
 
 void main() {
   setUpAll(() {
@@ -33,6 +37,7 @@ void main() {
     late MockRegisterUsecase mockRegisterUsecase;
     late MockGetCurrentUserUsecase mockGetCurrentUserUsecase;
     late MockUpdateUserUsecase mockUpdateUserUsecase;
+    late MockResetPasswordUsecase mockResetPasswordUsecase;
     late AuthProvider authProvider;
 
     setUp(() {
@@ -40,6 +45,7 @@ void main() {
       mockRegisterUsecase = MockRegisterUsecase();
       mockGetCurrentUserUsecase = MockGetCurrentUserUsecase();
       mockUpdateUserUsecase = MockUpdateUserUsecase();
+      mockResetPasswordUsecase = MockResetPasswordUsecase();
 
       when(mockGetCurrentUserUsecase.call(any)).thenAnswer((_) async => null);
 
@@ -48,6 +54,7 @@ void main() {
         registerUsecase: mockRegisterUsecase,
         getCurrentUserUsecase: mockGetCurrentUserUsecase,
         updateUserUsecase: mockUpdateUserUsecase,
+        resetPasswordUsecase: mockResetPasswordUsecase,
       );
     });
 

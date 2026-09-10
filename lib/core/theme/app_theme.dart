@@ -14,6 +14,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
+      scaffoldBackgroundColor: AppColors.backgroundLight,
       fontFamily: AppStyles.fontFamily,
 
       // Color Scheme
@@ -22,9 +23,9 @@ class AppTheme {
         brightness: Brightness.light,
         primary: AppColors.primaryBlue,
         onPrimary: Colors.white,
-        primaryContainer: AppColors.primaryBlueLight,
-        onPrimaryContainer: Colors.white,
-        secondary: AppColors.accentOrange,
+        primaryContainer: Colors.green.shade100,
+        onPrimaryContainer: Colors.green.shade900,
+        secondary: AppColors.primaryBlue,
         onSecondary: Colors.white,
         secondaryContainer: const Color(0xFFFFE0B2),
         onSecondaryContainer: AppColors.textPrimary,
@@ -54,15 +55,15 @@ class AppTheme {
 
       // App Bar Theme
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.backgroundLight,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: const Color.fromARGB(255, 145, 124, 217),
+        foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
         titleTextStyle: AppStyles.headlineMedium.copyWith(
-          color: AppColors.textPrimary,
+          color: Colors.white,
           fontWeight: FontWeight.w600,
         ),
-        iconTheme: const IconThemeData(color: AppColors.textPrimary, size: 24),
+        iconTheme: const IconThemeData(color: Colors.white, size: 24),
       ),
 
       // Card Theme
@@ -169,9 +170,9 @@ class AppTheme {
 
       // Bottom Navigation Bar Theme
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: AppColors.backgroundLight,
-        selectedItemColor: AppColors.primaryBlue,
-        unselectedItemColor: AppColors.textSecondary,
+        backgroundColor: Color.fromARGB(255, 212, 221, 240),
+        selectedItemColor: Color.fromARGB(255, 1, 1, 1),
+        unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
         elevation: 8,
         selectedLabelStyle: TextStyle(
@@ -196,8 +197,8 @@ class AppTheme {
 
       // Chip Theme
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.surfaceLight,
-        selectedColor: AppColors.primaryBlue,
+        backgroundColor: Colors.white,
+        selectedColor: Colors.green.shade100,
         disabledColor: AppColors.textMuted.withOpacity(0.1),
         labelStyle: AppStyles.labelMedium,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -263,6 +264,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
+      scaffoldBackgroundColor: AppColors.backgroundDark,
       fontFamily: AppStyles.fontFamily,
 
       // Color Scheme

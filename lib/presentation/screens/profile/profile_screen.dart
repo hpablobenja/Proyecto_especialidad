@@ -50,7 +50,9 @@ class ProfileScreen extends ConsumerWidget {
               const SizedBox(height: 20),
               Text(
                 user.name,
-                style: AppStyles.headline1,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
@@ -60,16 +62,34 @@ class ProfileScreen extends ConsumerWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
-              Chip(
-                label: Text(
-                  user.role.toUpperCase(),
-                  style: AppStyles.buttonText.copyWith(
-                    color: Colors.white,
-                    fontSize: 12,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Chip(
+                    label: Text(
+                      user.role.toUpperCase(),
+                      style: AppStyles.buttonText.copyWith(
+                        color: Colors.white,
+                        fontSize: 12,
+                      ),
+                    ),
+                    backgroundColor:
+                        user.role == 'admin' ? Colors.red : AppColors.accentColor,
                   ),
-                ),
-                backgroundColor:
-                    user.role == 'admin' ? Colors.red : AppColors.accentColor,
+                  if (user.workArea != null && user.workArea!.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    Chip(
+                      label: Text(
+                        user.workArea!.toUpperCase(),
+                        style: AppStyles.buttonText.copyWith(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                      ),
+                      backgroundColor: Colors.teal,
+                    ),
+                  ],
+                ],
               ),
               const SizedBox(height: 30),
               ListTile(

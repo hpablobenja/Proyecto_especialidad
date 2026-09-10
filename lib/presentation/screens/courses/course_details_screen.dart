@@ -27,10 +27,11 @@ class CourseDetailsScreen extends ConsumerWidget {
           children: <Widget>[
             Text(
               course.title,
-              style: const TextStyle(
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ) ?? const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 16),

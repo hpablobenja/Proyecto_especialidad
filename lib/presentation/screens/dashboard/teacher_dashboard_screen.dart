@@ -453,7 +453,7 @@ class _TeacherDashboardScreenState
                 title,
                 style: AppStyles.bodyText1.copyWith(
                   fontSize: 10,
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 2,
@@ -609,10 +609,10 @@ class _TeacherDashboardScreenState
           color:
               isUnlocked
                   ? achievement['color'].withAlpha((0.1 * 255).round())
-                  : Colors.grey[100],
+                  : Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isUnlocked ? achievement['color'] : Colors.grey[300]!,
+            color: isUnlocked ? achievement['color'] : Theme.of(context).colorScheme.outlineVariant,
             width: isUnlocked ? 2 : 1,
           ),
         ),
@@ -621,7 +621,7 @@ class _TeacherDashboardScreenState
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: isUnlocked ? achievement['color'] : Colors.grey[400],
+                color: isUnlocked ? achievement['color'] : Theme.of(context).colorScheme.surfaceContainerHighest,
                 shape: BoxShape.circle,
               ),
               child: Icon(achievement['icon'], color: Colors.white, size: 24),
@@ -635,7 +635,7 @@ class _TeacherDashboardScreenState
                     achievement['title'],
                     style: AppStyles.bodyText1.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: isUnlocked ? Colors.black87 : Colors.grey[600],
+                      color: isUnlocked ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -643,7 +643,7 @@ class _TeacherDashboardScreenState
                     achievement['description'],
                     style: AppStyles.bodyText1.copyWith(
                       fontSize: 12,
-                      color: isUnlocked ? Colors.grey[700] : Colors.grey[500],
+                      color: isUnlocked ? Theme.of(context).colorScheme.onSurfaceVariant : Theme.of(context).colorScheme.outline,
                     ),
                   ),
                 ],
@@ -652,7 +652,7 @@ class _TeacherDashboardScreenState
             if (isUnlocked)
               const Icon(Icons.check_circle, color: Colors.green, size: 24)
             else
-              Icon(Icons.lock, color: Colors.grey[400], size: 24),
+              Icon(Icons.lock, color: Theme.of(context).colorScheme.outline, size: 24),
           ],
         ),
       ),

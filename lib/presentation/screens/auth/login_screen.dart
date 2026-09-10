@@ -87,7 +87,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
+                      color: theme.cardColor.withOpacity(0.9),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Column(
@@ -95,7 +95,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         Text(
                           'RedMaestra',
                           style: theme.textTheme.headlineMedium?.copyWith(
-                            color: Colors.black87,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -103,7 +102,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         Text(
                           'Microformaciones para docentes',
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: Colors.black87,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -119,7 +117,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(16),
-                        color: Colors.white.withOpacity(0.9),
+                        color: theme.cardColor.withOpacity(0.9),
                       ),
                       padding: const EdgeInsets.all(24.0),
                       child: Form(
@@ -128,10 +126,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           children: [
                             TextFormField(
                               controller: _emailController,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: 'Correo Electrónico',
                                 prefixIcon: Icon(Icons.email_outlined),
                                 border: OutlineInputBorder(),
+                                filled: true,
+                                fillColor:
+                                    Theme.of(context).brightness ==
+                                            Brightness.light
+                                        ? AppColors.textFieldLight
+                                        : AppColors.textFieldDark,
                               ),
                               keyboardType: TextInputType.emailAddress,
                               validator: ValidationUtils.validateEmail,
@@ -139,10 +143,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             const SizedBox(height: 16),
                             TextFormField(
                               controller: _passwordController,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: 'Contraseña',
                                 prefixIcon: Icon(Icons.lock_outline),
                                 border: OutlineInputBorder(),
+                                filled: true,
+                                fillColor:
+                                    Theme.of(context).brightness ==
+                                            Brightness.light
+                                        ? AppColors.textFieldLight
+                                        : AppColors.textFieldDark,
                               ),
                               obscureText: true,
                               validator: ValidationUtils.validatePassword,
@@ -161,7 +171,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 child: Text(
                                   '¿Olvidaste tu contraseña?',
                                   style: TextStyle(
-                                    color: theme.primaryColor,
+                                    color: theme.colorScheme.secondary,
                                     fontSize: 14,
                                   ),
                                 ),
@@ -179,7 +189,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       : ElevatedButton(
                                         onPressed: _login,
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: theme.primaryColor,
+                                          backgroundColor:
+                                              theme.colorScheme.secondary,
                                           shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(
                                               8,
@@ -207,7 +218,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               },
                               child: Text(
                                 '¿No tienes cuenta? Regístrate',
-                                style: TextStyle(color: theme.primaryColor),
+                                style: TextStyle(
+                                  color: theme.colorScheme.secondary,
+                                ),
                               ),
                             ),
                           ],

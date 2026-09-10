@@ -21,8 +21,10 @@ void main() async {
   // Inicializa Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Inicializa el servicio de notificaciones (preparado para Firebase Console en el futuro)
-  await NotificationService().initialize();
+  // Inicializa el servicio de notificaciones sin bloquear el inicio de la app
+  NotificationService().initialize().catchError((e) {
+    debugPrint('Error inicializando notificaciones: $e');
+  });
 
   runApp(
     const ProviderScope(
@@ -45,7 +47,7 @@ class MyApp extends ConsumerWidget {
       title: 'RedMaestra - Microformaciones',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: themeProvider.themeMode,
+      themeMode: ThemeMode.system,
       builder: (context, child) {
         return BackgroundImage(excludeLogin: true, child: child!);
       },

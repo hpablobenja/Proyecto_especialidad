@@ -43,6 +43,8 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
     String? password,
     String? name,
     String? role,
+    String? workArea,
+    String? specialty,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#registerWithEmailAndPassword, [
@@ -50,6 +52,8 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
               password,
               name,
               role,
+              workArea,
+              specialty,
             ]),
             returnValue: _i4.Future<_i2.UserEntity>.value(
               _FakeUserEntity_0(
@@ -59,6 +63,8 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
                   password,
                   name,
                   role,
+                  workArea,
+                  specialty,
                 ]),
               ),
             ),

@@ -159,7 +159,7 @@ class _MyProgressScreenState extends ConsumerState<MyProgressScreen> {
           children: [
             Icon(headerIcon, color: AppColors.primaryColor, size: 28),
             const SizedBox(width: 8),
-            Expanded(child: Text(title, style: AppStyles.headline1)),
+            Expanded(child: Text(title, style: Theme.of(context).textTheme.headlineMedium)),
           ],
         ),
         const SizedBox(height: 16),
@@ -201,7 +201,6 @@ class _MyProgressScreenState extends ConsumerState<MyProgressScreen> {
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
-                        color: Colors.black87,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -261,10 +260,9 @@ class _MyProgressScreenState extends ConsumerState<MyProgressScreen> {
                                           progress?.maxQuizScore != null
                                               ? '• Nota: ${progress?.quizScore} / ${progress?.maxQuizScore}'
                                               : '• Nota: ${progress?.quizScore}',
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.bold,
-                                            color: Colors.blueGrey[700],
                                           ),
                                         ),
                                       ],

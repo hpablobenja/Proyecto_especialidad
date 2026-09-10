@@ -82,7 +82,14 @@ void main() {
       );
 
       when(
-        mockAuthRepository.registerWithEmailAndPassword(any, any, any, any),
+        mockAuthRepository.registerWithEmailAndPassword(
+          any,
+          any,
+          any,
+          any,
+          any,
+          any,
+        ),
       ).thenAnswer((_) async => mockUser);
 
       final result = await registerUsecase.call(
@@ -103,13 +110,22 @@ void main() {
           'password123',
           'New User',
           'maestro',
+          null,
+          null,
         ),
       ).called(1);
     });
 
     test('Registro fallido lanza excepción', () async {
       when(
-        mockAuthRepository.registerWithEmailAndPassword(any, any, any, any),
+        mockAuthRepository.registerWithEmailAndPassword(
+          any,
+          any,
+          any,
+          any,
+          any,
+          any,
+        ),
       ).thenThrow(Exception('Email ya registrado'));
 
       expect(

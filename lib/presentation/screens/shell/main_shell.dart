@@ -60,18 +60,13 @@ class _MainShellState extends ConsumerState<MainShell> {
         appBar: AppBar(
           title: Text(
             _titleForIndex(_currentIndex),
-            style: AppStyles.headlineMedium.copyWith(color: Colors.white),
+            style: AppStyles.headlineMedium,
           ),
           automaticallyImplyLeading: false,
           centerTitle: true,
           elevation: 0,
           scrolledUnderElevation: 0,
-          backgroundColor: const Color.fromARGB(
-            255,
-            145,
-            124,
-            217,
-          ), //255, 74, 165, 95
+          backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
           actions: const [NotificationDropdown(), SizedBox(width: 8)],
         ),
         drawer: isMaestro ? null : const AppDrawer(),
@@ -102,11 +97,8 @@ class _MainShellState extends ConsumerState<MainShell> {
         ),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _currentIndex,
-          backgroundColor: const Color.fromARGB(255, 212, 221, 240),
           onTap: _onItemTapped,
           type: BottomNavigationBarType.fixed,
-          selectedItemColor: const Color.fromARGB(255, 1, 1, 1),
-          unselectedItemColor: Colors.grey,
           showSelectedLabels: true,
           showUnselectedLabels: true,
           items: const [
@@ -239,7 +231,10 @@ class _GalleryScreenState extends ConsumerState<_GalleryScreen> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: const Color.fromARGB(255, 37, 58, 74),
+                  color:
+                      Theme.of(context).brightness == Brightness.light
+                          ? const Color.fromARGB(255, 37, 58, 74)
+                          : null,
                 ),
               ),
             ),
@@ -288,7 +283,10 @@ class _GalleryScreenState extends ConsumerState<_GalleryScreen> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: const Color.fromARGB(255, 37, 58, 74),
+                  color:
+                      Theme.of(context).brightness == Brightness.light
+                          ? const Color.fromARGB(255, 37, 58, 74)
+                          : null,
                 ),
               ),
             ),
@@ -374,7 +372,6 @@ class _GalleryScreenState extends ConsumerState<_GalleryScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -394,19 +391,30 @@ class _GalleryScreenState extends ConsumerState<_GalleryScreen> {
                                     _selectedAudience = audience;
                                   });
                                 },
-                                selectedColor: Colors.green.shade100,
-                                checkmarkColor: Colors.green.shade700,
+                                selectedColor:
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.primaryContainer,
+                                checkmarkColor:
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.onPrimaryContainer,
                                 labelStyle: TextStyle(
                                   color:
                                       isSelected
-                                          ? Colors.green.shade900
-                                          : Colors.black87,
+                                          ? Theme.of(
+                                            context,
+                                          ).colorScheme.onPrimaryContainer
+                                          : Theme.of(
+                                            context,
+                                          ).colorScheme.onSurface,
                                   fontWeight:
                                       isSelected
                                           ? FontWeight.bold
                                           : FontWeight.normal,
                                 ),
-                                backgroundColor: Colors.white,
+                                backgroundColor:
+                                    Theme.of(context).chipTheme.backgroundColor,
                                 elevation: isSelected ? 2 : 0,
                               ),
                             );
@@ -477,7 +485,11 @@ class _SearchBodyState extends ConsumerState<_SearchBody> {
                       FilterChip(
                         label: Text(
                           label,
-                          style: const TextStyle(color: Colors.black),
+                          style: TextStyle(
+                            color: Theme.of(context).brightness == Brightness.light
+                                ? Colors.black87
+                                : null,
+                          ),
                         ),
                         selected: chips.contains(label.toLowerCase()),
                         onSelected:

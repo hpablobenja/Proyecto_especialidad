@@ -12,6 +12,7 @@ class VideoPreviewCard extends StatelessWidget {
   final bool showActions;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final bool isCard;
 
   const VideoPreviewCard({
     super.key,
@@ -20,6 +21,7 @@ class VideoPreviewCard extends StatelessWidget {
     this.showActions = false,
     this.onEdit,
     this.onDelete,
+    this.isCard = true,
   });
 
   String? _extractVideoId(MediaResource media) {
@@ -64,22 +66,18 @@ class VideoPreviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final videoId = _extractVideoId(video);
 
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+    final content = InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
             if (videoId != null) ...[
               AspectRatio(
                 aspectRatio: 16 / 9,
                 child: Container(
                   decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(8),
-                    ),
+                    borderRadius: BorderRadius.circular(isCard ? 8 : 0),
                     image: DecorationImage(
                       image: NetworkImage(_getThumbnailUrl(videoId)),
                       fit: BoxFit.cover,
@@ -90,9 +88,7 @@ class VideoPreviewCard extends StatelessWidget {
                   ),
                   child: Container(
                     decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(8),
-                      ),
+                      borderRadius: BorderRadius.circular(isCard ? 8 : 0),
                       color: Colors.black.withOpacity(0.3),
                     ),
                     child: const Center(
@@ -109,10 +105,8 @@ class VideoPreviewCard extends StatelessWidget {
               AspectRatio(
                 aspectRatio: 16 / 9,
                 child: Container(
-                  decoration: const BoxDecoration(
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(8),
-                    ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(isCard ? 8 : 0),
                     color: Colors.grey,
                   ),
                   child: const Center(
@@ -125,27 +119,12 @@ class VideoPreviewCard extends StatelessWidget {
                 ),
               ),
             ],
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          video.filename,
-                          style: AppStyles.bodyText1.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                      ],
-                    ),
-                  ),
-                  if (showActions) ...[
+            if (showActions)
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
                     if (onEdit != null)
                       IconButton(
                         onPressed: onEdit,
@@ -162,12 +141,19 @@ class VideoPreviewCard extends StatelessWidget {
                         color: AppColors.errorColor,
                       ),
                   ],
-                ],
+                ),
               ),
-            ),
-          ],
-        ),
+        ],
       ),
     );
+
+    if (isCard) {
+      return Card(
+        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        child: content,
+      );
+    }
+    return content;
   }
 }
