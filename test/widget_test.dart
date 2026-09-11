@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 
 import 'package:redmaestra1/presentation/providers/theme_provider.dart';
 
-@GenerateMocks([ThemeProvider])
 void main() {
   group('ThemeProvider Widget Tests', () {
     testWidgets('ThemeProvider cambia tema correctamente', (

@@ -116,8 +116,9 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
               ),
               ElevatedButton(
                 onPressed: () {
-                  if (formKey.currentState!.validate())
+                  if (formKey.currentState!.validate()) {
                     Navigator.pop(context, true);
+                  }
                 },
                 child: const Text('Agregar'),
               ),
@@ -129,6 +130,7 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
 
     final id = _extractVideoIdFromUrl(urlCtrl.text);
     if (id == null) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('URL de YouTube no válida'),
@@ -163,10 +165,12 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
       );
 
       widget.onLessonUpdated(updated);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Video agregado correctamente')),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al agregar video: $e'),
@@ -218,10 +222,12 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
       );
 
       widget.onLessonUpdated(updated);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Video eliminado correctamente')),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al eliminar video: $e'),
@@ -262,8 +268,9 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
               ),
               ElevatedButton(
                 onPressed: () {
-                  if (formKey.currentState!.validate())
+                  if (formKey.currentState!.validate()) {
                     Navigator.pop(context, true);
+                  }
                 },
                 child: const Text('Actualizar'),
               ),
@@ -275,6 +282,7 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
 
     final id = _extractVideoIdFromUrl(urlCtrl.text);
     if (id == null) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('URL de YouTube no válida'),
@@ -312,10 +320,12 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
       );
 
       widget.onLessonUpdated(updated);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Video actualizado correctamente')),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al actualizar video: $e'),
@@ -411,7 +421,9 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
                                   video.url,
                                   style: AppStyles.bodyText1.copyWith(
                                     fontSize: 12,
-                                    color: AppColors.textColor.withOpacity(0.7),
+                                    color: AppColors.textColor.withValues(
+                                      alpha: 0.7,
+                                    ),
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -438,7 +450,7 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
                   ],
                 ),
               );
-            }).toList(),
+            }),
           ],
         ),
       ),

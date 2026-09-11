@@ -1,33 +1,24 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mockito/mockito.dart';
-import 'package:mockito/annotations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:redmaestra1/core/di/riverpod_providers.dart';
 import 'package:redmaestra1/presentation/providers/auth_provider.dart';
 import 'package:redmaestra1/presentation/screens/auth/login_screen.dart';
-import 'package:redmaestra1/domain/usecases/auth/login_usecase.dart';
-import 'package:redmaestra1/domain/usecases/auth/register_usecase.dart';
-import 'package:redmaestra1/domain/usecases/auth/get_current_user_usecase.dart';
-import 'package:redmaestra1/domain/usecases/auth/update_user_usecase.dart';
-import 'package:redmaestra1/domain/usecases/auth/reset_password_usecase.dart';
 import 'package:redmaestra1/domain/entities/user_entity.dart';
 
-@GenerateMocks([
-  LoginUsecase,
-  RegisterUsecase,
-  GetCurrentUserUsecase,
-  UpdateUserUsecase,
-  ResetPasswordUsecase,
-])
-import 'login_screen_test_simple.mocks.dart';
-
-class MockResetPasswordUsecase extends Mock implements ResetPasswordUsecase {}
+import 'providers_test.mocks.dart';
 
 void main() {
   setUpAll(() {
     TestWidgetsFlutterBinding.ensureInitialized();
+    SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
   });
 
   group('LoginScreen Widget Tests', () {
@@ -39,6 +30,9 @@ void main() {
     late AuthProvider authProvider;
 
     setUp(() {
+      SharedPreferences.setMockInitialValues({});
+      FlutterSecureStorage.setMockInitialValues({});
+
       mockLoginUsecase = MockLoginUsecase();
       mockRegisterUsecase = MockRegisterUsecase();
       mockGetCurrentUserUsecase = MockGetCurrentUserUsecase();
@@ -94,14 +88,9 @@ void main() {
     ) async {
       await tester.pumpWidget(createTestWidget());
 
-      final mockUser = UserEntity(
-        uid: 'test_uid',
-        email: 'test@example.com',
-        name: 'Test User',
-        role: 'maestro',
-      );
-
-      when(mockLoginUsecase.call(any)).thenAnswer((_) async => mockUser);
+      // Defer login completion to avoid navigating to HomeScreen (requires Firebase).
+      final loginCompleter = Completer<UserEntity>();
+      when(mockLoginUsecase.call(any)).thenAnswer((_) => loginCompleter.future);
 
       await tester.enterText(
         find.byType(TextFormField).first,
@@ -110,6 +99,7 @@ void main() {
       await tester.enterText(find.byType(TextFormField).last, 'password123');
       await tester.tap(find.byType(ElevatedButton));
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       verify(mockLoginUsecase.call(any)).called(1);
     });
