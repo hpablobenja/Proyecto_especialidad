@@ -60,3 +60,50 @@ projectId: 'flutter-project-24297',
 storageBucket: 'flutter-project-24297.firebasestorage.app'
 
 ## Equipo y roles - – Pablo Huañapaco 1: Backend – Pablo Huañapaco 2: Frontend - – Pablo Huañapaco: DevOps / QA
+
+## Pruebas (Testing)
+
+**Pruebas Unitarias (Capa de Dominio y Datos):**
+Evaluación aislada de las reglas de negocio críticas sin depender de la interfaz de usuario ni de conexiones a internet. Utilizando el paquete flutter_test y la librería mockito (o mocktail), se simularon (mockearon) las respuestas del servidor para validar el comportamiento exacto de los Casos de Uso (ej. EvaluateQuizUseCase, SyncLocalDataToCloudUseCase).
+
+**Pruebas de Componentes / Widget Tests (Capa de Presentación):**
+Verificación del comportamiento visual de los componentes atómicos en Flutter. Se comprobó que los formularios mostraran errores ante datos inválidos, que el reproductor de YouTube se inicializara correctamente y que los botones de progreso reaccionaran a los cambios de estado emitidos por los Providers.
+
+**Pruebas de Integración (Frontend - Backend):**
+Pruebas de caja negra diseñadas para comprobar el flujo de comunicación real entre la aplicación móvil y los servicios de Google Cloud (Firebase). Se validó el inicio de sesión con tokens JWT, la correcta ejecución de las Security Rules en Firestore y la inserción atómica de los registros de avance de los cursos.
+
+**Pruebas de Usabilidad y Aceptación (User Acceptance Testing - UAT):**
+Evaluación empírica en un entorno controlado con una muestra representativa de docentes de educación regular (grupo de control). Su propósito fue medir el grado de fricción en la navegación, la legibilidad del contenido en pantallas móviles y la efectividad del modelo de microaprendizaje, utilizando escenarios de prueba específicos (ej. "Inscribirse a un curso y completar el primer cuestionario").
+
+**Pruebas de Humo (Smoke Tests):** 
+Verificaciones rápidas de las funcionalidades críticas para asegurar la estabilidad tras cada despliegue.
+
+### Tipos de pruebas implementadas:
+
+**Widget Tests**
+- Renderizado básico de MaterialApp
+- Interacción con botones
+- Entrada de texto en TextFormField
+- ThemeProvider functionality
+
+**Provider Tests**
+- AuthProvider: login, logout, manejo de errores
+- ThemeProvider: cambio de tema, persistencia
+- ConnectivityProvider: inicialización
+
+**Login Screen Tests**
+- Renderizado del formulario
+- Entrada de datos
+- Interacción con botones
+- Manejo de errores
+
+**Use Case Tests**
+- LoginUsecase: éxito y fallo
+- RegisterUsecase: éxito y fallo
+- GetCurrentUserUsecase: usuario actual y nulo
+
+**Entity Tests**
+- UserEntity: creación, igualdad, toString
+- CourseEntity: estructura básica
+- ContentEntity: diferentes tipos
+- ProgressEntity: seguimiento de progreso
