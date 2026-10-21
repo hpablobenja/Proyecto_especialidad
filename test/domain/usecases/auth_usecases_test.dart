@@ -1,3 +1,4 @@
+// test auth usecases
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
@@ -21,36 +22,43 @@ void main() {
   });
 
   group('LoginUsecase Tests', () {
-    test('LoginUsecase llama al repositorio con credenciales correctas', () async {
-      final loginUsecase = LoginUsecase(mockAuthRepository);
-      const email = 'test@example.com';
-      const password = 'password123';
+    test(
+      'LoginUsecase llama al repositorio con credenciales correctas',
+      () async {
+        final loginUsecase = LoginUsecase(mockAuthRepository);
+        const email = 'test@example.com';
+        const password = 'password123';
 
-      final expectedUser = UserEntity(
-        uid: 'user_1',
-        email: email,
-        name: 'Test User',
-        role: 'maestro',
-      );
+        final expectedUser = UserEntity(
+          uid: 'user_1',
+          email: email,
+          name: 'Test User',
+          role: 'maestro',
+        );
 
-      when(mockAuthRepository.signInWithEmailAndPassword(email, password))
-          .thenAnswer((_) async => expectedUser);
+        when(
+          mockAuthRepository.signInWithEmailAndPassword(email, password),
+        ).thenAnswer((_) async => expectedUser);
 
-      final result = await loginUsecase.call(LoginParams(email: email, password: password));
+        final result = await loginUsecase.call(
+          LoginParams(email: email, password: password),
+        );
 
-      expect(result.uid, expectedUser.uid);
-      expect(result.email, expectedUser.email);
-      verify(mockAuthRepository.signInWithEmailAndPassword(email, password));
-      verifyNoMoreInteractions(mockAuthRepository);
-    });
+        expect(result.uid, expectedUser.uid);
+        expect(result.email, expectedUser.email);
+        verify(mockAuthRepository.signInWithEmailAndPassword(email, password));
+        verifyNoMoreInteractions(mockAuthRepository);
+      },
+    );
 
     test('LoginUsecase lanza excepción cuando falla el login', () async {
       final loginUsecase = LoginUsecase(mockAuthRepository);
       const email = 'test@example.com';
       const password = 'wrong_password';
 
-      when(mockAuthRepository.signInWithEmailAndPassword(email, password))
-          .thenThrow(Exception('Credenciales inválidas'));
+      when(
+        mockAuthRepository.signInWithEmailAndPassword(email, password),
+      ).thenThrow(Exception('Credenciales inválidas'));
 
       expect(
         () => loginUsecase.call(LoginParams(email: email, password: password)),
@@ -74,34 +82,40 @@ void main() {
         role: role,
       );
 
-      when(mockAuthRepository.registerWithEmailAndPassword(
-        email,
-        password,
-        name,
-        role,
-        any,
-        any,
-      )).thenAnswer((_) async => expectedUser);
+      when(
+        mockAuthRepository.registerWithEmailAndPassword(
+          email,
+          password,
+          name,
+          role,
+          any,
+          any,
+        ),
+      ).thenAnswer((_) async => expectedUser);
 
-      final result = await registerUsecase.call(RegisterParams(
-        email: email,
-        password: password,
-        name: name,
-        role: role,
-        workArea: null,
-        specialty: null,
-      ));
+      final result = await registerUsecase.call(
+        RegisterParams(
+          email: email,
+          password: password,
+          name: name,
+          role: role,
+          workArea: null,
+          specialty: null,
+        ),
+      );
 
       expect(result.uid, expectedUser.uid);
       expect(result.email, expectedUser.email);
-      verify(mockAuthRepository.registerWithEmailAndPassword(
-        email,
-        password,
-        name,
-        role,
-        null,
-        null,
-      ));
+      verify(
+        mockAuthRepository.registerWithEmailAndPassword(
+          email,
+          password,
+          name,
+          role,
+          null,
+          null,
+        ),
+      );
     });
 
     test('RegisterUsecase maneja campos opcionales', () async {
@@ -122,23 +136,27 @@ void main() {
         specialty: specialty,
       );
 
-      when(mockAuthRepository.registerWithEmailAndPassword(
-        email,
-        password,
-        name,
-        role,
-        workArea,
-        specialty,
-      )).thenAnswer((_) async => expectedUser);
+      when(
+        mockAuthRepository.registerWithEmailAndPassword(
+          email,
+          password,
+          name,
+          role,
+          workArea,
+          specialty,
+        ),
+      ).thenAnswer((_) async => expectedUser);
 
-      final result = await registerUsecase.call(RegisterParams(
-        email: email,
-        password: password,
-        name: name,
-        role: role,
-        workArea: workArea,
-        specialty: specialty,
-      ));
+      final result = await registerUsecase.call(
+        RegisterParams(
+          email: email,
+          password: password,
+          name: name,
+          role: role,
+          workArea: workArea,
+          specialty: specialty,
+        ),
+      );
 
       expect(result.workArea, workArea);
       expect(result.specialty, specialty);
@@ -156,8 +174,9 @@ void main() {
         role: 'maestro',
       );
 
-      when(mockAuthRepository.getCurrentUser())
-          .thenAnswer((_) async => expectedUser);
+      when(
+        mockAuthRepository.getCurrentUser(),
+      ).thenAnswer((_) async => expectedUser);
 
       final result = await getCurrentUserUsecase.call(NoParams());
 
@@ -168,8 +187,7 @@ void main() {
     test('GetCurrentUserUsecase retorna null cuando no hay usuario', () async {
       final getCurrentUserUsecase = GetCurrentUserUsecase(mockAuthRepository);
 
-      when(mockAuthRepository.getCurrentUser())
-          .thenAnswer((_) async => null);
+      when(mockAuthRepository.getCurrentUser()).thenAnswer((_) async => null);
 
       final result = await getCurrentUserUsecase.call(NoParams());
 
@@ -183,8 +201,7 @@ void main() {
       final resetPasswordUsecase = ResetPasswordUsecase(mockAuthRepository);
       const email = 'test@example.com';
 
-      when(mockAuthRepository.resetPassword(email))
-          .thenAnswer((_) async {});
+      when(mockAuthRepository.resetPassword(email)).thenAnswer((_) async {});
 
       await resetPasswordUsecase.call(email);
 
@@ -195,13 +212,11 @@ void main() {
       final resetPasswordUsecase = ResetPasswordUsecase(mockAuthRepository);
       const email = 'invalid@example.com';
 
-      when(mockAuthRepository.resetPassword(email))
-          .thenThrow(Exception('Usuario no encontrado'));
+      when(
+        mockAuthRepository.resetPassword(email),
+      ).thenThrow(Exception('Usuario no encontrado'));
 
-      expect(
-        () => resetPasswordUsecase.call(email),
-        throwsException,
-      );
+      expect(() => resetPasswordUsecase.call(email), throwsException);
     });
   });
 
@@ -218,8 +233,7 @@ void main() {
         specialty: 'Nueva Especialidad',
       );
 
-      when(mockAuthRepository.updateUser(updatedUser))
-          .thenAnswer((_) async {});
+      when(mockAuthRepository.updateUser(updatedUser)).thenAnswer((_) async {});
 
       await updateUserUsecase.call(updatedUser);
 
@@ -236,8 +250,7 @@ void main() {
         role: 'maestro',
       );
 
-      when(mockAuthRepository.updateUser(updatedUser))
-          .thenAnswer((_) async {});
+      when(mockAuthRepository.updateUser(updatedUser)).thenAnswer((_) async {});
 
       await updateUserUsecase.call(updatedUser);
 
