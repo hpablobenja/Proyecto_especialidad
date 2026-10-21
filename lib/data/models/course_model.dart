@@ -11,12 +11,14 @@ class CourseModel extends CourseEntity {
     required String description,
     this.thumbnailUrl,
     required String targetAudience,
+    String status = 'draft',
   }) : super(
           id: id,
           title: title,
           description: description,
           thumbnailUrl: thumbnailUrl,
           targetAudience: targetAudience,
+          status: status,
         );
 
   factory CourseModel.fromMap(Map<String, dynamic> map) {
@@ -26,6 +28,7 @@ class CourseModel extends CourseEntity {
       description: map['description'] as String,
       thumbnailUrl: map['thumbnailUrl'] as String?,
       targetAudience: map['targetAudience'] as String? ?? 'Otro(Especificar)',
+      status: map['status'] as String? ?? 'draft',
     );
   }
 
@@ -36,6 +39,7 @@ class CourseModel extends CourseEntity {
       'description': description,
       'thumbnailUrl': thumbnailUrl,
       'targetAudience': targetAudience,
+      'status': status,
     };
   }
 
@@ -46,6 +50,7 @@ class CourseModel extends CourseEntity {
     String? description,
     String? thumbnailUrl,
     String? targetAudience,
+    String? status,
   }) {
     return CourseModel(
       id: id ?? this.id,
@@ -53,6 +58,7 @@ class CourseModel extends CourseEntity {
       description: description ?? this.description,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
       targetAudience: targetAudience ?? this.targetAudience,
+      status: status ?? this.status,
     );
   }
 }

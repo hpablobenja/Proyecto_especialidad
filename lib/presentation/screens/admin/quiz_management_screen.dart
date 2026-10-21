@@ -8,6 +8,7 @@ import '../../../domain/entities/lesson_entity.dart';
 import '../../../domain/entities/quiz_entity.dart';
 import '../../../domain/entities/question_entity.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/validation_utils.dart';
 
 class QuizManagementScreen extends ConsumerStatefulWidget {
   final LessonEntity lesson;
@@ -15,7 +16,8 @@ class QuizManagementScreen extends ConsumerStatefulWidget {
   const QuizManagementScreen({super.key, required this.lesson});
 
   @override
-  ConsumerState<QuizManagementScreen> createState() => _QuizManagementScreenState();
+  ConsumerState<QuizManagementScreen> createState() =>
+      _QuizManagementScreenState();
 }
 
 class _QuizManagementScreenState extends ConsumerState<QuizManagementScreen> {
@@ -37,19 +39,21 @@ class _QuizManagementScreenState extends ConsumerState<QuizManagementScreen> {
 
     try {
       final firestore = ref.read(firestoreProvider);
-      final quizDoc = await firestore
-          .collection('quizzes')
-          .where('lessonId', isEqualTo: widget.lesson.id)
-          .limit(1)
-          .get();
+      final quizDoc =
+          await firestore
+              .collection('quizzes')
+              .where('lessonId', isEqualTo: widget.lesson.id)
+              .limit(1)
+              .get();
 
       if (quizDoc.docs.isNotEmpty) {
         final quizData = quizDoc.docs.first.data();
         final questionsData = quizData['questions'] as List? ?? [];
-        
-        final questions = questionsData
-            .map((q) => QuestionEntity.fromMap(q as Map<String, dynamic>))
-            .toList();
+
+        final questions =
+            questionsData
+                .map((q) => QuestionEntity.fromMap(q as Map<String, dynamic>))
+                .toList();
 
         setState(() {
           _quiz = QuizEntity(
@@ -75,9 +79,7 @@ class _QuizManagementScreenState extends ConsumerState<QuizManagementScreen> {
   Future<void> _saveQuiz(QuizEntity quiz) async {
     try {
       final firestore = ref.read(firestoreProvider);
-      final quizRef = firestore
-          .collection('quizzes')
-          .doc(quiz.id);
+      final quizRef = firestore.collection('quizzes').doc(quiz.id);
 
       await quizRef.set(quiz.toMap());
 
@@ -103,33 +105,33 @@ class _QuizManagementScreenState extends ConsumerState<QuizManagementScreen> {
   Future<void> _deleteQuiz() async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Eliminar cuestionario'),
-        content: const Text('¿Estás seguro de que deseas eliminar este cuestionario?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.errorColor,
+      builder:
+          (_) => AlertDialog(
+            title: const Text('Eliminar cuestionario'),
+            content: const Text(
+              '¿Estás seguro de que deseas eliminar este cuestionario?',
             ),
-            child: const Text('Eliminar'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.errorColor,
+                ),
+                child: const Text('Eliminar'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
 
     if (confirm != true) return;
 
     try {
       final firestore = ref.read(firestoreProvider);
-      await firestore
-          .collection('quizzes')
-          .doc(_quiz!.id)
-          .delete();
+      await firestore.collection('quizzes').doc(_quiz!.id).delete();
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -166,57 +168,66 @@ class _QuizManagementScreenState extends ConsumerState<QuizManagementScreen> {
             ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
+      body:
+          _loading
+              ? const Center(child: CircularProgressIndicator())
+              : _error != null
               ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
-                        const SizedBox(height: 16),
-                        Text(
-                          _error!,
-                          style: Theme.of(context).textTheme.bodyLarge,
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _error!,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
-                )
+                ),
+              )
               : _quiz == null
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.quiz_outlined, size: 64, color: Colors.grey[400]),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No hay cuestionario para esta lección',
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Crea un cuestionario con máximo 5 preguntas',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Colors.grey[600],
-                                  ),
-                            ),
-                            const SizedBox(height: 24),
-                            ElevatedButton.icon(
-                              onPressed: () => _showCreateQuizDialog(),
-                              icon: const Icon(Icons.add),
-                              label: const Text('Crear Cuestionario'),
-                            ),
-                          ],
+              ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.quiz_outlined,
+                        size: 64,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No hay cuestionario para esta lección',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Crea un cuestionario con banco de hasta 20 preguntas',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey[600],
                         ),
                       ),
-                    )
-                  : _buildQuizEditor(),
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: () => _showCreateQuizDialog(),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Crear Cuestionario'),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+              : _buildQuizEditor(),
     );
   }
 
@@ -236,7 +247,7 @@ class _QuizManagementScreenState extends ConsumerState<QuizManagementScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Máximo 5 preguntas. Cada pregunta debe tener 3 opciones de respuesta.',
+                      'Banco de hasta 20 preguntas. Los maestros verán 5 preguntas aleatorias. Cada pregunta debe tener 3 opciones de respuesta.',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ),
@@ -245,22 +256,49 @@ class _QuizManagementScreenState extends ConsumerState<QuizManagementScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Preguntas (${_quiz!.questions.length}/5)',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              if (_quiz!.questions.length < 5)
-                ElevatedButton.icon(
-                  onPressed: () => _showAddQuestionDialog(),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Agregar Pregunta'),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final questionsTitle = Text(
+                'Preguntas (${_quiz!.questions.length}/20)',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              );
+              final addQuestionButton = ElevatedButton.icon(
+                onPressed: () => _showAddQuestionDialog(),
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Agregar Pregunta'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  textStyle: const TextStyle(fontSize: 12),
+                  visualDensity: VisualDensity.compact,
                 ),
-            ],
+              );
+
+              if (constraints.maxWidth < 400) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    questionsTitle,
+                    if (_quiz!.questions.length < 20) ...[
+                      const SizedBox(height: 8),
+                      addQuestionButton,
+                    ],
+                  ],
+                );
+              }
+
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  questionsTitle,
+                  if (_quiz!.questions.length < 20) addQuestionButton,
+                ],
+              );
+            },
           ),
           const SizedBox(height: 16),
           ...List.generate(_quiz!.questions.length, (index) {
@@ -280,7 +318,10 @@ class _QuizManagementScreenState extends ConsumerState<QuizManagementScreen> {
                 backgroundColor: AppColors.primaryColor,
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              child: const Text('Guardar Cuestionario', style: TextStyle(fontSize: 16)),
+              child: const Text(
+                'Guardar Cuestionario',
+                style: TextStyle(fontSize: 16),
+              ),
             ),
           ),
         ],
@@ -324,141 +365,174 @@ class _QuizManagementScreenState extends ConsumerState<QuizManagementScreen> {
 
     showDialog(
       context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text(isEditing ? 'Editar Pregunta' : 'Nueva Pregunta'),
-          content: SingleChildScrollView(
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextFormField(
-                    controller: questionTextCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Pregunta',
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLines: 3,
-                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Ingrese la pregunta' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Opciones de respuesta (selecciona la correcta):',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  RadioListTile<int>(
-                    title: TextFormField(
-                      controller: option1Ctrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Opción 1',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (v) => (v == null || v.trim().isEmpty) ? 'Ingrese la opción' : null,
-                    ),
-                    value: 0,
-                    groupValue: correctAnswer,
-                    onChanged: (v) => setDialogState(() => correctAnswer = v),
-                  ),
-                  RadioListTile<int>(
-                    title: TextFormField(
-                      controller: option2Ctrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Opción 2',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (v) => (v == null || v.trim().isEmpty) ? 'Ingrese la opción' : null,
-                    ),
-                    value: 1,
-                    groupValue: correctAnswer,
-                    onChanged: (v) => setDialogState(() => correctAnswer = v),
-                  ),
-                  RadioListTile<int>(
-                    title: TextFormField(
-                      controller: option3Ctrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Opción 3',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (v) => (v == null || v.trim().isEmpty) ? 'Ingrese la opción' : null,
-                    ),
-                    value: 2,
-                    groupValue: correctAnswer,
-                    onChanged: (v) => setDialogState(() => correctAnswer = v),
-                  ),
-                  if (correctAnswer == null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: Text(
-                        'Selecciona la respuesta correcta',
-                        style: TextStyle(color: AppColors.errorColor, fontSize: 12),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (formKey.currentState!.validate() && correctAnswer != null) {
-                  final newQuestion = QuestionEntity(
-                    id: question?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-                    text: questionTextCtrl.text.trim(),
-                    options: [
-                      option1Ctrl.text.trim(),
-                      option2Ctrl.text.trim(),
-                      option3Ctrl.text.trim(),
-                    ],
-                    correctAnswerIndex: correctAnswer!,
-                  );
-
-                  setState(() {
-                    if (isEditing) {
-                      _quiz = QuizEntity(
-                        id: _quiz!.id,
-                        lessonId: _quiz!.lessonId,
-                        courseId: _quiz!.courseId,
-                        moduleId: _quiz!.moduleId,
-                        questions: List.from(_quiz!.questions)
-                          ..[questionIndex] = newQuestion,
-                      );
-                    } else {
-                      if (_quiz!.questions.length < 5) {
-                        _quiz = QuizEntity(
-                          id: _quiz!.id,
-                          lessonId: _quiz!.lessonId,
-                          courseId: _quiz!.courseId,
-                          moduleId: _quiz!.moduleId,
-                          questions: [..._quiz!.questions, newQuestion],
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Máximo 5 preguntas permitidas'),
-                            backgroundColor: AppColors.errorColor,
+      builder:
+          (_) => StatefulBuilder(
+            builder:
+                (context, setDialogState) => AlertDialog(
+                  title: Text(isEditing ? 'Editar Pregunta' : 'Nueva Pregunta'),
+                  content: SingleChildScrollView(
+                    child: Form(
+                      key: formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TextFormField(
+                            controller: questionTextCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Pregunta',
+                              border: OutlineInputBorder(),
+                            ),
+                            maxLines: 3,
+                            validator:
+                                (v) =>
+                                    ValidationUtils.validateRequiredTextWithLetters(
+                                      v,
+                                      fieldName: 'La pregunta',
+                                    ),
                           ),
-                        );
-                        return;
-                      }
-                    }
-                  });
-                  Navigator.pop(context);
-                }
-              },
-              child: Text(isEditing ? 'Guardar' : 'Agregar'),
-            ),
-          ],
-        ),
-      ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Opciones de respuesta (selecciona la correcta):',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          RadioListTile<int>(
+                            title: TextFormField(
+                              controller: option1Ctrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Opción 1',
+                                border: OutlineInputBorder(),
+                              ),
+                              validator:
+                                  (v) =>
+                                      ValidationUtils.validateRequiredTextWithLetters(
+                                        v,
+                                        fieldName: 'La opción 1',
+                                      ),
+                            ),
+                            value: 0,
+                            groupValue: correctAnswer,
+                            onChanged:
+                                (v) => setDialogState(() => correctAnswer = v),
+                          ),
+                          RadioListTile<int>(
+                            title: TextFormField(
+                              controller: option2Ctrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Opción 2',
+                                border: OutlineInputBorder(),
+                              ),
+                              validator:
+                                  (v) =>
+                                      ValidationUtils.validateRequiredTextWithLetters(
+                                        v,
+                                        fieldName: 'La opción 2',
+                                      ),
+                            ),
+                            value: 1,
+                            groupValue: correctAnswer,
+                            onChanged:
+                                (v) => setDialogState(() => correctAnswer = v),
+                          ),
+                          RadioListTile<int>(
+                            title: TextFormField(
+                              controller: option3Ctrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Opción 3',
+                                border: OutlineInputBorder(),
+                              ),
+                              validator:
+                                  (v) =>
+                                      ValidationUtils.validateRequiredTextWithLetters(
+                                        v,
+                                        fieldName: 'La opción 3',
+                                      ),
+                            ),
+                            value: 2,
+                            groupValue: correctAnswer,
+                            onChanged:
+                                (v) => setDialogState(() => correctAnswer = v),
+                          ),
+                          if (correctAnswer == null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Text(
+                                'Selecciona la respuesta correcta',
+                                style: TextStyle(
+                                  color: AppColors.errorColor,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancelar'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (formKey.currentState!.validate() &&
+                            correctAnswer != null) {
+                          final newQuestion = QuestionEntity(
+                            id:
+                                question?.id ??
+                                DateTime.now().millisecondsSinceEpoch
+                                    .toString(),
+                            text: questionTextCtrl.text.trim(),
+                            options: [
+                              option1Ctrl.text.trim(),
+                              option2Ctrl.text.trim(),
+                              option3Ctrl.text.trim(),
+                            ],
+                            correctAnswerIndex: correctAnswer!,
+                          );
+
+                          setState(() {
+                            if (isEditing) {
+                              _quiz = QuizEntity(
+                                id: _quiz!.id,
+                                lessonId: _quiz!.lessonId,
+                                courseId: _quiz!.courseId,
+                                moduleId: _quiz!.moduleId,
+                                questions: List.from(_quiz!.questions)
+                                  ..[questionIndex] = newQuestion,
+                              );
+                            } else {
+                              if (_quiz!.questions.length < 20) {
+                                _quiz = QuizEntity(
+                                  id: _quiz!.id,
+                                  lessonId: _quiz!.lessonId,
+                                  courseId: _quiz!.courseId,
+                                  moduleId: _quiz!.moduleId,
+                                  questions: [..._quiz!.questions, newQuestion],
+                                );
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Máximo 20 preguntas permitidas',
+                                    ),
+                                    backgroundColor: AppColors.errorColor,
+                                  ),
+                                );
+                                return;
+                              }
+                            }
+                          });
+                          Navigator.pop(context);
+                        }
+                      },
+                      child: Text(isEditing ? 'Guardar' : 'Agregar'),
+                    ),
+                  ],
+                ),
+          ),
     );
   }
 
@@ -502,8 +576,8 @@ class _QuestionEditorCard extends StatelessWidget {
                 Text(
                   'Pregunta $questionNumber',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const Spacer(),
                 IconButton(
@@ -512,7 +586,11 @@ class _QuestionEditorCard extends StatelessWidget {
                   tooltip: 'Editar',
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete, size: 20, color: AppColors.errorColor),
+                  icon: const Icon(
+                    Icons.delete,
+                    size: 20,
+                    color: AppColors.errorColor,
+                  ),
                   onPressed: onDelete,
                   tooltip: 'Eliminar',
                 ),
@@ -527,9 +605,14 @@ class _QuestionEditorCard extends StatelessWidget {
                 child: Row(
                   children: [
                     Icon(
-                      index == question.correctAnswerIndex ? Icons.check_circle : Icons.radio_button_unchecked,
+                      index == question.correctAnswerIndex
+                          ? Icons.check_circle
+                          : Icons.radio_button_unchecked,
                       size: 16,
-                      color: index == question.correctAnswerIndex ? AppColors.successColor : Colors.grey,
+                      color:
+                          index == question.correctAnswerIndex
+                              ? AppColors.successColor
+                              : Colors.grey,
                     ),
                     const SizedBox(width: 8),
                     Expanded(child: Text(question.options[index])),
@@ -543,4 +626,3 @@ class _QuestionEditorCard extends StatelessWidget {
     );
   }
 }
-

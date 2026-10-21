@@ -10,6 +10,7 @@ import '../../widgets/youtube_video_manager.dart';
 import 'quiz_management_screen.dart';
 import '../../../domain/entities/module_entity.dart';
 import '../../../domain/entities/lesson_entity.dart';
+import '../../../core/utils/validation_utils.dart';
 
 class CourseContentScreen extends ConsumerStatefulWidget {
   final String courseId;
@@ -58,16 +59,20 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
                   TextFormField(
                     controller: titleCtrl,
                     decoration: const InputDecoration(labelText: 'Título'),
-                    validator:
-                        (v) =>
-                            (v == null || v.trim().isEmpty)
-                                ? 'Ingrese un título'
-                                : null,
+                    validator: (v) => ValidationUtils.validateRequiredTextWithLetters(
+                      v,
+                      fieldName: 'El título de la lección',
+                    ),
                   ),
                   TextFormField(
                     controller: objCtrl,
                     decoration: const InputDecoration(
-                      labelText: 'Objetivos (opcional)',
+                      labelText: 'Objetivos de la lección',
+                    ),
+                    maxLines: 3,
+                    validator: (v) => ValidationUtils.validateRequiredTextWithLetters(
+                      v,
+                      fieldName: 'Los objetivos de la lección',
                     ),
                   ),
                 ],
@@ -192,16 +197,20 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
                   TextFormField(
                     controller: titleCtrl,
                     decoration: const InputDecoration(labelText: 'Título'),
-                    validator:
-                        (v) =>
-                            (v == null || v.trim().isEmpty)
-                                ? 'Ingrese un título'
-                                : null,
+                    validator: (v) => ValidationUtils.validateRequiredTextWithLetters(
+                      v,
+                      fieldName: 'El título del módulo',
+                    ),
                   ),
                   TextFormField(
                     controller: descCtrl,
                     decoration: const InputDecoration(
-                      labelText: 'Descripción (opcional)',
+                      labelText: 'Descripción del módulo',
+                    ),
+                    maxLines: 3,
+                    validator: (v) => ValidationUtils.validateRequiredTextWithLetters(
+                      v,
+                      fieldName: 'La descripción del módulo',
                     ),
                   ),
                 ],
@@ -473,22 +482,20 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
                   TextFormField(
                     controller: titleCtrl,
                     decoration: const InputDecoration(labelText: 'Título'),
-                    validator:
-                        (v) =>
-                            (v == null || v.trim().isEmpty)
-                                ? 'Requerido'
-                                : null,
+                    validator: (v) => ValidationUtils.validateRequiredTextWithLetters(
+                      v,
+                      fieldName: 'El título de la estrategia',
+                    ),
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: descCtrl,
                     decoration: const InputDecoration(labelText: 'Descripción'),
                     maxLines: 5,
-                    validator:
-                        (v) =>
-                            (v == null || v.trim().isEmpty)
-                                ? 'Requerido'
-                                : null,
+                    validator: (v) => ValidationUtils.validateRequiredTextWithLetters(
+                      v,
+                      fieldName: 'La descripción de la estrategia',
+                    ),
                   ),
                 ],
               ),
@@ -606,16 +613,20 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
                     decoration: const InputDecoration(
                       labelText: 'Título del módulo',
                     ),
-                    validator:
-                        (v) =>
-                            (v == null || v.trim().isEmpty)
-                                ? 'Ingrese un título'
-                                : null,
+                    validator: (v) => ValidationUtils.validateRequiredTextWithLetters(
+                      v,
+                      fieldName: 'El título del módulo',
+                    ),
                   ),
                   TextFormField(
                     controller: descCtrl,
                     decoration: const InputDecoration(
-                      labelText: 'Descripción (opcional)',
+                      labelText: 'Descripción del módulo',
+                    ),
+                    maxLines: 3,
+                    validator: (v) => ValidationUtils.validateRequiredTextWithLetters(
+                      v,
+                      fieldName: 'La descripción del módulo',
                     ),
                   ),
                 ],
@@ -645,7 +656,7 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
         id: '',
         courseId: widget.courseId,
         title: titleCtrl.text.trim(),
-        description: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
+        description: descCtrl.text.trim(),
         orderIndex: _modules.length,
       );
       final created = await admin.createModule(module);
@@ -682,16 +693,20 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
                     decoration: const InputDecoration(
                       labelText: 'Título de la lección',
                     ),
-                    validator:
-                        (v) =>
-                            (v == null || v.trim().isEmpty)
-                                ? 'Ingrese un título'
-                                : null,
+                    validator: (v) => ValidationUtils.validateRequiredTextWithLetters(
+                      v,
+                      fieldName: 'El título de la lección',
+                    ),
                   ),
                   TextFormField(
                     controller: objCtrl,
                     decoration: const InputDecoration(
-                      labelText: 'Objetivos (opcional)',
+                      labelText: 'Objetivos de la lección',
+                    ),
+                    maxLines: 3,
+                    validator: (v) => ValidationUtils.validateRequiredTextWithLetters(
+                      v,
+                      fieldName: 'Los objetivos de la lección',
                     ),
                   ),
                 ],

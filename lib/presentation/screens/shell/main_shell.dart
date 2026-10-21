@@ -195,11 +195,15 @@ class _GalleryScreenState extends ConsumerState<_GalleryScreen> {
       );
     }
 
-    // Filter courses by selected audience
+    // Filter courses by selected audience and status (only published for teachers)
+    final publishedCourses = courseProvider.courses
+        .where((c) => c.status == 'published')
+        .toList();
+    
     final filteredCourses =
         _selectedAudience == 'Todos'
-            ? courseProvider.courses
-            : courseProvider.courses
+            ? publishedCourses
+            : publishedCourses
                 .where(
                   (c) =>
                       c.targetAudience.trim().toLowerCase() ==

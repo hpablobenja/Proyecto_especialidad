@@ -23,8 +23,27 @@ class CourseRepositoryImpl implements CourseRepository {
       title: course.title,
       description: course.description,
       targetAudience: course.targetAudience,
+      status: course.status,
     );
     final newCourseModel = await remoteDataSource.createCourse(courseModel);
     return newCourseModel;
+  }
+
+  @override
+  Future<CourseEntity> updateCourse(CourseEntity course) async {
+    final courseModel = CourseModel(
+      id: course.id,
+      title: course.title,
+      description: course.description,
+      targetAudience: course.targetAudience,
+      status: course.status,
+    );
+    final updatedCourseModel = await remoteDataSource.updateCourse(courseModel);
+    return updatedCourseModel;
+  }
+
+  @override
+  Future<bool> updateCourseStatus(String courseId, String status) async {
+    return await remoteDataSource.updateCourseStatus(courseId, status);
   }
 }

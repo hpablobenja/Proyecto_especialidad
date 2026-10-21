@@ -191,3 +191,100 @@ class MockResetPasswordUsecase extends _i1.Mock
           )
           as _i5.Future<void>);
 }
+
+/// A class which mocks [AuthRepository].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockAuthRepository extends _i1.Mock implements _i2.AuthRepository {
+  MockAuthRepository() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  _i5.Future<_i3.UserEntity> registerWithEmailAndPassword(
+    String? email,
+    String? password,
+    String? name,
+    String? role,
+    String? workArea,
+    String? specialty,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#registerWithEmailAndPassword, [
+              email,
+              password,
+              name,
+              role,
+              workArea,
+              specialty,
+            ]),
+            returnValue: _i5.Future<_i3.UserEntity>.value(
+              _FakeUserEntity_1(
+                this,
+                Invocation.method(#registerWithEmailAndPassword, [
+                  email,
+                  password,
+                  name,
+                  role,
+                  workArea,
+                  specialty,
+                ]),
+              ),
+            ),
+          )
+          as _i5.Future<_i3.UserEntity>);
+
+  @override
+  _i5.Future<_i3.UserEntity> signInWithEmailAndPassword(
+    String? email,
+    String? password,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#signInWithEmailAndPassword, [email, password]),
+            returnValue: _i5.Future<_i3.UserEntity>.value(
+              _FakeUserEntity_1(
+                this,
+                Invocation.method(#signInWithEmailAndPassword, [
+                  email,
+                  password,
+                ]),
+              ),
+            ),
+          )
+          as _i5.Future<_i3.UserEntity>);
+
+  @override
+  _i5.Future<void> signOut() =>
+      (super.noSuchMethod(
+            Invocation.method(#signOut, []),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<_i3.UserEntity?> getCurrentUser() =>
+      (super.noSuchMethod(
+            Invocation.method(#getCurrentUser, []),
+            returnValue: _i5.Future<_i3.UserEntity?>.value(),
+          )
+          as _i5.Future<_i3.UserEntity?>);
+
+  @override
+  _i5.Future<void> updateUser(_i3.UserEntity? user) =>
+      (super.noSuchMethod(
+            Invocation.method(#updateUser, [user]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> resetPassword(String? email) =>
+      (super.noSuchMethod(
+            Invocation.method(#resetPassword, [email]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+}

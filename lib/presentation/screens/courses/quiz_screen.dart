@@ -1,5 +1,7 @@
 // lib/presentation/screens/courses/quiz_screen.dart
 
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,6 +39,13 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     _loadQuiz();
   }
 
+  List<QuestionEntity> _getRandomQuestions(List<QuestionEntity> allQuestions, int count) {
+    final random = Random();
+    final shuffled = List<QuestionEntity>.from(allQuestions);
+    shuffled.shuffle(random);
+    return shuffled.take(count).toList();
+  }
+
   Future<void> _loadQuiz() async {
     setState(() {
       _loading = true;
@@ -63,15 +72,24 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
       final quizData = quizDoc.docs.first.data();
       final questionsData = quizData['questions'] as List? ?? [];
 
-      final questions =
+      final allQuestions =
           questionsData
               .map((q) => QuestionEntity.fromMap(q as Map<String, dynamic>))
               .toList();
 
+      final auth = ref.read(authStateProvider);
+      final isTeacher = auth.currentUser?.role == 'maestro';
+      
+      List<QuestionEntity> questionsToShow;
+      if (isTeacher && allQuestions.length > 5) {
+        questionsToShow = _getRandomQuestions(allQuestions, 5);
+      } else {
+        questionsToShow = allQuestions;
+      }
+
       int? fetchedScore;
       bool hasPrevious = false;
 
-      final auth = ref.read(authStateProvider);
       final progress = ref.read(progressStateProvider);
 
       if (auth.currentUser != null) {
@@ -93,7 +111,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           lessonId: widget.lesson.id,
           courseId: widget.lesson.courseId,
           moduleId: widget.lesson.moduleId,
-          questions: questions,
+          questions: questionsToShow,
         );
         if (hasPrevious) {
           _previousScore = fetchedScore;

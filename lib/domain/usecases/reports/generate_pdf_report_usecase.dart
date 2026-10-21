@@ -91,7 +91,7 @@ class GeneratePdfReportUsecase implements Usecase<List<int>, String> {
         final moduleTitle = moduleData['title'] as String? ?? 'Sin título';
         moduleTitles[course.id]![moduleId] = moduleTitle;
 
-        // Lecciones están ahora en la colección raíz /lecciones
+        // 1. Lecciones en la colección raíz /lecciones
         final lessonsSnapshot = await firestore
             .collection('lecciones')
             .where('courseId', isEqualTo: course.id)
@@ -102,16 +102,35 @@ class GeneratePdfReportUsecase implements Usecase<List<int>, String> {
           lessonTitles[moduleId] = {};
         }
 
-        final sortedLessons = lessonsSnapshot.docs.toList()
-          ..sort((a, b) =>
-              ((a.data()['orderIndex'] as num?) ?? 0)
-                  .compareTo((b.data()['orderIndex'] as num?) ?? 0));
-
-        for (var lessonDoc in sortedLessons) {
+        for (var lessonDoc in lessonsSnapshot.docs) {
           final lessonData = lessonDoc.data();
           final lessonId = lessonDoc.id;
-          final lessonTitle = lessonData['title'] as String? ?? 'Sin título';
+          final lessonTitle = lessonData['title'] as String? ??
+              lessonData['name'] as String? ??
+              lessonData['lessonTitle'] as String? ??
+              'Sin título';
           lessonTitles[moduleId]![lessonId] = lessonTitle;
+        }
+
+        // 2. Fallback a subcolección anidada si no hay en raíz
+        if (lessonTitles[moduleId]!.isEmpty) {
+          final subLessonsSnapshot = await firestore
+              .collection('courses')
+              .doc(course.id)
+              .collection('modules')
+              .doc(moduleId)
+              .collection('lessons')
+              .get();
+
+          for (var lessonDoc in subLessonsSnapshot.docs) {
+            final lessonData = lessonDoc.data();
+            final lessonId = lessonDoc.id;
+            final lessonTitle = lessonData['title'] as String? ??
+                lessonData['name'] as String? ??
+                lessonData['lessonTitle'] as String? ??
+                'Sin título';
+            lessonTitles[moduleId]![lessonId] = lessonTitle;
+          }
         }
       }
     }

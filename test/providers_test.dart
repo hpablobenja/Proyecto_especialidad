@@ -5,6 +5,8 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:redmaestra1/core/services/session_tracking_service.dart';
+import 'package:redmaestra1/domain/repositories/auth_repository.dart';
 import 'package:redmaestra1/presentation/providers/auth_provider.dart';
 import 'package:redmaestra1/presentation/providers/theme_provider.dart';
 import 'package:redmaestra1/presentation/providers/connectivity_provider.dart';
@@ -21,6 +23,7 @@ import 'package:redmaestra1/domain/entities/user_entity.dart';
   GetCurrentUserUsecase,
   UpdateUserUsecase,
   ResetPasswordUsecase,
+  AuthRepository,
 ])
 import 'providers_test.mocks.dart';
 
@@ -37,18 +40,23 @@ void main() {
     late MockGetCurrentUserUsecase mockGetCurrentUserUsecase;
     late MockUpdateUserUsecase mockUpdateUserUsecase;
     late MockResetPasswordUsecase mockResetPasswordUsecase;
+    late MockAuthRepository mockAuthRepository;
     late AuthProvider authProvider;
 
     setUp(() {
       SharedPreferences.setMockInitialValues({});
       FlutterSecureStorage.setMockInitialValues({});
+      SessionTrackingService().dispose();
 
       mockLoginUsecase = MockLoginUsecase();
       mockRegisterUsecase = MockRegisterUsecase();
       mockGetCurrentUserUsecase = MockGetCurrentUserUsecase();
       mockUpdateUserUsecase = MockUpdateUserUsecase();
       mockResetPasswordUsecase = MockResetPasswordUsecase();
+      mockAuthRepository = MockAuthRepository();
 
+      when(mockLoginUsecase.repository).thenReturn(mockAuthRepository);
+      when(mockAuthRepository.signOut()).thenAnswer((_) async {});
       when(mockGetCurrentUserUsecase.call(any)).thenAnswer((_) async => null);
 
       authProvider = AuthProvider(

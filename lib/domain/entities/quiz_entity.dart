@@ -8,7 +8,7 @@ class QuizEntity extends Equatable {
   final String lessonId;
   final String courseId;
   final String moduleId;
-  final List<QuestionEntity> questions; // Máximo 5 preguntas
+  final List<QuestionEntity> questions; // Banco de preguntas (máximo 20 para admin, se muestran 5 aleatorias a maestros)
 
   const QuizEntity({
     required this.id,

@@ -18,6 +18,7 @@ class CreateCourseUsecase implements Usecase<CourseEntity, CreateCourseParams> {
       title: params.title,
       description: params.description,
       targetAudience: params.targetAudience,
+      status: 'draft', // Los cursos se crean como borrador por defecto
     );
     return await repository.createCourse(newCourse);
   }

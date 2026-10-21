@@ -8,6 +8,7 @@ class CourseEntity extends Equatable {
   final String description;
   final String? thumbnailUrl;
   final String targetAudience;
+  final String status; // 'draft' o 'published'
 
   const CourseEntity({
     required this.id,
@@ -15,10 +16,11 @@ class CourseEntity extends Equatable {
     required this.description,
     this.thumbnailUrl,
     required this.targetAudience,
+    this.status = 'draft',
   });
 
   @override
-  List<Object?> get props => [id, title, description, thumbnailUrl, targetAudience];
+  List<Object?> get props => [id, title, description, thumbnailUrl, targetAudience, status];
 
   CourseEntity copyWith({
     String? id,
@@ -26,6 +28,7 @@ class CourseEntity extends Equatable {
     String? description,
     String? thumbnailUrl,
     String? targetAudience,
+    String? status,
   }) {
     return CourseEntity(
       id: id ?? this.id,
@@ -33,6 +36,7 @@ class CourseEntity extends Equatable {
       description: description ?? this.description,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
       targetAudience: targetAudience ?? this.targetAudience,
+      status: status ?? this.status,
     );
   }
 }

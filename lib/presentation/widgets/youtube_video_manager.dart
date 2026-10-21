@@ -85,8 +85,16 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
     return null;
   }
 
+  String _formatDuration(Duration d) {
+    final minutes = d.inMinutes;
+    final seconds = d.inSeconds % 60;
+    return '$minutes:${seconds.toString().padLeft(2, '0')} min';
+  }
+
   Future<void> _addVideo() async {
     final urlCtrl = TextEditingController();
+    final durationMinutesCtrl = TextEditingController();
+    final durationSecondsCtrl = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
     final ok = await showDialog<bool>(
@@ -96,17 +104,94 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
             title: const Text('Agregar video de YouTube'),
             content: Form(
               key: formKey,
-              child: TextFormField(
-                controller: urlCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'URL de YouTube',
-                  hintText: 'https://youtu.be/XXXXXXXXXXX',
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextFormField(
+                      controller: urlCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'URL de YouTube *',
+                        hintText: 'https://youtu.be/XXXXXXXXXXX',
+                      ),
+                      validator: (v) {
+                        final id = v == null ? null : _extractVideoIdFromUrl(v);
+                        if (id == null) return 'Ingrese una URL válida de YouTube';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Duración del video (máximo 16:00 min):',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: durationMinutesCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Minutos *',
+                              hintText: '0 - 16',
+                              border: OutlineInputBorder(),
+                            ),
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) {
+                                return 'Obligatorio';
+                              }
+                              final mins = int.tryParse(v.trim());
+                              if (mins == null || mins < 0) {
+                                return 'Inválido';
+                              }
+                              if (mins > 16) {
+                                return 'Máx 16';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextFormField(
+                            controller: durationSecondsCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Segundos',
+                              hintText: '0 - 59',
+                              border: OutlineInputBorder(),
+                            ),
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) return null;
+                              final secs = int.tryParse(v.trim());
+                              if (secs == null || secs < 0 || secs >= 60) {
+                                return '0-59';
+                              }
+                              final mins = int.tryParse(durationMinutesCtrl.text.trim()) ?? 0;
+                              if (mins == 16 && secs > 0) {
+                                return 'Excede 16m';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Nota: Por política de la plataforma, ningún video de lección debe superar los 16 minutos.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
                 ),
-                validator: (v) {
-                  final id = v == null ? null : _extractVideoIdFromUrl(v);
-                  if (id == null) return 'Ingrese una URL válida de YouTube';
-                  return null;
-                },
               ),
             ),
             actions: [
@@ -117,6 +202,18 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
               ElevatedButton(
                 onPressed: () {
                   if (formKey.currentState!.validate()) {
+                    final mins = int.tryParse(durationMinutesCtrl.text.trim()) ?? 0;
+                    final secs = int.tryParse(durationSecondsCtrl.text.trim()) ?? 0;
+                    final totalSeconds = (mins * 60) + secs;
+                    if (totalSeconds > 16 * 60) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('El video no debe superar los 16 minutos de duración'),
+                          backgroundColor: AppColors.errorColor,
+                        ),
+                      );
+                      return;
+                    }
                     Navigator.pop(context, true);
                   }
                 },
@@ -140,6 +237,21 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
       return;
     }
 
+    final mins = int.tryParse(durationMinutesCtrl.text.trim()) ?? 0;
+    final secs = int.tryParse(durationSecondsCtrl.text.trim()) ?? 0;
+    final totalDuration = Duration(minutes: mins, seconds: secs);
+
+    if (totalDuration > const Duration(minutes: 16)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('El video no puede superar los 16 minutos de duración.'),
+          backgroundColor: AppColors.errorColor,
+        ),
+      );
+      return;
+    }
+
     try {
       final media = MediaResource(
         id: 'youtube:$id',
@@ -147,8 +259,12 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
         filename: 'YouTube $id',
         mimeType: 'video/youtube',
         sizeBytes: 0,
-        duration: null,
-        metadata: {'provider': 'youtube', 'videoId': id},
+        duration: totalDuration,
+        metadata: {
+          'provider': 'youtube',
+          'videoId': id,
+          'durationSeconds': totalDuration.inSeconds,
+        },
       );
 
       final updated = LessonEntity(
@@ -239,6 +355,19 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
 
   Future<void> _editVideo(MediaResource video) async {
     final urlCtrl = TextEditingController(text: video.url);
+    final Map<String, dynamic>? meta = video.metadata;
+    final metaDurationSecs = meta != null ? (meta['durationSeconds'] as num?)?.toInt() : null;
+    final initialMinutes = video.duration?.inMinutes ?? (metaDurationSecs != null ? (metaDurationSecs / 60).floor() : null);
+    final initialSeconds = video.duration != null
+        ? (video.duration!.inSeconds % 60)
+        : (metaDurationSecs != null ? (metaDurationSecs % 60) : 0);
+    
+    final durationMinutesCtrl = TextEditingController(
+      text: initialMinutes != null ? initialMinutes.toString() : '',
+    );
+    final durationSecondsCtrl = TextEditingController(
+      text: initialSeconds > 0 ? initialSeconds.toString() : '',
+    );
     final formKey = GlobalKey<FormState>();
 
     final ok = await showDialog<bool>(
@@ -248,17 +377,94 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
             title: const Text('Editar video de YouTube'),
             content: Form(
               key: formKey,
-              child: TextFormField(
-                controller: urlCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'URL de YouTube',
-                  hintText: 'https://youtu.be/XXXXXXXXXXX',
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextFormField(
+                      controller: urlCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'URL de YouTube *',
+                        hintText: 'https://youtu.be/XXXXXXXXXXX',
+                      ),
+                      validator: (v) {
+                        final id = v == null ? null : _extractVideoIdFromUrl(v);
+                        if (id == null) return 'Ingrese una URL válida de YouTube';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Duración del video (máximo 16:00 min):',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: durationMinutesCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Minutos *',
+                              hintText: '0 - 16',
+                              border: OutlineInputBorder(),
+                            ),
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) {
+                                return 'Obligatorio';
+                              }
+                              final mins = int.tryParse(v.trim());
+                              if (mins == null || mins < 0) {
+                                return 'Inválido';
+                              }
+                              if (mins > 16) {
+                                return 'Máx 16';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextFormField(
+                            controller: durationSecondsCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Segundos',
+                              hintText: '0 - 59',
+                              border: OutlineInputBorder(),
+                            ),
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) return null;
+                              final secs = int.tryParse(v.trim());
+                              if (secs == null || secs < 0 || secs >= 60) {
+                                return '0-59';
+                              }
+                              final mins = int.tryParse(durationMinutesCtrl.text.trim()) ?? 0;
+                              if (mins == 16 && secs > 0) {
+                                return 'Excede 16m';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Nota: Por política de la plataforma, ningún video de lección debe superar los 16 minutos.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
                 ),
-                validator: (v) {
-                  final id = v == null ? null : _extractVideoIdFromUrl(v);
-                  if (id == null) return 'Ingrese una URL válida de YouTube';
-                  return null;
-                },
               ),
             ),
             actions: [
@@ -269,6 +475,18 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
               ElevatedButton(
                 onPressed: () {
                   if (formKey.currentState!.validate()) {
+                    final mins = int.tryParse(durationMinutesCtrl.text.trim()) ?? 0;
+                    final secs = int.tryParse(durationSecondsCtrl.text.trim()) ?? 0;
+                    final totalSeconds = (mins * 60) + secs;
+                    if (totalSeconds > 16 * 60) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('El video no debe superar los 16 minutos de duración'),
+                          backgroundColor: AppColors.errorColor,
+                        ),
+                      );
+                      return;
+                    }
                     Navigator.pop(context, true);
                   }
                 },
@@ -292,6 +510,21 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
       return;
     }
 
+    final mins = int.tryParse(durationMinutesCtrl.text.trim()) ?? 0;
+    final secs = int.tryParse(durationSecondsCtrl.text.trim()) ?? 0;
+    final totalDuration = Duration(minutes: mins, seconds: secs);
+
+    if (totalDuration > const Duration(minutes: 16)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('El video no puede superar los 16 minutos de duración.'),
+          backgroundColor: AppColors.errorColor,
+        ),
+      );
+      return;
+    }
+
     try {
       final updatedMedia = MediaResource(
         id: 'youtube:$id',
@@ -299,8 +532,12 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
         filename: 'YouTube $id',
         mimeType: 'video/youtube',
         sizeBytes: 0,
-        duration: null,
-        metadata: {'provider': 'youtube', 'videoId': id},
+        duration: totalDuration,
+        metadata: {
+          'provider': 'youtube',
+          'videoId': id,
+          'durationSeconds': totalDuration.inSeconds,
+        },
       );
 
       final updated = LessonEntity(
@@ -398,6 +635,20 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
                         child: YouTubePlayerWidget(
                           videoId: videoId,
                           autoPlay: false,
+                          onDurationLoaded: (detectedDuration) {
+                            if (detectedDuration > const Duration(minutes: 16)) {
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Atención: El video supera los 16 minutos permitidos (${_formatDuration(detectedDuration)}). Debe reemplazarlo.',
+                                  ),
+                                  backgroundColor: AppColors.errorColor,
+                                  duration: const Duration(seconds: 5),
+                                ),
+                              );
+                            }
+                          },
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -410,11 +661,48 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  video.filename,
-                                  style: AppStyles.bodyText1.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        video.filename,
+                                        style: AppStyles.bodyText1.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    if (video.duration != null) ...[
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: video.duration! > const Duration(minutes: 16)
+                                              ? AppColors.errorColor.withValues(alpha: 0.15)
+                                              : AppColors.primaryColor.withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(
+                                            color: video.duration! > const Duration(minutes: 16)
+                                                ? AppColors.errorColor
+                                                : AppColors.primaryColor,
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          _formatDuration(video.duration!),
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color: video.duration! > const Duration(minutes: 16)
+                                                ? AppColors.errorColor
+                                                : AppColors.primaryColor,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
                                 ),
                                 const SizedBox(height: 4),
                                 Text(

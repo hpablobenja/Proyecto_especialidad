@@ -11,7 +11,7 @@ class SessionTrackingService {
   factory SessionTrackingService() => _instance;
   SessionTrackingService._internal();
 
-  final DataUserRepository _dataUserRepository = DataUserRepository();
+  late final DataUserRepository _dataUserRepository = DataUserRepository();
   Timer? _sessionTimer;
   bool _isSessionActive = false;
   int _currentSessionMinutes = 0;

@@ -80,6 +80,7 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
     'title': c.title,
     'description': c.description,
     'targetAudience': c.targetAudience,
+    'status': c.status,
   };
 
   CourseEntity _courseFromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -89,6 +90,7 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
       title: (d['title'] ?? '') as String,
       description: (d['description'] ?? '') as String,
       targetAudience: (d['targetAudience'] ?? 'Ciencias Naturales') as String,
+      status: (d['status'] ?? 'draft') as String,
     );
   }
 

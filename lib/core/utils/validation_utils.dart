@@ -21,4 +21,18 @@ class ValidationUtils {
     }
     return null;
   }
+
+  /// Valida que el texto no esté vacío y contenga al menos una letra (no solo números o símbolos)
+  static String? validateRequiredTextWithLetters(String? value, {String fieldName = 'Este campo'}) {
+    if (value == null || value.trim().isEmpty) {
+      return '$fieldName es obligatorio.';
+    }
+    final trimmed = value.trim();
+    // Verifica si contiene al menos una letra (incluye tildes y caracteres en español)
+    final hasLetters = RegExp(r'[a-zA-ZáéíóúÁÉÍÓÚñÑ]').hasMatch(trimmed);
+    if (!hasLetters) {
+      return '$fieldName debe contener letras, no solo números o símbolos.';
+    }
+    return null;
+  }
 }

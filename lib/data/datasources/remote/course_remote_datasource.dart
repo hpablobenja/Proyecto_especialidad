@@ -7,6 +7,8 @@ import '../../models/course_model.dart';
 abstract class CourseRemoteDataSource {
   Future<List<CourseModel>> getCourses();
   Future<CourseModel> createCourse(CourseModel course);
+  Future<CourseModel> updateCourse(CourseModel course);
+  Future<bool> updateCourseStatus(String courseId, String status);
   // Futuras implementaciones: editar, eliminar, buscar, etc.
 }
 
@@ -26,6 +28,7 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
         description: (data['description'] ?? '') as String,
         targetAudience:
             (data['targetAudience'] ?? 'Ciencias Naturales') as String,
+        status: (data['status'] ?? 'draft') as String,
       );
     }).toList();
   }
@@ -36,5 +39,21 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
     final newCourse = course.copyWith(id: docRef.id);
     await docRef.set(newCourse.toMap());
     return newCourse;
+  }
+
+  @override
+  Future<CourseModel> updateCourse(CourseModel course) async {
+    await firestore.collection('courses').doc(course.id).update(course.toMap());
+    return course;
+  }
+
+  @override
+  Future<bool> updateCourseStatus(String courseId, String status) async {
+    try {
+      await firestore.collection('courses').doc(courseId).update({'status': status});
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 }

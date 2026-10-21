@@ -7,12 +7,14 @@ class YouTubePlayerWidget extends StatefulWidget {
   final String videoId;
   final bool autoPlay;
   final VoidCallback? onEnded;
+  final ValueChanged<Duration>? onDurationLoaded;
 
   const YouTubePlayerWidget({
     super.key,
     required this.videoId,
     this.autoPlay = false,
     this.onEnded,
+    this.onDurationLoaded,
   });
 
   @override
@@ -22,6 +24,7 @@ class YouTubePlayerWidget extends StatefulWidget {
 class _YouTubePlayerWidgetState extends State<YouTubePlayerWidget> {
   late final YoutubePlayerController _controller;
   late final bool _isValidId;
+  bool _durationEmitted = false;
 
   @override
   void initState() {
@@ -44,8 +47,24 @@ class _YouTubePlayerWidgetState extends State<YouTubePlayerWidget> {
   }
 
   void _handlePlayerState() {
+    if (!_durationEmitted && _controller.metadata.duration > Duration.zero) {
+      _durationEmitted = true;
+      widget.onDurationLoaded?.call(_controller.metadata.duration);
+    }
     if (_controller.value.playerState == PlayerState.ended) {
       widget.onEnded?.call();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant YouTubePlayerWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.videoId != widget.videoId) {
+      _durationEmitted = false;
+      _isValidId = RegExp(r'^[A-Za-z0-9_-]{11}$').hasMatch(widget.videoId);
+      if (_isValidId) {
+        _controller.load(widget.videoId);
+      }
     }
   }
 
