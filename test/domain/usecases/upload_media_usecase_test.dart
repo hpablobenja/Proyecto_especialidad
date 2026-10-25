@@ -144,7 +144,7 @@ void main() {
 
       await usecase(params);
 
-      expect(mockRepository.lastLessonId, 'lessonId');
+      expect(mockRepository.lastLessonId, 'lesson_1');
     });
 
     test('UploadMediaUsecase calls repository with correct request', () async {

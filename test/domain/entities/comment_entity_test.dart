@@ -98,7 +98,7 @@ void main() {
       );
 
       final props = comment.props;
-      expect(props.length, 10);
+      expect(props.length, 9);
       expect(props, contains('comment_1'));
       expect(props, contains('course_1'));
       expect(props, contains('module_1'));

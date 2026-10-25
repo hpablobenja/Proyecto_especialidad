@@ -66,7 +66,18 @@ class CommentsProvider extends ChangeNotifier {
         createdAt: DateTime.now(),
       );
       final created = await addCommentUsecase.call(c);
-      _items = [created, ..._items];
+      final stored = CommentEntity(
+        id: created.id,
+        courseId: created.courseId,
+        moduleId: created.moduleId,
+        lessonId: created.lessonId,
+        userId: created.userId,
+        userName: created.userName,
+        text: c.text,
+        createdAt: created.createdAt,
+        updatedAt: created.updatedAt,
+      );
+      _items = [stored, ..._items];
       notifyListeners();
       return true;
     } catch (e) {

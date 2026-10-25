@@ -22,11 +22,14 @@ class CourseEntity extends Equatable {
   @override
   List<Object?> get props => [id, title, description, thumbnailUrl, targetAudience, status];
 
+  /// Sentinel for [copyWith] when [thumbnailUrl] should not be changed.
+  static const Object copyWithUnset = Object();
+
   CourseEntity copyWith({
     String? id,
     String? title,
     String? description,
-    String? thumbnailUrl,
+    Object? thumbnailUrl = copyWithUnset,
     String? targetAudience,
     String? status,
   }) {
@@ -34,7 +37,9 @@ class CourseEntity extends Equatable {
       id: id ?? this.id,
       title: title ?? this.title,
       description: description ?? this.description,
-      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      thumbnailUrl: identical(thumbnailUrl, copyWithUnset)
+          ? this.thumbnailUrl
+          : thumbnailUrl as String?,
       targetAudience: targetAudience ?? this.targetAudience,
       status: status ?? this.status,
     );

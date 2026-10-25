@@ -88,7 +88,7 @@ void main() {
       );
 
       final props = lesson.props;
-      expect(props.length, 10);
+      expect(props.length, 11);
       expect(props, contains('lesson_1'));
       expect(props, contains('course_1'));
       expect(props, contains('module_1'));

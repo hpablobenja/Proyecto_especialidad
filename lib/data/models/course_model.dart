@@ -48,7 +48,7 @@ class CourseModel extends CourseEntity {
     String? id,
     String? title,
     String? description,
-    String? thumbnailUrl,
+    Object? thumbnailUrl = CourseEntity.copyWithUnset,
     String? targetAudience,
     String? status,
   }) {
@@ -56,7 +56,9 @@ class CourseModel extends CourseEntity {
       id: id ?? this.id,
       title: title ?? this.title,
       description: description ?? this.description,
-      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      thumbnailUrl: identical(thumbnailUrl, CourseEntity.copyWithUnset)
+          ? this.thumbnailUrl
+          : thumbnailUrl as String?,
       targetAudience: targetAudience ?? this.targetAudience,
       status: status ?? this.status,
     );
