@@ -12,7 +12,7 @@ import 'package:redmaestra1/presentation/providers/auth_provider.dart';
 import 'package:redmaestra1/presentation/screens/auth/login_screen.dart';
 import 'package:redmaestra1/domain/entities/user_entity.dart';
 
-import 'providers_test.mocks.dart';
+import '../providers/providers_test.mocks.dart';
 
 void main() {
   setUpAll(() {

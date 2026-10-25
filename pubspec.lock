@@ -406,6 +406,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_coverage_report:
+    dependency: "direct dev"
+    description:
+      name: flutter_coverage_report
+      sha256: e21aeed280aa4746d24b53e03d1c2df9eb49d0680528bedc384be077e9e8b0ba
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.1"
   flutter_inappwebview:
     dependency: transitive
     description:
