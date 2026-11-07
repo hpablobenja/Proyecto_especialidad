@@ -25,7 +25,7 @@ class DataUserModel {
 
   factory DataUserModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    
+
     // Safely parse category progress to handle ints stored in Firestore as doubles
     Map<String, double> parsedCategoryProgress = {
       'Ciencias Sociales': 0.0,
@@ -46,18 +46,23 @@ class DataUserModel {
       userId: doc.id,
       currentSessionMinutes: data['currentSessionMinutes'] ?? 0,
       totalSessionMinutes: data['totalSessionMinutes'] ?? 0,
-      sessionStartTime: data['sessionStartTime'] != null 
-          ? (data['sessionStartTime'] as Timestamp).toDate() 
-          : null,
-      lastSessionEnd: data['lastSessionEnd'] != null
-          ? (data['lastSessionEnd'] as Timestamp).toDate()
-          : DateTime.now(),
+      sessionStartTime:
+          data['sessionStartTime'] != null
+              ? (data['sessionStartTime'] as Timestamp).toDate()
+              : null,
+      lastSessionEnd:
+          data['lastSessionEnd'] != null
+              ? (data['lastSessionEnd'] as Timestamp).toDate()
+              : DateTime.now(),
       categoryProgress: parsedCategoryProgress,
       overallProgress: (data['overallProgress'] as num?)?.toDouble() ?? 0.0,
-      unlockedAchievements: List<String>.from(data['unlockedAchievements'] ?? []),
-      updatedAt: data['updatedAt'] != null 
-          ? (data['updatedAt'] as Timestamp).toDate() 
-          : DateTime.now(),
+      unlockedAchievements: List<String>.from(
+        data['unlockedAchievements'] ?? [],
+      ),
+      updatedAt:
+          data['updatedAt'] != null
+              ? (data['updatedAt'] as Timestamp).toDate()
+              : DateTime.now(),
     );
   }
 
@@ -66,7 +71,8 @@ class DataUserModel {
       'userId': userId,
       'currentSessionMinutes': currentSessionMinutes,
       'totalSessionMinutes': totalSessionMinutes,
-      if (sessionStartTime != null) 'sessionStartTime': Timestamp.fromDate(sessionStartTime!),
+      if (sessionStartTime != null)
+        'sessionStartTime': Timestamp.fromDate(sessionStartTime!),
       'lastSessionEnd': Timestamp.fromDate(lastSessionEnd),
       'categoryProgress': categoryProgress,
       'overallProgress': overallProgress,
@@ -88,7 +94,8 @@ class DataUserModel {
   }) {
     return DataUserModel(
       userId: userId ?? this.userId,
-      currentSessionMinutes: currentSessionMinutes ?? this.currentSessionMinutes,
+      currentSessionMinutes:
+          currentSessionMinutes ?? this.currentSessionMinutes,
       totalSessionMinutes: totalSessionMinutes ?? this.totalSessionMinutes,
       sessionStartTime: sessionStartTime ?? this.sessionStartTime,
       lastSessionEnd: lastSessionEnd ?? this.lastSessionEnd,
@@ -111,7 +118,8 @@ class DataUserModel {
 
   // Obtener tiempo de sesión actual formateado
   String get currentSessionFormatted => formatMinutes(currentSessionMinutes);
-  
+
   // Obtener tiempo total formateado (incluye el tiempo de la sesión actual para ser exacto en tiempo real)
-  String get totalSessionFormatted => formatMinutes(totalSessionMinutes + currentSessionMinutes);
+  String get totalSessionFormatted =>
+      formatMinutes(totalSessionMinutes + currentSessionMinutes);
 }

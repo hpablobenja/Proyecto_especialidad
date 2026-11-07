@@ -40,10 +40,16 @@ class MockContentRepository implements ContentRepository {
   Future<void> deleteModule(String courseId, String moduleId) async {}
 
   @override
-  Future<void> reorderModules(String courseId, List<String> orderedModuleIds) async {}
+  Future<void> reorderModules(
+    String courseId,
+    List<String> orderedModuleIds,
+  ) async {}
 
   @override
-  Future<List<LessonEntity>> listLessons(String courseId, String moduleId) async => [];
+  Future<List<LessonEntity>> listLessons(
+    String courseId,
+    String moduleId,
+  ) async => [];
 
   @override
   Future<LessonEntity> createLesson(LessonEntity lesson) async => lesson;
@@ -52,41 +58,69 @@ class MockContentRepository implements ContentRepository {
   Future<void> updateLesson(LessonEntity lesson) async {}
 
   @override
-  Future<void> deleteLesson(String courseId, String moduleId, String lessonId) async {}
+  Future<void> deleteLesson(
+    String courseId,
+    String moduleId,
+    String lessonId,
+  ) async {}
 
   @override
-  Future<void> reorderLessons(String courseId, String moduleId, List<String> orderedLessonIds) async {}
+  Future<void> reorderLessons(
+    String courseId,
+    String moduleId,
+    List<String> orderedLessonIds,
+  ) async {}
 
   @override
-  Future<MediaResource> uploadMedia({required String courseId, required String? moduleId, required String? lessonId, required MediaUploadRequest request}) async {
+  Future<MediaResource> uploadMedia({
+    required String courseId,
+    required String? moduleId,
+    required String? lessonId,
+    required MediaUploadRequest request,
+  }) async {
     lastCourseId = courseId;
     lastModuleId = moduleId;
     lastLessonId = lessonId;
     lastRequest = request;
-    
+
     if (errorToThrow != null) {
       throw errorToThrow!;
     }
-    return mediaToReturn ?? MediaResource(
-      id: 'media_1',
-      url: 'https://example.com/file',
-      filename: request.filename,
-      mimeType: request.mimeType,
-      sizeBytes: request.bytes.length,
-    );
+    return mediaToReturn ??
+        MediaResource(
+          id: 'media_1',
+          url: 'https://example.com/file',
+          filename: request.filename,
+          mimeType: request.mimeType,
+          sizeBytes: request.bytes.length,
+        );
   }
 
   @override
-  Future<void> deleteMedia({required String courseId, required String? moduleId, required String? lessonId, required String mediaId}) async {}
+  Future<void> deleteMedia({
+    required String courseId,
+    required String? moduleId,
+    required String? lessonId,
+    required String mediaId,
+  }) async {}
 
   @override
-  Future<List<CommentEntity>> listComments({required String courseId, required String moduleId, required String lessonId}) async => [];
+  Future<List<CommentEntity>> listComments({
+    required String courseId,
+    required String moduleId,
+    required String lessonId,
+  }) async => [];
 
   @override
   Future<CommentEntity> addComment(CommentEntity comment) async => comment;
 
   @override
-  Future<void> deleteComment({required String courseId, required String moduleId, required String lessonId, required String commentId}) async {}
+  Future<void> deleteComment({
+    required String courseId,
+    required String moduleId,
+    required String lessonId,
+    required String commentId,
+  }) async {}
 }
 
 void main() {
@@ -153,10 +187,7 @@ void main() {
         mimeType: 'application/pdf',
         bytes: [1, 2, 3],
       );
-      final params = UploadMediaParams(
-        courseId: 'course_1',
-        request: request,
-      );
+      final params = UploadMediaParams(courseId: 'course_1', request: request);
 
       await usecase(params);
 
@@ -189,19 +220,22 @@ void main() {
       expect(result.url, 'https://example.com/file.pdf');
     });
 
-    test('UploadMediaUsecase throws exception when repository throws', () async {
-      mockRepository.errorToThrow = Exception('Upload failed');
-      final params = UploadMediaParams(
-        courseId: 'course_1',
-        request: MediaUploadRequest(
-          filename: 'test.pdf',
-          mimeType: 'application/pdf',
-          bytes: [1, 2, 3],
-        ),
-      );
+    test(
+      'UploadMediaUsecase throws exception when repository throws',
+      () async {
+        mockRepository.errorToThrow = Exception('Upload failed');
+        final params = UploadMediaParams(
+          courseId: 'course_1',
+          request: MediaUploadRequest(
+            filename: 'test.pdf',
+            mimeType: 'application/pdf',
+            bytes: [1, 2, 3],
+          ),
+        );
 
-      expect(() => usecase(params), throwsException);
-    });
+        expect(() => usecase(params), throwsException);
+      },
+    );
 
     test('UploadMediaUsecase handles null moduleId', () async {
       final params = UploadMediaParams(
@@ -274,10 +308,7 @@ void main() {
         mimeType: 'application/pdf',
         bytes: [1, 2, 3],
       );
-      final params = UploadMediaParams(
-        courseId: 'course_1',
-        request: request,
-      );
+      final params = UploadMediaParams(courseId: 'course_1', request: request);
 
       expect(params.moduleId, null);
       expect(params.lessonId, null);

@@ -44,14 +44,15 @@ class ProfileScreen extends ConsumerWidget {
               const SizedBox(height: 20),
               CircleAvatar(
                 radius: 60,
-                backgroundColor: AppColors.primaryColor,
+                backgroundColor: const Color(0xFF1E3A8A),
                 child: const Icon(Icons.person, size: 80, color: Colors.white),
               ),
               const SizedBox(height: 20),
               Text(
                 user.name,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF2D3748),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -67,23 +68,27 @@ class ProfileScreen extends ConsumerWidget {
                 children: [
                   Chip(
                     label: Text(
-                      user.role.toUpperCase(),
+                      user.role,
                       style: AppStyles.buttonText.copyWith(
                         color: Colors.white,
                         fontSize: 12,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     backgroundColor:
-                        user.role == 'admin' ? Colors.red : AppColors.accentColor,
+                        user.role == 'admin'
+                            ? Colors.red
+                            : const Color(0xFF917CDC),
                   ),
                   if (user.workArea != null && user.workArea!.isNotEmpty) ...[
                     const SizedBox(width: 8),
                     Chip(
                       label: Text(
-                        user.workArea!.toUpperCase(),
+                        user.workArea!,
                         style: AppStyles.buttonText.copyWith(
                           color: Colors.white,
                           fontSize: 12,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       backgroundColor: Colors.teal,
@@ -92,26 +97,82 @@ class ProfileScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 30),
-              ListTile(
-                leading: const Icon(
-                  Icons.person,
-                  color: AppColors.primaryColor,
+              Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                title: const Text('Nombre Completo'),
-                subtitle: Text(user.name),
-              ),
-              ListTile(
-                leading: const Icon(Icons.email, color: AppColors.primaryColor),
-                title: const Text('Correo Electrónico'),
-                subtitle: Text(user.email),
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.security,
-                  color: AppColors.primaryColor,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0x0A000000),
+                        blurRadius: 8,
+                        spreadRadius: 0,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: const Icon(
+                          Icons.person,
+                          color: Color(0xFF917CDC),
+                        ),
+                        title: const Text(
+                          'Nombre Completo',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF2D3748),
+                          ),
+                        ),
+                        subtitle: Text(
+                          user.name,
+                          style: const TextStyle(color: Color(0xFF4A5568)),
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      ListTile(
+                        leading: const Icon(
+                          Icons.email,
+                          color: Color(0xFF917CDC),
+                        ),
+                        title: const Text(
+                          'Correo Electrónico',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF2D3748),
+                          ),
+                        ),
+                        subtitle: Text(
+                          user.email,
+                          style: const TextStyle(color: Color(0xFF4A5568)),
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      ListTile(
+                        leading: const Icon(
+                          Icons.work,
+                          color: Color(0xFF917CDC),
+                        ),
+                        title: const Text(
+                          'Especialidad',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF2D3748),
+                          ),
+                        ),
+                        subtitle: Text(
+                          user.specialty ?? 'No especificada',
+                          style: const TextStyle(color: Color(0xFF4A5568)),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                title: const Text('ID de Usuario'),
-                subtitle: Text(user.uid),
               ),
               const SizedBox(height: 40),
               ElevatedButton.icon(
@@ -126,13 +187,13 @@ class ProfileScreen extends ConsumerWidget {
                 icon: const Icon(Icons.edit),
                 label: const Text('Editar Perfil'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.accentColor,
+                  backgroundColor: const Color(0xFF917CDC),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 30,
                     vertical: 15,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
               ),
@@ -224,7 +285,7 @@ class ProfileScreen extends ConsumerWidget {
                     vertical: 15,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
               ),

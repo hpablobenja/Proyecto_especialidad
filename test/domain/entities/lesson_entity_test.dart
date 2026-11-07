@@ -40,12 +40,9 @@ void main() {
         orderIndex: 1,
       );
 
-      expect(lesson.contentDelta, null);
       expect(lesson.objectives, null);
       expect(lesson.media, isEmpty);
-      expect(lesson.downloadableResources, isEmpty);
       expect(lesson.strategies, isEmpty);
-      expect(lesson.dripUnlockAt, null);
     });
 
     test('LessonEntity with equatable works correctly', () {
@@ -97,23 +94,6 @@ void main() {
       expect(props, contains(1));
     });
 
-    test('LessonEntity handles contentDelta', () {
-      final contentDelta = [
-        {'insert': 'Hello World\n'},
-      ];
-      final lesson = LessonEntity(
-        id: 'lesson_1',
-        courseId: 'course_1',
-        moduleId: 'module_1',
-        title: 'Introduction',
-        contentDelta: contentDelta,
-        orderIndex: 1,
-      );
-
-      expect(lesson.contentDelta, isNotNull);
-      expect(lesson.contentDelta?.length, 1);
-    });
-
     test('LessonEntity handles multiple media resources', () {
       final media1 = const MediaResource(
         id: 'media_1',
@@ -141,26 +121,6 @@ void main() {
       expect(lesson.media.length, 2);
     });
 
-    test('LessonEntity handles downloadable resources', () {
-      final resource = const MediaResource(
-        id: 'resource_1',
-        url: 'https://example.com/file.pdf',
-        filename: 'file.pdf',
-        mimeType: 'application/pdf',
-        sizeBytes: 2048000,
-      );
-      final lesson = LessonEntity(
-        id: 'lesson_1',
-        courseId: 'course_1',
-        moduleId: 'module_1',
-        title: 'Introduction',
-        downloadableResources: [resource],
-        orderIndex: 1,
-      );
-
-      expect(lesson.downloadableResources.length, 1);
-    });
-
     test('LessonEntity handles strategies', () {
       final strategies = [
         {'name': 'Quiz', 'description': 'Test your knowledge'},
@@ -176,20 +136,6 @@ void main() {
       );
 
       expect(lesson.strategies.length, 2);
-    });
-
-    test('LessonEntity handles dripUnlockAt', () {
-      final unlockDate = DateTime(2026, 12, 31);
-      final lesson = LessonEntity(
-        id: 'lesson_1',
-        courseId: 'course_1',
-        moduleId: 'module_1',
-        title: 'Introduction',
-        dripUnlockAt: unlockDate,
-        orderIndex: 1,
-      );
-
-      expect(lesson.dripUnlockAt, unlockDate);
     });
 
     test('LessonEntity handles special characters in title', () {

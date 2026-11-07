@@ -117,7 +117,8 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
                       ),
                       validator: (v) {
                         final id = v == null ? null : _extractVideoIdFromUrl(v);
-                        if (id == null) return 'Ingrese una URL válida de YouTube';
+                        if (id == null)
+                          return 'Ingrese una URL válida de YouTube';
                         return null;
                       },
                     ),
@@ -125,8 +126,8 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
                     Text(
                       'Duración del video (máximo 16:00 min):',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -171,7 +172,11 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
                               if (secs == null || secs < 0 || secs >= 60) {
                                 return '0-59';
                               }
-                              final mins = int.tryParse(durationMinutesCtrl.text.trim()) ?? 0;
+                              final mins =
+                                  int.tryParse(
+                                    durationMinutesCtrl.text.trim(),
+                                  ) ??
+                                  0;
                               if (mins == 16 && secs > 0) {
                                 return 'Excede 16m';
                               }
@@ -202,13 +207,17 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
               ElevatedButton(
                 onPressed: () {
                   if (formKey.currentState!.validate()) {
-                    final mins = int.tryParse(durationMinutesCtrl.text.trim()) ?? 0;
-                    final secs = int.tryParse(durationSecondsCtrl.text.trim()) ?? 0;
+                    final mins =
+                        int.tryParse(durationMinutesCtrl.text.trim()) ?? 0;
+                    final secs =
+                        int.tryParse(durationSecondsCtrl.text.trim()) ?? 0;
                     final totalSeconds = (mins * 60) + secs;
                     if (totalSeconds > 16 * 60) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('El video no debe superar los 16 minutos de duración'),
+                          content: Text(
+                            'El video no debe superar los 16 minutos de duración',
+                          ),
                           backgroundColor: AppColors.errorColor,
                         ),
                       );
@@ -245,7 +254,9 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('El video no puede superar los 16 minutos de duración.'),
+          content: Text(
+            'El video no puede superar los 16 minutos de duración.',
+          ),
           backgroundColor: AppColors.errorColor,
         ),
       );
@@ -272,12 +283,9 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
         courseId: widget.lesson.courseId,
         moduleId: widget.lesson.moduleId,
         title: widget.lesson.title,
-        contentDelta: widget.lesson.contentDelta,
         objectives: widget.lesson.objectives,
         media: [...widget.lesson.media, media],
-        downloadableResources: widget.lesson.downloadableResources,
         orderIndex: widget.lesson.orderIndex,
-        dripUnlockAt: widget.lesson.dripUnlockAt,
       );
 
       widget.onLessonUpdated(updated);
@@ -329,12 +337,9 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
         courseId: widget.lesson.courseId,
         moduleId: widget.lesson.moduleId,
         title: widget.lesson.title,
-        contentDelta: widget.lesson.contentDelta,
         objectives: widget.lesson.objectives,
         media: widget.lesson.media.where((m) => m.id != video.id).toList(),
-        downloadableResources: widget.lesson.downloadableResources,
         orderIndex: widget.lesson.orderIndex,
-        dripUnlockAt: widget.lesson.dripUnlockAt,
       );
 
       widget.onLessonUpdated(updated);
@@ -356,12 +361,16 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
   Future<void> _editVideo(MediaResource video) async {
     final urlCtrl = TextEditingController(text: video.url);
     final Map<String, dynamic>? meta = video.metadata;
-    final metaDurationSecs = meta != null ? (meta['durationSeconds'] as num?)?.toInt() : null;
-    final initialMinutes = video.duration?.inMinutes ?? (metaDurationSecs != null ? (metaDurationSecs / 60).floor() : null);
-    final initialSeconds = video.duration != null
-        ? (video.duration!.inSeconds % 60)
-        : (metaDurationSecs != null ? (metaDurationSecs % 60) : 0);
-    
+    final metaDurationSecs =
+        meta != null ? (meta['durationSeconds'] as num?)?.toInt() : null;
+    final initialMinutes =
+        video.duration?.inMinutes ??
+        (metaDurationSecs != null ? (metaDurationSecs / 60).floor() : null);
+    final initialSeconds =
+        video.duration != null
+            ? (video.duration!.inSeconds % 60)
+            : (metaDurationSecs != null ? (metaDurationSecs % 60) : 0);
+
     final durationMinutesCtrl = TextEditingController(
       text: initialMinutes != null ? initialMinutes.toString() : '',
     );
@@ -390,7 +399,8 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
                       ),
                       validator: (v) {
                         final id = v == null ? null : _extractVideoIdFromUrl(v);
-                        if (id == null) return 'Ingrese una URL válida de YouTube';
+                        if (id == null)
+                          return 'Ingrese una URL válida de YouTube';
                         return null;
                       },
                     ),
@@ -398,8 +408,8 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
                     Text(
                       'Duración del video (máximo 16:00 min):',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -444,7 +454,11 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
                               if (secs == null || secs < 0 || secs >= 60) {
                                 return '0-59';
                               }
-                              final mins = int.tryParse(durationMinutesCtrl.text.trim()) ?? 0;
+                              final mins =
+                                  int.tryParse(
+                                    durationMinutesCtrl.text.trim(),
+                                  ) ??
+                                  0;
                               if (mins == 16 && secs > 0) {
                                 return 'Excede 16m';
                               }
@@ -475,13 +489,17 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
               ElevatedButton(
                 onPressed: () {
                   if (formKey.currentState!.validate()) {
-                    final mins = int.tryParse(durationMinutesCtrl.text.trim()) ?? 0;
-                    final secs = int.tryParse(durationSecondsCtrl.text.trim()) ?? 0;
+                    final mins =
+                        int.tryParse(durationMinutesCtrl.text.trim()) ?? 0;
+                    final secs =
+                        int.tryParse(durationSecondsCtrl.text.trim()) ?? 0;
                     final totalSeconds = (mins * 60) + secs;
                     if (totalSeconds > 16 * 60) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('El video no debe superar los 16 minutos de duración'),
+                          content: Text(
+                            'El video no debe superar los 16 minutos de duración',
+                          ),
                           backgroundColor: AppColors.errorColor,
                         ),
                       );
@@ -518,7 +536,9 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('El video no puede superar los 16 minutos de duración.'),
+          content: Text(
+            'El video no puede superar los 16 minutos de duración.',
+          ),
           backgroundColor: AppColors.errorColor,
         ),
       );
@@ -545,15 +565,12 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
         courseId: widget.lesson.courseId,
         moduleId: widget.lesson.moduleId,
         title: widget.lesson.title,
-        contentDelta: widget.lesson.contentDelta,
         objectives: widget.lesson.objectives,
         media:
             widget.lesson.media
                 .map((m) => m.id == video.id ? updatedMedia : m)
                 .toList(),
-        downloadableResources: widget.lesson.downloadableResources,
         orderIndex: widget.lesson.orderIndex,
-        dripUnlockAt: widget.lesson.dripUnlockAt,
       );
 
       widget.onLessonUpdated(updated);
@@ -636,7 +653,8 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
                           videoId: videoId,
                           autoPlay: false,
                           onDurationLoaded: (detectedDuration) {
-                            if (detectedDuration > const Duration(minutes: 16)) {
+                            if (detectedDuration >
+                                const Duration(minutes: 16)) {
                               if (!mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
@@ -679,14 +697,26 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
                                           vertical: 2,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: video.duration! > const Duration(minutes: 16)
-                                              ? AppColors.errorColor.withValues(alpha: 0.15)
-                                              : AppColors.primaryColor.withValues(alpha: 0.15),
-                                          borderRadius: BorderRadius.circular(6),
+                                          color:
+                                              video.duration! >
+                                                      const Duration(
+                                                        minutes: 16,
+                                                      )
+                                                  ? AppColors.errorColor
+                                                      .withValues(alpha: 0.15)
+                                                  : AppColors.primaryColor
+                                                      .withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
                                           border: Border.all(
-                                            color: video.duration! > const Duration(minutes: 16)
-                                                ? AppColors.errorColor
-                                                : AppColors.primaryColor,
+                                            color:
+                                                video.duration! >
+                                                        const Duration(
+                                                          minutes: 16,
+                                                        )
+                                                    ? AppColors.errorColor
+                                                    : AppColors.primaryColor,
                                             width: 1,
                                           ),
                                         ),
@@ -695,9 +725,13 @@ class _YouTubeVideoManagerState extends State<YouTubeVideoManager> {
                                           style: TextStyle(
                                             fontSize: 11,
                                             fontWeight: FontWeight.bold,
-                                            color: video.duration! > const Duration(minutes: 16)
-                                                ? AppColors.errorColor
-                                                : AppColors.primaryColor,
+                                            color:
+                                                video.duration! >
+                                                        const Duration(
+                                                          minutes: 16,
+                                                        )
+                                                    ? AppColors.errorColor
+                                                    : AppColors.primaryColor,
                                           ),
                                         ),
                                       ),

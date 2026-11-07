@@ -26,56 +26,50 @@ service cloud.firestore {
     }
 
     match /courses/{courseId} {
-      allow read: if request.auth != null; 
+      allow read, list, get: if request.auth != null; 
       allow write: if request.auth != null && isAdmin();
       
       match /modules/{moduleId} {
-        allow read: if request.auth != null;
+        allow read, list, get: if request.auth != null;
         allow write: if request.auth != null && isAdmin();
-        allow list: if request.auth != null;
-        allow get: if request.auth != null;
-
-        match /lessons/{lessonId} {
-          allow list: if request.auth != null;
-          allow get: if request.auth != null;
-          allow read: if request.auth != null;
-          allow write: if request.auth != null && isAdmin();
-        }
       }
     }
 
-    // Compatibilidad para consultas a nivel raíz
+    // Compatibilidad para consultas a nivel raíz de módulos
     match /modules/{moduleId} {
-      allow read: if request.auth != null;
+      allow read, list, get: if request.auth != null;
       allow write: if request.auth != null && isAdmin();
     }
 
     match /lessons/{lessonId} {
-      allow read: if request.auth != null;
+      allow read, list, get: if request.auth != null;
+      allow write: if request.auth != null && isAdmin();
+      
+      match /comments/{commentId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null 
+                      && isAdminOrMaestro()
+                      && request.resource.data.userId == request.auth.uid;
+        allow update, delete: if request.auth != null 
+                              && (isAdminOrMaestro() || resource.data.userId == request.auth.uid);
+      }
+    }
+
+    // Colección raíz para cuestionarios de las lecciones
+    match /quizzes/{quizId} {
+      allow read, list, get: if request.auth != null;
       allow write: if request.auth != null && isAdmin();
     }
 
-    match /lecciones/{leccionId} {
-      allow read: if request.auth != null;
-      allow create, update: if request.auth != null && isAdmin()
-                            && request.resource.data.keys().hasAll(['courseId', 'moduleId']);
-      allow delete: if request.auth != null && isAdmin();
-    }
-
-    match /quizzes/{quizId} {
-      allow read: if request.auth != null;
-      allow create, update: if request.auth != null && isAdmin()
-                            && request.resource.data.keys().hasAll(['lessonId', 'courseId', 'moduleId']);
-      allow delete: if request.auth != null && isAdmin();
-    }
-
     match /dataUser/{userId} {
-    	allow read: if request.auth != null && isMaestro();
+      allow read: if request.auth != null && isMaestro();
       allow create, update, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
     }
-		match /user_courses/{courseId} {
+
+    match /user_courses/{courseId} {
       allow read, write: if request.auth != null;
     }
+
     match /userProgress/{progressId} {
       allow read, write: if request.auth != null;
       allow list: if request.auth != null && isAdmin();
@@ -89,6 +83,21 @@ service cloud.firestore {
       allow update, delete: if request.auth != null 
                   && (request.auth.uid == resource.data.userId || isAdminOrMaestro());
     }
+
+    // Reglas para tracking de video educativo
+    match /videoProgress/{documentId} {
+      // Permitir leer y listar si el documento pertenece al usuario (o en consultas filtradas por su userId)
+      allow read, list, get: if request.auth != null 
+                              && (resource == null || resource.data.userId == request.auth.uid || isAdmin());
+      // Permitir escribir su propio progreso de video
+      allow write: if request.auth != null 
+                    && (request.resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // Reglas para configuración del sistema (solo admin)
+    match /systemConfig/{configId} {
+      allow read, get: if request.auth != null && isAdmin();
+      allow write, create, update: if request.auth != null && isAdmin();
+    }
   }
 }
-

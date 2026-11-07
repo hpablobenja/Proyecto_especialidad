@@ -3,30 +3,25 @@
 import '../../domain/entities/course_entity.dart';
 
 class CourseModel extends CourseEntity {
-  final String? thumbnailUrl;
-
   const CourseModel({
     required String id,
     required String title,
     required String description,
-    this.thumbnailUrl,
     required String targetAudience,
     String status = 'draft',
   }) : super(
-          id: id,
-          title: title,
-          description: description,
-          thumbnailUrl: thumbnailUrl,
-          targetAudience: targetAudience,
-          status: status,
-        );
+         id: id,
+         title: title,
+         description: description,
+         targetAudience: targetAudience,
+         status: status,
+       );
 
   factory CourseModel.fromMap(Map<String, dynamic> map) {
     return CourseModel(
       id: map['id'] as String,
       title: map['title'] as String,
       description: map['description'] as String,
-      thumbnailUrl: map['thumbnailUrl'] as String?,
       targetAudience: map['targetAudience'] as String? ?? 'Otro(Especificar)',
       status: map['status'] as String? ?? 'draft',
     );
@@ -37,7 +32,6 @@ class CourseModel extends CourseEntity {
       'id': id,
       'title': title,
       'description': description,
-      'thumbnailUrl': thumbnailUrl,
       'targetAudience': targetAudience,
       'status': status,
     };
@@ -48,7 +42,6 @@ class CourseModel extends CourseEntity {
     String? id,
     String? title,
     String? description,
-    Object? thumbnailUrl = CourseEntity.copyWithUnset,
     String? targetAudience,
     String? status,
   }) {
@@ -56,9 +49,6 @@ class CourseModel extends CourseEntity {
       id: id ?? this.id,
       title: title ?? this.title,
       description: description ?? this.description,
-      thumbnailUrl: identical(thumbnailUrl, CourseEntity.copyWithUnset)
-          ? this.thumbnailUrl
-          : thumbnailUrl as String?,
       targetAudience: targetAudience ?? this.targetAudience,
       status: status ?? this.status,
     );

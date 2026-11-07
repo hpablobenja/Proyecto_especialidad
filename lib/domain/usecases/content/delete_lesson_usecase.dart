@@ -7,7 +7,11 @@ class DeleteLessonParams {
   final String courseId;
   final String moduleId;
   final String lessonId;
-  DeleteLessonParams({required this.courseId, required this.moduleId, required this.lessonId});
+  DeleteLessonParams({
+    required this.courseId,
+    required this.moduleId,
+    required this.lessonId,
+  });
 }
 
 class DeleteLessonUsecase implements Usecase<void, DeleteLessonParams> {
@@ -16,6 +20,10 @@ class DeleteLessonUsecase implements Usecase<void, DeleteLessonParams> {
 
   @override
   Future<void> call(DeleteLessonParams params) {
-    return repository.deleteLesson(params.courseId, params.moduleId, params.lessonId);
+    return repository.deleteLesson(
+      params.courseId,
+      params.moduleId,
+      params.lessonId,
+    );
   }
 }

@@ -3,7 +3,11 @@ import 'package:flutter/foundation.dart';
 class LoggerService {
   /// Registra una excepción con contexto sobre dónde ocurrió.
   /// En el futuro, esto se puede integrar con Crashlytics o Sentry.
-  static void logError(String message, dynamic error, [StackTrace? stackTrace]) {
+  static void logError(
+    String message,
+    dynamic error, [
+    StackTrace? stackTrace,
+  ]) {
     if (kDebugMode) {
       print('=========================================');
       print('🚨 ERROR: $message');

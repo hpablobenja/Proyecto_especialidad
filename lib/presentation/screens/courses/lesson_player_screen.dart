@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/entities/lesson_entity.dart';
 import '../../../domain/entities/media_resource.dart';
 import '../../widgets/youtube_player_widget.dart';
+import '../../widgets/video_tracking_widget.dart';
+import '../../widgets/video_download_button.dart';
 import '../../../core/di/riverpod_providers.dart';
 
 class LessonPlayerScreen extends ConsumerStatefulWidget {
@@ -91,16 +93,16 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
       moduleId: widget.lesson.moduleId,
       lessonId: widget.lesson.id,
       userId: user.uid,
-      userName: user.email,
+      userName: user.name ?? user.email,
       text: text,
     );
     if (!mounted) return;
     if (ok) {
       _commentCtrl.clear();
     } else if (comments.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(comments.error!)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(comments.error!)));
     }
   }
 
@@ -109,42 +111,89 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
     final lesson = widget.lesson;
     final cp = ref.watch(commentsStateProvider);
     final auth = ref.watch(authStateProvider);
-    
+
     // Pick first YouTube media
     final ytMedia = lesson.media.firstWhere(
       (m) => m.mimeType == 'video/youtube',
-      orElse: () => lesson.media.isNotEmpty
-          ? lesson.media.first
-          : const MediaResource(
-              id: '',
-              url: '',
-              filename: '',
-              mimeType: '',
-              sizeBytes: 0,
-              duration: null,
-              metadata: <String, dynamic>{},
-            ),
+      orElse:
+          () =>
+              lesson.media.isNotEmpty
+                  ? lesson.media.first
+                  : const MediaResource(
+                    id: '',
+                    url: '',
+                    filename: '',
+                    mimeType: '',
+                    sizeBytes: 0,
+                    duration: null,
+                    metadata: <String, dynamic>{},
+                  ),
     );
 
-    final videoId = ytMedia.mimeType == 'video/youtube'
-        ? _youtubeIdFromMedia(ytMedia)
-        : null;
+    final videoId =
+        ytMedia.mimeType == 'video/youtube'
+            ? _youtubeIdFromMedia(ytMedia)
+            : null;
+
+    final user = auth.currentUser;
+    final totalDurationMs = ytMedia.duration?.inMilliseconds ?? 0;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(lesson.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+        actions: [
+          if (videoId != null && ytMedia.url.isNotEmpty)
+            VideoDownloadButton(
+              videoId: videoId,
+              courseId: lesson.courseId,
+              downloadUrl: ytMedia.url,
+              totalDurationSeconds: (totalDurationMs / 1000).round(),
+            ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (videoId != null)
+            if (videoId != null && user != null)
+              VideoTrackingWidget(
+                videoId: videoId,
+                userId: user.uid,
+                courseId: lesson.courseId,
+                moduleId: lesson.moduleId,
+                lessonId: lesson.id,
+                checkpoints: lesson.checkpoints ?? [],
+                totalDurationMs: totalDurationMs,
+                onLessonCompleted: () {
+                  // Marca video como visto y notifica
+                  ref.read(progressStateProvider).markVideoViewed(
+                    userId: user.uid,
+                    courseId: lesson.courseId,
+                    moduleId: lesson.moduleId,
+                    lessonId: lesson.id,
+                  );
+                  ref.read(progressStateProvider).markAnyLessonViewed();
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Lección vista registrada.')),
+                  );
+                },
+              )
+            else if (videoId != null)
               YouTubePlayerWidget(
                 videoId: videoId,
                 autoPlay: false,
                 onEnded: () {
-                  // Marca visualización y notifica
+                  // Marca video como visto y notifica (fallback sin tracking)
+                  if (user != null) {
+                    ref.read(progressStateProvider).markVideoViewed(
+                      userId: user.uid,
+                      courseId: lesson.courseId,
+                      moduleId: lesson.moduleId,
+                      lessonId: lesson.id,
+                    );
+                  }
                   ref.read(progressStateProvider).markAnyLessonViewed();
                   if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -164,33 +213,35 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
             Text('Comentarios', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             Expanded(
-              child: cp.isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : cp.items.isEmpty
+              child:
+                  cp.isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : cp.items.isEmpty
                       ? const Center(child: Text('Sé el primero en comentar.'))
                       : ListView.separated(
-                          itemCount: cp.items.length,
-                          separatorBuilder: (_, __) => const Divider(height: 8),
-                          itemBuilder: (context, index) {
-                            final c = cp.items[index];
-                            return ListTile(
-                              dense: true,
-                              leading: const Icon(Icons.person_outline),
-                              title: Text(c.userName),
-                              subtitle: Text(c.text),
-                              trailing: Text(
-                                '${c.createdAt.day.toString().padLeft(2, '0')}/${c.createdAt.month.toString().padLeft(2, '0')}/${c.createdAt.year}',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            );
-                          },
-                        ),
+                        itemCount: cp.items.length,
+                        separatorBuilder: (_, __) => const Divider(height: 8),
+                        itemBuilder: (context, index) {
+                          final c = cp.items[index];
+                          return ListTile(
+                            dense: true,
+                            leading: const Icon(Icons.person_outline),
+                            title: Text(c.userName),
+                            subtitle: Text(c.text),
+                            trailing: Text(
+                              '${c.createdAt.day.toString().padLeft(2, '0')}/${c.createdAt.month.toString().padLeft(2, '0')}/${c.createdAt.year}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          );
+                        },
+                      ),
             ),
             const SizedBox(height: 8),
             ValueListenableBuilder<TextEditingValue>(
               valueListenable: _commentCtrl,
               builder: (context, value, _) {
-                final canSend = value.text.trim().isNotEmpty && auth.currentUser != null;
+                final canSend =
+                    value.text.trim().isNotEmpty && auth.currentUser != null;
                 return Row(
                   children: [
                     Expanded(
@@ -202,16 +253,25 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
                           hintText: 'Escribe un comentario...',
                           border: OutlineInputBorder(),
                           isDense: true,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 8),
                     IconButton(
                       icon: const Icon(Icons.send),
-                      color: canSend ? Theme.of(context).colorScheme.primary : Theme.of(context).disabledColor,
+                      color:
+                          canSend
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).disabledColor,
                       onPressed: canSend ? _submitComment : null,
-                      tooltip: auth.currentUser == null ? 'Inicia sesión para comentar' : 'Publicar',
+                      tooltip:
+                          auth.currentUser == null
+                              ? 'Inicia sesión para comentar'
+                              : 'Publicar',
                     ),
                   ],
                 );

@@ -13,11 +13,18 @@ import '../screens/admin/course_management_screen.dart';
 import '../screens/admin/admin_reports_screen.dart';
 import '../screens/courses/courses_list_screen.dart';
 
-class AppDrawer extends ConsumerWidget {
+class AppDrawer extends ConsumerStatefulWidget {
   const AppDrawer({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AppDrawer> createState() => _AppDrawerState();
+}
+
+class _AppDrawerState extends ConsumerState<AppDrawer> {
+  bool _isSigningOut = false;
+
+  @override
+  Widget build(BuildContext context) {
     final auth = ref.watch(authStateProvider);
     final user = auth.currentUser;
 
@@ -130,19 +137,24 @@ class AppDrawer extends ConsumerWidget {
               title: const Text('Cerrar sesión'),
               textColor: Colors.red,
               iconColor: Colors.red,
-              onTap: () async {
-                Navigator.of(context).pop();
-                // Limpiar el estado de cursos iniciados antes de desloguear
-                ref.read(favoritesStateProvider).clear();
-                await ref.read(authStateProvider).signOut();
-                // Ir al login y limpiar la pila
-                if (context.mounted) {
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => LoginScreen()),
-                    (route) => false,
-                  );
-                }
-              },
+              onTap: _isSigningOut
+                  ? null
+                  : () async {
+                      setState(() {
+                        _isSigningOut = true;
+                      });
+                      Navigator.of(context).pop();
+                      // Limpiar el estado de cursos iniciados antes de desloguear
+                      ref.read(favoritesStateProvider).clear();
+                      await ref.read(authStateProvider).signOut();
+                      // Ir al login y limpiar la pila
+                      if (context.mounted) {
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(builder: (_) => LoginScreen()),
+                          (route) => false,
+                        );
+                      }
+                    },
             ),
           ],
         ),

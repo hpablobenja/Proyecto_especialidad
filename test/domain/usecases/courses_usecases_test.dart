@@ -63,8 +63,9 @@ void main() {
         ),
       ];
 
-      when(mockCourseRepository.getCourses())
-          .thenAnswer((_) async => expectedCourses);
+      when(
+        mockCourseRepository.getCourses(),
+      ).thenAnswer((_) async => expectedCourses);
 
       final result = await getCoursesUsecase.call(NoParams());
 
@@ -73,16 +74,19 @@ void main() {
       verify(mockCourseRepository.getCourses());
     });
 
-    test('GetCoursesUsecase retorna lista vacía cuando no hay cursos', () async {
-      final getCoursesUsecase = GetCoursesUsecase(mockCourseRepository);
+    test(
+      'GetCoursesUsecase retorna lista vacía cuando no hay cursos',
+      () async {
+        final getCoursesUsecase = GetCoursesUsecase(mockCourseRepository);
 
-      when(mockCourseRepository.getCourses()).thenAnswer((_) async => []);
+        when(mockCourseRepository.getCourses()).thenAnswer((_) async => []);
 
-      final result = await getCoursesUsecase.call(NoParams());
+        final result = await getCoursesUsecase.call(NoParams());
 
-      expect(result, isEmpty);
-      verify(mockCourseRepository.getCourses());
-    });
+        expect(result, isEmpty);
+        verify(mockCourseRepository.getCourses());
+      },
+    );
   });
 
   group('CreateCourseUsecase Tests', () {
@@ -100,16 +104,17 @@ void main() {
         targetAudience: params.targetAudience,
       );
 
-      when(mockCourseRepository.createCourse(any))
-          .thenAnswer((_) async => createdCourse);
+      when(
+        mockCourseRepository.createCourse(any),
+      ).thenAnswer((_) async => createdCourse);
 
       final result = await createCourseUsecase.call(params);
 
       expect(result.id, createdCourse.id);
       expect(result.title, params.title);
-      final captured = verify(
-        mockCourseRepository.createCourse(captureAny),
-      ).captured.single as CourseEntity;
+      final captured =
+          verify(mockCourseRepository.createCourse(captureAny)).captured.single
+              as CourseEntity;
       expect(captured.id, isEmpty);
       expect(captured.status, 'draft');
     });
@@ -127,48 +132,58 @@ void main() {
       mockProgressQuery = MockMapQuery();
       mockProgressSnapshot = MockMapQuerySnapshot();
 
-      when(mockFirestore.collection('userProgress'))
-          .thenReturn(mockProgressCollection);
       when(
-        mockProgressCollection.where('userId', isEqualTo: anyNamed('isEqualTo')),
+        mockFirestore.collection('userProgress'),
+      ).thenReturn(mockProgressCollection);
+      when(
+        mockProgressCollection.where(
+          'userId',
+          isEqualTo: anyNamed('isEqualTo'),
+        ),
       ).thenReturn(mockProgressQuery);
-      when(mockProgressQuery.get()).thenAnswer((_) async => mockProgressSnapshot);
+      when(
+        mockProgressQuery.get(),
+      ).thenAnswer((_) async => mockProgressSnapshot);
       when(mockProgressSnapshot.docs).thenReturn([]);
     });
 
-    test('GetCourseProgressUsecase retorna progreso vacío sin cursos', () async {
-      final usecase = GetCourseProgressUsecase(
-        mockCourseRepository,
-        firestore: mockFirestore,
-      );
+    test(
+      'GetCourseProgressUsecase retorna progreso vacío sin cursos',
+      () async {
+        final usecase = GetCourseProgressUsecase(
+          mockCourseRepository,
+          firestore: mockFirestore,
+        );
 
-      when(mockCourseRepository.getCourses()).thenAnswer((_) async => []);
+        when(mockCourseRepository.getCourses()).thenAnswer((_) async => []);
 
-      final result = await usecase.call('user_1');
+        final result = await usecase.call('user_1');
 
-      expect(result.completedCourses, isEmpty);
-      expect(result.inProgressCourses, isEmpty);
-      verify(mockCourseRepository.getCourses());
-    });
+        expect(result.completedCourses, isEmpty);
+        expect(result.inProgressCourses, isEmpty);
+        verify(mockCourseRepository.getCourses());
+      },
+    );
 
-    test('GetCourseProgressUsecase retorna vacío cuando no hay progreso', () async {
-      final usecase = GetCourseProgressUsecase(
-        mockCourseRepository,
-        firestore: mockFirestore,
-      );
+    test(
+      'GetCourseProgressUsecase retorna vacío cuando no hay progreso',
+      () async {
+        final usecase = GetCourseProgressUsecase(
+          mockCourseRepository,
+          firestore: mockFirestore,
+        );
 
-      when(mockCourseRepository.getCourses()).thenAnswer(
-        (_) async => [
-          buildCourse(id: 'course_1', title: 'Curso de Flutter'),
-        ],
-      );
+        when(mockCourseRepository.getCourses()).thenAnswer(
+          (_) async => [buildCourse(id: 'course_1', title: 'Curso de Flutter')],
+        );
 
-      final result = await usecase.call('user_1');
+        final result = await usecase.call('user_1');
 
-      expect(result.completedCourses, isEmpty);
-      expect(result.inProgressCourses, isEmpty);
-      verify(mockCourseRepository.getCourses());
-    });
+        expect(result.completedCourses, isEmpty);
+        expect(result.inProgressCourses, isEmpty);
+        verify(mockCourseRepository.getCourses());
+      },
+    );
   });
 
   group('SearchCoursesUsecase Tests', () {
@@ -190,7 +205,9 @@ void main() {
         ),
       ];
 
-      when(mockCourseRepository.getCourses()).thenAnswer((_) async => allCourses);
+      when(
+        mockCourseRepository.getCourses(),
+      ).thenAnswer((_) async => allCourses);
 
       final result = await searchCoursesUsecase.call(searchTerm);
 
@@ -199,26 +216,28 @@ void main() {
       verify(mockCourseRepository.getCourses());
     });
 
-    test('SearchCoursesUsecase retorna lista vacía cuando no hay resultados', () async {
-      final searchCoursesUsecase = SearchCoursesUsecase(mockCourseRepository);
+    test(
+      'SearchCoursesUsecase retorna lista vacía cuando no hay resultados',
+      () async {
+        final searchCoursesUsecase = SearchCoursesUsecase(mockCourseRepository);
 
-      when(mockCourseRepository.getCourses()).thenAnswer(
-        (_) async => [
-          buildCourse(id: 'course_1', title: 'Curso de Dart'),
-        ],
-      );
+        when(mockCourseRepository.getCourses()).thenAnswer(
+          (_) async => [buildCourse(id: 'course_1', title: 'Curso de Dart')],
+        );
 
-      final result = await searchCoursesUsecase.call('TérminoInexistente');
+        final result = await searchCoursesUsecase.call('TérminoInexistente');
 
-      expect(result, isEmpty);
-      verify(mockCourseRepository.getCourses());
-    });
+        expect(result, isEmpty);
+        verify(mockCourseRepository.getCourses());
+      },
+    );
   });
 
   group('RecommendCoursesUsecase Tests', () {
     test('RecommendCoursesUsecase recomienda hasta 3 cursos', () async {
-      final recommendCoursesUsecase =
-          RecommendCoursesUsecase(mockCourseRepository);
+      final recommendCoursesUsecase = RecommendCoursesUsecase(
+        mockCourseRepository,
+      );
       final allCourses = [
         buildCourse(id: 'course_1', title: 'Curso 1'),
         buildCourse(id: 'course_2', title: 'Curso 2'),
@@ -226,7 +245,9 @@ void main() {
         buildCourse(id: 'course_4', title: 'Curso 4'),
       ];
 
-      when(mockCourseRepository.getCourses()).thenAnswer((_) async => allCourses);
+      when(
+        mockCourseRepository.getCourses(),
+      ).thenAnswer((_) async => allCourses);
 
       final result = await recommendCoursesUsecase.call('user_1');
 
@@ -235,16 +256,20 @@ void main() {
       verify(mockCourseRepository.getCourses());
     });
 
-    test('RecommendCoursesUsecase retorna lista vacía cuando no hay cursos', () async {
-      final recommendCoursesUsecase =
-          RecommendCoursesUsecase(mockCourseRepository);
+    test(
+      'RecommendCoursesUsecase retorna lista vacía cuando no hay cursos',
+      () async {
+        final recommendCoursesUsecase = RecommendCoursesUsecase(
+          mockCourseRepository,
+        );
 
-      when(mockCourseRepository.getCourses()).thenAnswer((_) async => []);
+        when(mockCourseRepository.getCourses()).thenAnswer((_) async => []);
 
-      final result = await recommendCoursesUsecase.call('user_1');
+        final result = await recommendCoursesUsecase.call('user_1');
 
-      expect(result, isEmpty);
-      verify(mockCourseRepository.getCourses());
-    });
+        expect(result, isEmpty);
+        verify(mockCourseRepository.getCourses());
+      },
+    );
   });
 }

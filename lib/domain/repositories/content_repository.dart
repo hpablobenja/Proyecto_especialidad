@@ -25,7 +25,11 @@ abstract class ContentRepository {
   Future<LessonEntity> createLesson(LessonEntity lesson);
   Future<void> updateLesson(LessonEntity lesson);
   Future<void> deleteLesson(String courseId, String moduleId, String lessonId);
-  Future<void> reorderLessons(String courseId, String moduleId, List<String> orderedLessonIds);
+  Future<void> reorderLessons(
+    String courseId,
+    String moduleId,
+    List<String> orderedLessonIds,
+  );
 
   // Media uploads
   Future<MediaResource> uploadMedia({

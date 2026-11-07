@@ -23,24 +23,28 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
   bool _isLoadingStats = true;
   bool _isLoadingTeachers = true;
   final ScreenshotController _screenshotController = ScreenshotController();
-  
+
   // Filtro de maestro
   String? _selectedTeacherId;
   List<Map<String, String?>> _teachers = [];
   bool _showIndividualReport = false;
-  
+
   // Estadísticas generales
   int _totalUsers = 0;
   int _usersWithProgress = 0;
   int _totalLessonsCompleted = 0;
-  final Map<String, int> _lessonsByStatus = {'Completado': 0, 'En Curso': 0, 'No Iniciado': 0};
+  final Map<String, int> _lessonsByStatus = {
+    'Completado': 0,
+    'En Curso': 0,
+    'No Iniciado': 0,
+  };
   final Map<String, int> _usersByWorkArea = {'Urbano': 0, 'Rural': 0};
   final Map<String, int> _usersBySpecialty = {};
   final Map<String, int> _lessonsByCourse = {};
   final Map<String, String> _courseNames = {};
   double _completionRate = 0.0;
   int _activeUsersLast7Days = 0;
-  
+
   // Estadísticas individuales del maestro seleccionado
   int _teacherTotalLessons = 0;
   int _teacherCompletedLessons = 0;
@@ -64,23 +68,24 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
     try {
       final firestore = ref.read(firestoreProvider);
       final usersSnapshot = await firestore.collection('users').get();
-      final teachers = usersSnapshot.docs
-          .where((doc) => doc.data()['role'] == 'maestro')
-          .map((doc) {
-            final data = doc.data();
-            return <String, String?>{
-              'uid': doc.id,
-              'name': data['name'] as String? ?? 'Sin nombre',
-              'email': data['email'] as String? ?? '',
-              'workArea': data['workArea'] as String?,
-              'specialty': data['specialty'] as String?,
-            };
-          })
-          .toList();
-      
+      final teachers =
+          usersSnapshot.docs
+              .where((doc) => doc.data()['role'] == 'maestro')
+              .map((doc) {
+                final data = doc.data();
+                return <String, String?>{
+                  'uid': doc.id,
+                  'name': data['name'] as String? ?? 'Sin nombre',
+                  'email': data['email'] as String? ?? '',
+                  'workArea': data['workArea'] as String?,
+                  'specialty': data['specialty'] as String?,
+                };
+              })
+              .toList();
+
       // Ordenar alfabéticamente por nombre
       teachers.sort((a, b) => (a['name'] ?? '').compareTo(b['name'] ?? ''));
-      
+
       setState(() {
         _teachers = teachers;
         _isLoadingTeachers = false;
@@ -99,7 +104,8 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
 
       _courseNames.clear();
       for (var doc in coursesSnapshot.docs) {
-        _courseNames[doc.id] = doc.data()['title'] as String? ?? 'Curso sin nombre';
+        _courseNames[doc.id] =
+            doc.data()['title'] as String? ?? 'Curso sin nombre';
       }
     } catch (_) {
       // Si falla, continuamos con IDs vacíos
@@ -113,22 +119,23 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
 
     try {
       final firestore = ref.read(firestoreProvider);
-      
+
       // Obtener progreso del maestro específico
-      final progressSnapshot = await firestore
-          .collection('userProgress')
-          .where('userId', isEqualTo: teacherId)
-          .get();
-      
+      final progressSnapshot =
+          await firestore
+              .collection('userProgress')
+              .where('userId', isEqualTo: teacherId)
+              .get();
+
       _teacherTotalLessons = progressSnapshot.docs.length;
       _teacherCompletedLessons = 0;
       _teacherInProgressLessons = 0;
       _teacherNotStartedLessons = 0;
-      
+
       for (var doc in progressSnapshot.docs) {
         final data = doc.data();
         final status = data['status'] as String? ?? 'No Iniciado';
-        
+
         if (status == 'completed') {
           _teacherCompletedLessons++;
         } else if (status == 'inProgress') {
@@ -137,12 +144,13 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
           _teacherNotStartedLessons++;
         }
       }
-      
+
       // Calcular porcentaje de progreso
       if (_teacherTotalLessons > 0) {
-        _teacherProgressPercentage = (_teacherCompletedLessons / _teacherTotalLessons) * 100;
+        _teacherProgressPercentage =
+            (_teacherCompletedLessons / _teacherTotalLessons) * 100;
       }
-      
+
       setState(() {
         _isLoadingStats = false;
       });
@@ -160,12 +168,15 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
 
     try {
       final firestore = ref.read(firestoreProvider);
-      
+
       // Obtener todos los usuarios
       final usersSnapshot = await firestore.collection('users').get();
-      final users = usersSnapshot.docs.where((doc) => doc.data()['role'] == 'maestro').toList();
+      final users =
+          usersSnapshot.docs
+              .where((doc) => doc.data()['role'] == 'maestro')
+              .toList();
       _totalUsers = users.length;
-      
+
       // Contar por área de trabajo
       _usersByWorkArea.clear();
       for (var doc in users) {
@@ -174,30 +185,32 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
           _usersByWorkArea[workArea] = (_usersByWorkArea[workArea] ?? 0) + 1;
         }
       }
-      
+
       // Contar por especialidad
       _usersBySpecialty.clear();
       for (var doc in users) {
         final specialty = doc.data()['specialty'] as String?;
         if (specialty != null && specialty.isNotEmpty) {
-          _usersBySpecialty[specialty] = (_usersBySpecialty[specialty] ?? 0) + 1;
+          _usersBySpecialty[specialty] =
+              (_usersBySpecialty[specialty] ?? 0) + 1;
         }
       }
-      
+
       // Obtener progreso de usuarios
       final progressSnapshot = await firestore.collection('userProgress').get();
       _usersWithProgress = progressSnapshot.docs.length;
-      
+
       // Calcular usuarios activos en los últimos 7 días
       final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
-      _activeUsersLast7Days = progressSnapshot.docs.where((doc) {
-        final updatedAt = doc.data()['updatedAt'] as Timestamp?;
-        if (updatedAt != null) {
-          return updatedAt.toDate().isAfter(sevenDaysAgo);
-        }
-        return false;
-      }).length;
-      
+      _activeUsersLast7Days =
+          progressSnapshot.docs.where((doc) {
+            final updatedAt = doc.data()['updatedAt'] as Timestamp?;
+            if (updatedAt != null) {
+              return updatedAt.toDate().isAfter(sevenDaysAgo);
+            }
+            return false;
+          }).length;
+
       // Contar lecciones por estado y por curso
       _lessonsByStatus.clear();
       _lessonsByCourse.clear();
@@ -205,7 +218,7 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
         final data = doc.data();
         final status = data['status'] as String? ?? 'No Iniciado';
         final courseId = data['courseId'] as String?;
-        
+
         // Mapear el status de Firestore a las claves del mapa
         String mappedStatus;
         switch (status) {
@@ -218,39 +231,41 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
           default:
             mappedStatus = 'No Iniciado';
         }
-        
+
         if (_lessonsByStatus.containsKey(mappedStatus)) {
-          _lessonsByStatus[mappedStatus] = (_lessonsByStatus[mappedStatus] ?? 0) + 1;
+          _lessonsByStatus[mappedStatus] =
+              (_lessonsByStatus[mappedStatus] ?? 0) + 1;
         }
-        
+
         if (courseId != null) {
           _lessonsByCourse[courseId] = (_lessonsByCourse[courseId] ?? 0) + 1;
         }
-        
+
         if (status == 'completed') {
           _totalLessonsCompleted++;
         }
       }
-      
+
       // Calcular tasa de finalización
       if (_lessonsByStatus.isNotEmpty) {
         final totalLessons = _lessonsByStatus.values.reduce((a, b) => a + b);
         if (totalLessons > 0) {
-          _completionRate = (_lessonsByStatus['Completado'] ?? 0) / totalLessons * 100;
+          _completionRate =
+              (_lessonsByStatus['Completado'] ?? 0) / totalLessons * 100;
         } else {
           _completionRate = 0.0;
         }
       } else {
         _completionRate = 0.0;
       }
-      
+
       // Si no hay datos, inicializar en 0
       if (_lessonsByStatus.isEmpty) {
         _lessonsByStatus['Completado'] = 0;
         _lessonsByStatus['En Curso'] = 0;
         _lessonsByStatus['No Iniciado'] = 0;
       }
-      
+
       setState(() {
         _isLoadingStats = false;
       });
@@ -266,7 +281,7 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
       _selectedTeacherId = teacherId;
       _showIndividualReport = teacherId != null;
     });
-    
+
     if (teacherId != null) {
       _loadTeacherStatistics(teacherId);
     }
@@ -302,26 +317,26 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
                       const Text('No hay maestros disponibles')
                     else
                       DropdownButtonFormField<String>(
-                      initialValue: _selectedTeacherId,
-                      decoration: const InputDecoration(
-                        labelText: 'Seleccionar maestro',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.person_search),
-                      ),
-                      items: [
-                        const DropdownMenuItem<String>(
-                          value: null,
-                          child: Text('Ver estadísticas generales'),
+                        initialValue: _selectedTeacherId,
+                        decoration: const InputDecoration(
+                          labelText: 'Seleccionar maestro',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.person_search),
                         ),
-                        ..._teachers.map((teacher) {
-                          return DropdownMenuItem<String>(
-                            value: teacher['uid'] as String,
-                            child: Text(teacher['name'] as String),
-                          );
-                        }),
-                      ],
-                      onChanged: _onTeacherChanged,
-                    ),
+                        items: [
+                          const DropdownMenuItem<String>(
+                            value: null,
+                            child: Text('Ver estadísticas generales'),
+                          ),
+                          ..._teachers.map((teacher) {
+                            return DropdownMenuItem<String>(
+                              value: teacher['uid'] as String,
+                              child: Text(teacher['name'] as String),
+                            );
+                          }),
+                        ],
+                        onChanged: _onTeacherChanged,
+                      ),
                   ],
                 ),
               ),
@@ -367,7 +382,7 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
             controller: _screenshotController,
             child: _buildStatisticsCharts(),
           ),
-        
+
         const SizedBox(height: 32),
         const Divider(),
         const SizedBox(height: 24),
@@ -398,10 +413,7 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
             label: const Text('Descargar reporte con gráficas'),
             onPressed: () => _generateReportWithCharts(context),
             style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 16,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             ),
           ),
       ],
@@ -411,9 +423,15 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
   Widget _buildIndividualTeacherReport() {
     final selectedTeacher = _teachers.firstWhere(
       (t) => t['uid'] == _selectedTeacherId,
-      orElse: () => <String, String?>{'uid': '', 'name': 'Maestro no encontrado', 'email': '', 'workArea': ''},
+      orElse:
+          () => <String, String?>{
+            'uid': '',
+            'name': 'Maestro no encontrado',
+            'email': '',
+            'workArea': '',
+          },
     );
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -435,16 +453,16 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
         if (selectedTeacher['email'] != null)
           Text(
             'Email: ${selectedTeacher['email']}',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[600],
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
           ),
         if (selectedTeacher['workArea'] != null)
           Text(
             'Área: ${selectedTeacher['workArea']}',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[600],
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
           ),
         const SizedBox(height: 24),
 
@@ -460,7 +478,7 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
           )
         else
           _buildTeacherStatisticsCharts(),
-        
+
         const SizedBox(height: 32),
         const Divider(),
         const SizedBox(height: 24),
@@ -491,10 +509,7 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
             label: const Text('Descargar reporte individual'),
             onPressed: () => _generateIndividualReport(context),
             style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 16,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             ),
           ),
       ],
@@ -502,10 +517,12 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
   }
 
   Widget _buildStatisticsCharts() {
-    final topCourseValues = _lessonsByCourse.values.toList()..sort((a, b) => b.compareTo(a));
-    final maxCourseLessons = topCourseValues.isEmpty
-        ? 0
-        : topCourseValues.take(5).reduce((a, b) => a > b ? a : b);
+    final topCourseValues =
+        _lessonsByCourse.values.toList()..sort((a, b) => b.compareTo(a));
+    final maxCourseLessons =
+        topCourseValues.isEmpty
+            ? 0
+            : topCourseValues.take(5).reduce((a, b) => a > b ? a : b);
 
     return Column(
       children: [
@@ -513,33 +530,57 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
         Row(
           children: [
             Expanded(
-              child: _buildStatCard('Total Usuarios', _totalUsers.toString(), Icons.people),
+              child: _buildStatCard(
+                'Total Usuarios',
+                _totalUsers.toString(),
+                Icons.people,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildStatCard('Con Progreso', _usersWithProgress.toString(), Icons.trending_up),
+              child: _buildStatCard(
+                'Con Progreso',
+                _usersWithProgress.toString(),
+                Icons.trending_up,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildStatCard('Lecciones Completadas', _totalLessonsCompleted.toString(), Icons.check_circle),
+              child: _buildStatCard(
+                'Lecciones Completadas',
+                _totalLessonsCompleted.toString(),
+                Icons.check_circle,
+              ),
             ),
           ],
         ),
         const SizedBox(height: 24),
-        
+
         // Tarjetas de estadísticas - Segunda fila
         Row(
           children: [
             Expanded(
-              child: _buildStatCard('Tasa Finalización', '${_completionRate.toStringAsFixed(1)}%', Icons.percent),
+              child: _buildStatCard(
+                'Tasa Finalización',
+                '${_completionRate.toStringAsFixed(1)}%',
+                Icons.percent,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildStatCard('Activos (7 días)', _activeUsersLast7Days.toString(), Icons.calendar_today),
+              child: _buildStatCard(
+                'Activos (7 días)',
+                _activeUsersLast7Days.toString(),
+                Icons.calendar_today,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildStatCard('Especialidades', _usersBySpecialty.length.toString(), Icons.school),
+              child: _buildStatCard(
+                'Especialidades',
+                _usersBySpecialty.length.toString(),
+                Icons.school,
+              ),
             ),
           ],
         ),
@@ -562,9 +603,9 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'Proporción de maestros con lecciones iniciadas o completadas frente a sin actividad.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 16),
                 SizedBox(
@@ -572,9 +613,10 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
                   child: Builder(
                     builder: (context) {
                       final withProgress = _usersWithProgress;
-                      final withoutProgress = (_totalUsers - _usersWithProgress) > 0
-                          ? (_totalUsers - _usersWithProgress)
-                          : 0;
+                      final withoutProgress =
+                          (_totalUsers - _usersWithProgress) > 0
+                              ? (_totalUsers - _usersWithProgress)
+                              : 0;
 
                       return PieChart(
                         PieChartData(
@@ -594,7 +636,8 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
                             ),
                             PieChartSectionData(
                               value: withoutProgress.toDouble(),
-                              title: withoutProgress > 0 ? '$withoutProgress' : '',
+                              title:
+                                  withoutProgress > 0 ? '$withoutProgress' : '',
                               color: Colors.blueGrey.shade300,
                               radius: 50,
                               titleStyle: const TextStyle(
@@ -643,9 +686,13 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
                   child: BarChart(
                     BarChartData(
                       alignment: BarChartAlignment.spaceAround,
-                      maxY: ([_usersByWorkArea['Urbano'] ?? 0, _usersByWorkArea['Rural'] ?? 0]
-                              .reduce((a, b) => a > b ? a : b) + 5)
-                          .toDouble(),
+                      maxY:
+                          ([
+                                    _usersByWorkArea['Urbano'] ?? 0,
+                                    _usersByWorkArea['Rural'] ?? 0,
+                                  ].reduce((a, b) => a > b ? a : b) +
+                                  5)
+                              .toDouble(),
                       barGroups: [
                         BarChartGroupData(
                           x: 0,
@@ -698,7 +745,9 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
                         topTitles: AxisTitles(
                           sideTitles: SideTitles(showTitles: false),
                         ),
-                        rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        rightTitles: AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
                       ),
                     ),
                   ),
@@ -730,7 +779,11 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
                     child: BarChart(
                       BarChartData(
                         alignment: BarChartAlignment.spaceAround,
-                        maxY: _usersBySpecialty.values.reduce((a, b) => a > b ? a : b).toDouble() + 2,
+                        maxY:
+                            _usersBySpecialty.values
+                                .reduce((a, b) => a > b ? a : b)
+                                .toDouble() +
+                            2,
                         barGroups: List.generate(
                           _usersBySpecialty.keys.length,
                           (index) {
@@ -741,7 +794,9 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
                               barRods: [
                                 BarChartRodData(
                                   toY: value.toDouble(),
-                                  color: Colors.primaries[index % Colors.primaries.length],
+                                  color:
+                                      Colors.primaries[index %
+                                          Colors.primaries.length],
                                   width: 20,
                                 ),
                               ],
@@ -755,12 +810,17 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
                               showTitles: true,
                               getTitlesWidget: (value, meta) {
                                 final index = value.toInt();
-                                if (index >= 0 && index < _usersBySpecialty.keys.length) {
-                                  final key = _usersBySpecialty.keys.elementAt(index);
+                                if (index >= 0 &&
+                                    index < _usersBySpecialty.keys.length) {
+                                  final key = _usersBySpecialty.keys.elementAt(
+                                    index,
+                                  );
                                   return Padding(
                                     padding: const EdgeInsets.only(top: 8.0),
                                     child: Text(
-                                      key.length > 10 ? '${key.substring(0, 10)}...' : key,
+                                      key.length > 10
+                                          ? '${key.substring(0, 10)}...'
+                                          : key,
                                       style: const TextStyle(fontSize: 10),
                                     ),
                                   );
@@ -785,7 +845,9 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
                           topTitles: AxisTitles(
                             sideTitles: SideTitles(showTitles: false),
                           ),
-                          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          rightTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
                         ),
                       ),
                     ),
@@ -819,10 +881,13 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
                         alignment: BarChartAlignment.spaceAround,
                         maxY: maxCourseLessons.toDouble() + 2,
                         barGroups: List.generate(
-                          _lessonsByCourse.keys.length > 5 ? 5 : _lessonsByCourse.keys.length,
+                          _lessonsByCourse.keys.length > 5
+                              ? 5
+                              : _lessonsByCourse.keys.length,
                           (index) {
-                            final sortedEntries = _lessonsByCourse.entries.toList()
-                              ..sort((a, b) => b.value.compareTo(a.value));
+                            final sortedEntries =
+                                _lessonsByCourse.entries.toList()
+                                  ..sort((a, b) => b.value.compareTo(a.value));
                             final entry = sortedEntries[index];
                             return BarChartGroupData(
                               x: index,
@@ -848,7 +913,10 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
                                     padding: const EdgeInsets.only(top: 8.0),
                                     child: Text(
                                       '${index + 1}',
-                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   );
                                 }
@@ -872,38 +940,45 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
                           topTitles: AxisTitles(
                             sideTitles: SideTitles(showTitles: false),
                           ),
-                          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          rightTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                const SizedBox(height: 16),
-                // Leyenda de cursos
-                Wrap(
-                  spacing: 16,
-                  runSpacing: 8,
-                  children: [
-                    for (var i = 0; i < 5 && i < _lessonsByCourse.keys.length; i++)
-                      _buildCourseLegend(i),
-                  ],
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  // Leyenda de cursos
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 8,
+                    children: [
+                      for (
+                        var i = 0;
+                        i < 5 && i < _lessonsByCourse.keys.length;
+                        i++
+                      )
+                        _buildCourseLegend(i),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
         const SizedBox(height: 24),
       ],
     );
   }
 
   Widget _buildCourseLegend(int index) {
-    final sortedEntries = _lessonsByCourse.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+    final sortedEntries =
+        _lessonsByCourse.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
     if (index >= sortedEntries.length) return const SizedBox.shrink();
-    
+
     final courseId = sortedEntries[index].key;
     final courseName = _courseNames[courseId] ?? 'Curso desconocido';
-    
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -927,7 +1002,9 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
         ),
         const SizedBox(width: 4),
         Text(
-          courseName.length > 20 ? '${courseName.substring(0, 20)}...' : courseName,
+          courseName.length > 20
+              ? '${courseName.substring(0, 20)}...'
+              : courseName,
           style: const TextStyle(fontSize: 11),
         ),
       ],
@@ -945,9 +1022,9 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
             const SizedBox(height: 8),
             Text(
               value,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
             Text(
@@ -967,10 +1044,7 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
         Container(
           width: 12,
           height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 4),
         Text(label, style: const TextStyle(fontSize: 12)),
@@ -985,15 +1059,27 @@ class _AdminReportsScreenState extends ConsumerState<AdminReportsScreen> {
         Row(
           children: [
             Expanded(
-              child: _buildStatCard('Total Lecciones', _teacherTotalLessons.toString(), Icons.book),
+              child: _buildStatCard(
+                'Total Lecciones',
+                _teacherTotalLessons.toString(),
+                Icons.book,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildStatCard('Completadas', _teacherCompletedLessons.toString(), Icons.check_circle),
+              child: _buildStatCard(
+                'Completadas',
+                _teacherCompletedLessons.toString(),
+                Icons.check_circle,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildStatCard('Progreso', '${_teacherProgressPercentage.toStringAsFixed(1)}%', Icons.trending_up),
+              child: _buildStatCard(
+                'Progreso',
+                '${_teacherProgressPercentage.toStringAsFixed(1)}%',
+                Icons.trending_up,
+              ),
             ),
           ],
         ),

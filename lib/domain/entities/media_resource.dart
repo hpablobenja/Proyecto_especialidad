@@ -18,6 +18,38 @@ class MediaResource {
     this.duration,
     this.metadata,
   });
+
+  factory MediaResource.fromMap(Map<String, dynamic> map) {
+    final durationSeconds = map['durationSeconds'];
+    final durationMs = map['durationMs'];
+
+    return MediaResource(
+      id: map['id'] as String? ?? '',
+      url: map['url'] as String? ?? '',
+      filename: map['filename'] as String? ?? '',
+      mimeType: map['mimeType'] as String? ?? '',
+      sizeBytes: (map['sizeBytes'] as num?)?.toInt() ?? 0,
+      duration:
+          durationSeconds != null
+              ? Duration(seconds: (durationSeconds as num).toInt())
+              : durationMs != null
+              ? Duration(milliseconds: (durationMs as num).toInt())
+              : null,
+      metadata: (map['metadata'] as Map?)?.cast<String, dynamic>(),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'url': url,
+      'filename': filename,
+      'mimeType': mimeType,
+      'sizeBytes': sizeBytes,
+      'durationSeconds': duration?.inSeconds,
+      'metadata': metadata,
+    };
+  }
 }
 
 class MediaUploadRequest {

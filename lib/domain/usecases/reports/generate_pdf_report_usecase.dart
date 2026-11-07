@@ -12,8 +12,10 @@ class GeneratePdfReportUsecase implements Usecase<List<int>, String> {
   final CourseRepository courseRepository;
   final FirebaseFirestore firestore;
 
-  GeneratePdfReportUsecase(this.courseRepository, {FirebaseFirestore? firestore})
-      : firestore = firestore ?? FirebaseFirestore.instance;
+  GeneratePdfReportUsecase(
+    this.courseRepository, {
+    FirebaseFirestore? firestore,
+  }) : firestore = firestore ?? FirebaseFirestore.instance;
 
   @override
   Future<List<int>> call(String userId) async {
@@ -36,10 +38,11 @@ class GeneratePdfReportUsecase implements Usecase<List<int>, String> {
     }
 
     // Obtener el progreso del usuario desde Firebase
-    final progressSnapshot = await firestore
-        .collection('userProgress')
-        .where('userId', isEqualTo: userId)
-        .get();
+    final progressSnapshot =
+        await firestore
+            .collection('userProgress')
+            .where('userId', isEqualTo: userId)
+            .get();
 
     final progressMap = <String, LessonProgressEntity>{};
     for (var doc in progressSnapshot.docs) {
@@ -48,42 +51,52 @@ class GeneratePdfReportUsecase implements Usecase<List<int>, String> {
     }
 
     // Organizar progreso por curso, módulo y lección
-    final courseProgressMap = <String, Map<String, Map<String, LessonProgressEntity>>>{};
+    final courseProgressMap =
+        <String, Map<String, Map<String, LessonProgressEntity>>>{};
 
     for (var progress in progressMap.values) {
       if (!courseProgressMap.containsKey(progress.courseId)) {
         courseProgressMap[progress.courseId] = {};
       }
-      if (!courseProgressMap[progress.courseId]!.containsKey(progress.moduleId)) {
+      if (!courseProgressMap[progress.courseId]!.containsKey(
+        progress.moduleId,
+      )) {
         courseProgressMap[progress.courseId]![progress.moduleId] = {};
       }
-      courseProgressMap[progress.courseId]![progress.moduleId]![progress.lessonId] = progress;
+      courseProgressMap[progress.courseId]![progress.moduleId]![progress
+              .lessonId] =
+          progress;
     }
 
     // Obtener información de módulos y lecciones
     final courseTitles = <String, String>{};
-    final moduleTitles = <String, Map<String, String>>{}; // courseId -> {moduleId: title}
-    final lessonTitles = <String, Map<String, String>>{}; // moduleId -> {lessonId: title}
+    final moduleTitles =
+        <String, Map<String, String>>{}; // courseId -> {moduleId: title}
+    final lessonTitles =
+        <String, Map<String, String>>{}; // moduleId -> {lessonId: title}
 
     for (var course in allCourses) {
       if (!courseProgressMap.containsKey(course.id)) continue;
       courseTitles[course.id] = course.title;
 
       // Obtener módulos (still nested under courses)
-      final modulesSnapshot = await firestore
-          .collection('courses')
-          .doc(course.id)
-          .collection('modules')
-          .get();
+      final modulesSnapshot =
+          await firestore
+              .collection('courses')
+              .doc(course.id)
+              .collection('modules')
+              .get();
 
       if (!moduleTitles.containsKey(course.id)) {
         moduleTitles[course.id] = {};
       }
 
-      final sortedModules = modulesSnapshot.docs.toList()
-        ..sort((a, b) =>
-            ((a.data()['orderIndex'] as num?) ?? 0)
-                .compareTo((b.data()['orderIndex'] as num?) ?? 0));
+      final sortedModules =
+          modulesSnapshot.docs.toList()..sort(
+            (a, b) => ((a.data()['orderIndex'] as num?) ?? 0).compareTo(
+              (b.data()['orderIndex'] as num?) ?? 0,
+            ),
+          );
 
       for (var moduleDoc in sortedModules) {
         final moduleData = moduleDoc.data();
@@ -92,11 +105,12 @@ class GeneratePdfReportUsecase implements Usecase<List<int>, String> {
         moduleTitles[course.id]![moduleId] = moduleTitle;
 
         // 1. Lecciones en la colección raíz /lecciones
-        final lessonsSnapshot = await firestore
-            .collection('lecciones')
-            .where('courseId', isEqualTo: course.id)
-            .where('moduleId', isEqualTo: moduleId)
-            .get();
+        final lessonsSnapshot =
+            await firestore
+                .collection('lessons')
+                .where('courseId', isEqualTo: course.id)
+                .where('moduleId', isEqualTo: moduleId)
+                .get();
 
         if (!lessonTitles.containsKey(moduleId)) {
           lessonTitles[moduleId] = {};
@@ -105,7 +119,8 @@ class GeneratePdfReportUsecase implements Usecase<List<int>, String> {
         for (var lessonDoc in lessonsSnapshot.docs) {
           final lessonData = lessonDoc.data();
           final lessonId = lessonDoc.id;
-          final lessonTitle = lessonData['title'] as String? ??
+          final lessonTitle =
+              lessonData['title'] as String? ??
               lessonData['name'] as String? ??
               lessonData['lessonTitle'] as String? ??
               'Sin título';
@@ -114,18 +129,20 @@ class GeneratePdfReportUsecase implements Usecase<List<int>, String> {
 
         // 2. Fallback a subcolección anidada si no hay en raíz
         if (lessonTitles[moduleId]!.isEmpty) {
-          final subLessonsSnapshot = await firestore
-              .collection('courses')
-              .doc(course.id)
-              .collection('modules')
-              .doc(moduleId)
-              .collection('lessons')
-              .get();
+          final subLessonsSnapshot =
+              await firestore
+                  .collection('courses')
+                  .doc(course.id)
+                  .collection('modules')
+                  .doc(moduleId)
+                  .collection('lessons')
+                  .get();
 
           for (var lessonDoc in subLessonsSnapshot.docs) {
             final lessonData = lessonDoc.data();
             final lessonId = lessonDoc.id;
-            final lessonTitle = lessonData['title'] as String? ??
+            final lessonTitle =
+                lessonData['title'] as String? ??
                 lessonData['name'] as String? ??
                 lessonData['lessonTitle'] as String? ??
                 'Sin título';
@@ -183,7 +200,8 @@ class GeneratePdfReportUsecase implements Usecase<List<int>, String> {
                   // Desglose por módulo
                   ...moduleProgress.entries.map((moduleEntry) {
                     final moduleId = moduleEntry.key;
-                    final moduleTitle = moduleTitles[courseId]?[moduleId] ?? 'Módulo $moduleId';
+                    final moduleTitle =
+                        moduleTitles[courseId]?[moduleId] ?? 'Módulo $moduleId';
                     final lessonProgress = moduleEntry.value;
 
                     return pw.Column(
@@ -205,7 +223,9 @@ class GeneratePdfReportUsecase implements Usecase<List<int>, String> {
                         ...lessonProgress.entries.map((lessonEntry) {
                           final lessonId = lessonEntry.key;
                           final progress = lessonEntry.value;
-                          final lessonTitle = lessonTitles[moduleId]?[lessonId] ?? 'Lección $lessonId';
+                          final lessonTitle =
+                              lessonTitles[moduleId]?[lessonId] ??
+                              'Lección $lessonId';
 
                           String statusText;
                           switch (progress.status) {
@@ -220,7 +240,10 @@ class GeneratePdfReportUsecase implements Usecase<List<int>, String> {
                           }
 
                           return pw.Padding(
-                            padding: const pw.EdgeInsets.only(left: 20, bottom: 5),
+                            padding: const pw.EdgeInsets.only(
+                              left: 20,
+                              bottom: 5,
+                            ),
                             child: pw.Row(
                               children: [
                                 pw.Text(
@@ -231,9 +254,11 @@ class GeneratePdfReportUsecase implements Usecase<List<int>, String> {
                                   statusText,
                                   style: pw.TextStyle(
                                     fontSize: 12,
-                                    fontWeight: progress.status == LessonProgressStatus.completed
-                                        ? pw.FontWeight.bold
-                                        : pw.FontWeight.normal,
+                                    fontWeight:
+                                        progress.status ==
+                                                LessonProgressStatus.completed
+                                            ? pw.FontWeight.bold
+                                            : pw.FontWeight.normal,
                                   ),
                                 ),
                               ],

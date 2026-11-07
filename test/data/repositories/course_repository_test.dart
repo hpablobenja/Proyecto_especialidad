@@ -37,8 +37,9 @@ void main() {
         ),
       ];
 
-      when(mockCourseRemoteDataSource.getCourses())
-          .thenAnswer((_) async => expectedCourses);
+      when(
+        mockCourseRemoteDataSource.getCourses(),
+      ).thenAnswer((_) async => expectedCourses);
 
       final result = await courseRepositoryImpl.getCourses();
 
@@ -47,72 +48,94 @@ void main() {
       verify(mockCourseRemoteDataSource.getCourses());
     });
 
-    test('createCourse convierte CourseEntity a CourseModel y llama al datasource', () async {
-      final courseEntity = CourseEntity(
-        id: 'new_course',
-        title: 'Nuevo Curso',
-        description: 'Nueva Descripción',
-        targetAudience: 'Todos',
-        status: 'draft',
-      );
+    test(
+      'createCourse convierte CourseEntity a CourseModel y llama al datasource',
+      () async {
+        final courseEntity = CourseEntity(
+          id: 'new_course',
+          title: 'Nuevo Curso',
+          description: 'Nueva Descripción',
+          targetAudience: 'Todos',
+          status: 'draft',
+        );
 
-      final expectedCourseModel = CourseModel(
-        id: 'new_course',
-        title: 'Nuevo Curso',
-        description: 'Nueva Descripción',
-        targetAudience: 'Todos',
-        status: 'draft',
-      );
+        final expectedCourseModel = CourseModel(
+          id: 'new_course',
+          title: 'Nuevo Curso',
+          description: 'Nueva Descripción',
+          targetAudience: 'Todos',
+          status: 'draft',
+        );
 
-      when(mockCourseRemoteDataSource.createCourse(any))
-          .thenAnswer((_) async => expectedCourseModel);
+        when(
+          mockCourseRemoteDataSource.createCourse(any),
+        ).thenAnswer((_) async => expectedCourseModel);
 
-      final result = await courseRepositoryImpl.createCourse(courseEntity);
+        final result = await courseRepositoryImpl.createCourse(courseEntity);
 
-      expect(result.id, expectedCourseModel.id);
-      verify(mockCourseRemoteDataSource.createCourse(argThat(
-        isA<CourseModel>()
-            .having((c) => c.title, 'title', courseEntity.title),
-      )));
-    });
+        expect(result.id, expectedCourseModel.id);
+        verify(
+          mockCourseRemoteDataSource.createCourse(
+            argThat(
+              isA<CourseModel>().having(
+                (c) => c.title,
+                'title',
+                courseEntity.title,
+              ),
+            ),
+          ),
+        );
+      },
+    );
 
-    test('updateCourse convierte CourseEntity a CourseModel y llama al datasource', () async {
-      final courseEntity = CourseEntity(
-        id: 'course_1',
-        title: 'Curso Actualizado',
-        description: 'Descripción Actualizada',
-        targetAudience: 'Avanzados',
-        status: 'published',
-      );
+    test(
+      'updateCourse convierte CourseEntity a CourseModel y llama al datasource',
+      () async {
+        final courseEntity = CourseEntity(
+          id: 'course_1',
+          title: 'Curso Actualizado',
+          description: 'Descripción Actualizada',
+          targetAudience: 'Avanzados',
+          status: 'published',
+        );
 
-      final expectedCourseModel = CourseModel(
-        id: 'course_1',
-        title: 'Curso Actualizado',
-        description: 'Descripción Actualizada',
-        targetAudience: 'Avanzados',
-        status: 'published',
-      );
+        final expectedCourseModel = CourseModel(
+          id: 'course_1',
+          title: 'Curso Actualizado',
+          description: 'Descripción Actualizada',
+          targetAudience: 'Avanzados',
+          status: 'published',
+        );
 
-      when(mockCourseRemoteDataSource.updateCourse(any))
-          .thenAnswer((_) async => expectedCourseModel);
+        when(
+          mockCourseRemoteDataSource.updateCourse(any),
+        ).thenAnswer((_) async => expectedCourseModel);
 
-      final result = await courseRepositoryImpl.updateCourse(courseEntity);
+        final result = await courseRepositoryImpl.updateCourse(courseEntity);
 
-      expect(result.title, 'Curso Actualizado');
-      verify(mockCourseRemoteDataSource.updateCourse(argThat(
-        isA<CourseModel>()
-            .having((c) => c.id, 'id', courseEntity.id),
-      )));
-    });
+        expect(result.title, 'Curso Actualizado');
+        verify(
+          mockCourseRemoteDataSource.updateCourse(
+            argThat(
+              isA<CourseModel>().having((c) => c.id, 'id', courseEntity.id),
+            ),
+          ),
+        );
+      },
+    );
 
     test('updateCourseStatus llama al datasource correctamente', () async {
       const courseId = 'course_1';
       const status = 'published';
 
-      when(mockCourseRemoteDataSource.updateCourseStatus(courseId, status))
-          .thenAnswer((_) async => true);
+      when(
+        mockCourseRemoteDataSource.updateCourseStatus(courseId, status),
+      ).thenAnswer((_) async => true);
 
-      final result = await courseRepositoryImpl.updateCourseStatus(courseId, status);
+      final result = await courseRepositoryImpl.updateCourseStatus(
+        courseId,
+        status,
+      );
 
       expect(result, true);
       verify(mockCourseRemoteDataSource.updateCourseStatus(courseId, status));
@@ -122,10 +145,14 @@ void main() {
       const courseId = 'course_1';
       const status = 'published';
 
-      when(mockCourseRemoteDataSource.updateCourseStatus(courseId, status))
-          .thenAnswer((_) async => false);
+      when(
+        mockCourseRemoteDataSource.updateCourseStatus(courseId, status),
+      ).thenAnswer((_) async => false);
 
-      final result = await courseRepositoryImpl.updateCourseStatus(courseId, status);
+      final result = await courseRepositoryImpl.updateCourseStatus(
+        courseId,
+        status,
+      );
 
       expect(result, false);
       verify(mockCourseRemoteDataSource.updateCourseStatus(courseId, status));

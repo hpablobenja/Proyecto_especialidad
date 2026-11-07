@@ -28,28 +28,33 @@ class MockAuthRepository implements AuthRepository {
     lastRegisterRole = role;
     lastRegisterWorkArea = workArea;
     lastRegisterSpecialty = specialty;
-    
+
     if (errorToThrow != null) {
       throw errorToThrow!;
     }
-    return userToReturn ?? UserEntity(
-      uid: 'test_uid',
-      email: email,
-      name: name,
-      role: role,
-      workArea: workArea,
-      specialty: specialty,
-    );
+    return userToReturn ??
+        UserEntity(
+          uid: 'test_uid',
+          email: email,
+          name: name,
+          role: role,
+          workArea: workArea,
+          specialty: specialty,
+        );
   }
 
   @override
-  Future<UserEntity> signInWithEmailAndPassword(String email, String password) async {
-    return userToReturn ?? UserEntity(
-      uid: 'test_uid',
-      email: email,
-      name: 'Test User',
-      role: 'student',
-    );
+  Future<UserEntity> signInWithEmailAndPassword(
+    String email,
+    String password,
+  ) async {
+    return userToReturn ??
+        UserEntity(
+          uid: 'test_uid',
+          email: email,
+          name: 'Test User',
+          role: 'student',
+        );
   }
 
   @override

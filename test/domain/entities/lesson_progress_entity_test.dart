@@ -220,21 +220,24 @@ void main() {
       expect(progress.maxQuizScore, null);
     });
 
-    test('LessonProgressEntity fromMap with invalid status defaults to notStarted', () {
-      final map = {
-        'userId': 'user_1',
-        'courseId': 'course_1',
-        'moduleId': 'module_1',
-        'lessonId': 'lesson_1',
-        'status': 'invalid_status',
-        'hasViewedVideo': false,
-        'hasCompletedQuiz': false,
-      };
+    test(
+      'LessonProgressEntity fromMap with invalid status defaults to notStarted',
+      () {
+        final map = {
+          'userId': 'user_1',
+          'courseId': 'course_1',
+          'moduleId': 'module_1',
+          'lessonId': 'lesson_1',
+          'status': 'invalid_status',
+          'hasViewedVideo': false,
+          'hasCompletedQuiz': false,
+        };
 
-      final progress = LessonProgressEntity.fromMap(map);
+        final progress = LessonProgressEntity.fromMap(map);
 
-      expect(progress.status, LessonProgressStatus.notStarted);
-    });
+        expect(progress.status, LessonProgressStatus.notStarted);
+      },
+    );
 
     test('LessonProgressEntity round-trip conversion', () {
       final now = DateTime.now();

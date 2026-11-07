@@ -9,11 +9,14 @@ import 'package:open_filex/open_filex.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_styles.dart';
 import '../../../core/di/riverpod_providers.dart';
-import '../../widgets/app_drawer.dart';
 import '../../../domain/entities/lesson_progress_entity.dart';
 import '../../../domain/usecases/courses/get_course_progress_usecase.dart';
+import '../analytics/analytics_dashboard_screen.dart';
+import '../../providers/video_tracking_provider.dart';
 
 class MyProgressScreen extends ConsumerStatefulWidget {
+  const MyProgressScreen({super.key});
+
   @override
   ConsumerState<MyProgressScreen> createState() => _MyProgressScreenState();
 }
@@ -80,7 +83,6 @@ class _MyProgressScreenState extends ConsumerState<MyProgressScreen> {
     final progressProvider = ref.watch(progressStateProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Mi Progreso')),
       body:
           progressProvider.isLoading
               ? const Center(child: CircularProgressIndicator())
@@ -106,6 +108,54 @@ class _MyProgressScreenState extends ConsumerState<MyProgressScreen> {
                     ],
 
                     const SizedBox(height: 32),
+
+                    // Botón de Analítica Educativa
+                    Center(
+                      child: Column(
+                        children: [
+                          ElevatedButton.icon(
+                            onPressed: () async {
+                              // Forzar sincronización antes de mostrar analítica
+                              await ref
+                                  .read(videoTrackingProvider.notifier)
+                                  .forceSync();
+
+                              if (!context.mounted) return;
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder:
+                                      (_) => const AnalyticsDashboardScreen(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.analytics),
+                            label: const Text(
+                              'Ver Analítica Educativa',
+                              style: AppStyles.buttonText,
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.accentColor,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 15,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Estadísticas detalladas de tu aprendizaje',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: Colors.grey[700]),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
 
                     // Botón de Generar Reporte
                     Center(
@@ -157,9 +207,17 @@ class _MyProgressScreenState extends ConsumerState<MyProgressScreen> {
       children: [
         Row(
           children: [
-            Icon(headerIcon, color: AppColors.primaryColor, size: 28),
+            Icon(headerIcon, color: const Color(0xFF917CDC), size: 28),
             const SizedBox(width: 8),
-            Expanded(child: Text(title, style: Theme.of(context).textTheme.headlineMedium)),
+            Expanded(
+              child: Text(
+                title,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  color: const Color(0xFF2D3748),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -172,114 +230,193 @@ class _MyProgressScreenState extends ConsumerState<MyProgressScreen> {
   Widget _buildCourseItem(CourseProgressDetail detail) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ExpansionTile(
-        title: Text(
-          detail.course.title,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0x0A000000),
+              blurRadius: 8,
+              spreadRadius: 0,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        leading: const Icon(Icons.school, color: AppColors.primaryColor),
-        children:
-            detail.moduleTitles.entries.map((moduleEntry) {
-              final moduleId = moduleEntry.key;
-              final moduleTitle = moduleEntry.value;
-              final lessons = detail.lessonTitles[moduleId] ?? {};
+        child: ExpansionTile(
+          title: Text(
+            detail.course.title,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+              color: Color(0xFF2D3748),
+            ),
+          ),
+          leading: const Icon(Icons.school, color: Color(0xFF917CDC)),
+          children:
+              detail.moduleTitles.entries.map((moduleEntry) {
+                final moduleId = moduleEntry.key;
+                final moduleTitle = moduleEntry.value;
+                final lessons = detail.lessonTitles[moduleId] ?? {};
 
-              if (lessons.isEmpty) return const SizedBox.shrink();
+                if (lessons.isEmpty) return const SizedBox.shrink();
 
-              return Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 8.0,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      moduleTitle,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ...lessons.entries.map((lessonEntry) {
-                      final lessonId = lessonEntry.key;
-                      final lessonTitle = lessonEntry.value;
-                      final progress = detail.progress[moduleId]?[lessonId];
-
-                      String statusText = 'No Iniciado';
-                      IconData statusIcon = Icons.radio_button_unchecked;
-                      Color statusColor = Colors.grey;
-
-                      if (progress != null) {
-                        if (progress.status == LessonProgressStatus.completed) {
-                          statusText = 'Completado';
-                          statusIcon = Icons.check_circle;
-                          statusColor = AppColors.successColor;
-                        } else if (progress.status ==
-                            LessonProgressStatus.inProgress) {
-                          statusText = 'En Curso';
-                          statusIcon = Icons.access_time;
-                          statusColor = AppColors.accentColor;
-                        }
-                      }
-
-                      return Padding(
-                        padding: const EdgeInsets.only(
-                          left: 16.0,
-                          bottom: 12.0,
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        moduleTitle,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: Color(0xFF2D3748),
                         ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(statusIcon, color: statusColor, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
+                      ),
+                      const SizedBox(height: 8),
+                      ...lessons.entries.map((lessonEntry) {
+                        final lessonId = lessonEntry.key;
+                        final lessonTitle = lessonEntry.value;
+                        final progress = detail.progress[moduleId]?[lessonId];
+
+                        String statusText = 'No Iniciado';
+                        IconData statusIcon = Icons.radio_button_unchecked;
+                        Color statusColor = Colors.grey;
+
+                        if (progress != null) {
+                          if (progress.status ==
+                              LessonProgressStatus.completed) {
+                            statusText = 'Completado';
+                            statusIcon = Icons.check_circle;
+                            statusColor = AppColors.successColor;
+                          } else if (progress.status ==
+                              LessonProgressStatus.inProgress) {
+                            statusText = 'En Curso';
+                            statusIcon = Icons.access_time;
+                            statusColor = AppColors.accentColor;
+                          }
+                        }
+
+                        // Estados individuales
+                        final hasViewedVideo =
+                            progress?.hasViewedVideo ?? false;
+                        final hasCompletedStrategies =
+                            progress?.hasCompletedStrategies ?? false;
+                        final hasCompletedQuiz =
+                            progress?.hasCompletedQuiz ?? false;
+
+                        // Verificar si el video está completo usando VideoTracking
+                        final videoCompleted =
+                            (progress?.completionPercentage ?? 0) >= 90;
+                        final videoProgress =
+                            progress?.completionPercentage ?? 0.0;
+
+                        return Padding(
+                          padding: const EdgeInsets.only(
+                            left: 16.0,
+                            bottom: 12.0,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    lessonTitle,
-                                    style: const TextStyle(fontSize: 14),
+                                  Icon(
+                                    statusIcon,
+                                    color: statusColor,
+                                    size: 20,
                                   ),
-                                  Row(
-                                    children: [
-                                      Text(
-                                        statusText,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          color: statusColor,
-                                        ),
-                                      ),
-                                      if (progress?.quizScore != null) ...[
-                                        const SizedBox(width: 8),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
                                         Text(
-                                          progress?.maxQuizScore != null
-                                              ? '• Nota: ${progress?.quizScore} / ${progress?.maxQuizScore}'
-                                              : '• Nota: ${progress?.quizScore}',
+                                          lessonTitle,
                                           style: const TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                            color: Color(0xFF2D3748),
                                           ),
                                         ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            Text(
+                                              statusText,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                                color: statusColor,
+                                              ),
+                                            ),
+                                            if (progress?.quizScore !=
+                                                null) ...[
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                progress?.maxQuizScore != null
+                                                    ? '• Nota: ${progress?.quizScore} / ${progress?.maxQuizScore}'
+                                                    : '• Nota: ${progress?.quizScore}',
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Color(0xFF2D3748),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
                                       ],
-                                    ],
+                                    ),
                                   ),
                                 ],
                               ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                    const Divider(),
-                  ],
-                ),
-              );
-            }).toList(),
+                              const SizedBox(height: 8),
+                              // Indicadores de progreso individual
+                              Row(
+                                children: [
+                                  _buildProgressIndicator(
+                                    icon: Icons.play_circle,
+                                    label: 'Video',
+                                    isCompleted:
+                                        hasViewedVideo || videoCompleted,
+                                    progress:
+                                        videoCompleted ? 100.0 : videoProgress,
+                                    color: Colors.blue,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  _buildProgressIndicator(
+                                    icon: Icons.description,
+                                    label: 'Estrategias',
+                                    isCompleted: hasCompletedStrategies,
+                                    color: Colors.green,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  _buildProgressIndicator(
+                                    icon: Icons.quiz,
+                                    label: 'Cuestionario',
+                                    isCompleted: hasCompletedQuiz,
+                                    color: Colors.orange,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                      const Divider(),
+                    ],
+                  ),
+                );
+              }).toList(),
+        ),
       ),
     );
   }
@@ -290,30 +427,92 @@ class _MyProgressScreenState extends ConsumerState<MyProgressScreen> {
       padding: const EdgeInsets.all(24),
       margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
+        color: const Color(0xFFF1F4F8),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0x0A000000),
+            blurRadius: 8,
+            spreadRadius: 0,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          Icon(Icons.school_outlined, size: 64, color: Colors.grey[400]),
+          Icon(Icons.school_outlined, size: 64, color: const Color(0xFFCBD5E1)),
           const SizedBox(height: 16),
           Text(
             'Aún no has completado ninguna microformación',
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w500,
-              color: Colors.grey[700],
+              color: Color(0xFF2D3748),
             ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           Text(
             'Completa al menos una microformación para ver tu progreso aquí',
-            style: TextStyle(color: Colors.grey[500]),
+            style: const TextStyle(color: Color(0xFF4A5568)),
             textAlign: TextAlign.center,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildProgressIndicator({
+    required IconData icon,
+    required String label,
+    required bool isCompleted,
+    double progress = 0.0,
+    required Color color,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color:
+              isCompleted
+                  ? color.withValues(alpha: 0.15)
+                  : const Color(0xFFF1F4F8),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isCompleted ? color : const Color(0xFFE2E8F0),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              isCompleted ? Icons.check_circle : icon,
+              color: isCompleted ? color : const Color(0xFFCBD5E1),
+              size: 20,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: isCompleted ? color : const Color(0xFF4A5568),
+              ),
+            ),
+            if (progress > 0 && !isCompleted) ...[
+              const SizedBox(height: 2),
+              Text(
+                '${progress.toInt()}%',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

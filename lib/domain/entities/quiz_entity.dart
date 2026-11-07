@@ -8,7 +8,8 @@ class QuizEntity extends Equatable {
   final String lessonId;
   final String courseId;
   final String moduleId;
-  final List<QuestionEntity> questions; // Banco de preguntas (máximo 20 para admin, se muestran 5 aleatorias a maestros)
+  final List<QuestionEntity>
+  questions; // Banco de preguntas (máximo 20 para admin, se muestran 5 aleatorias a maestros)
 
   const QuizEntity({
     required this.id,
@@ -37,10 +38,10 @@ class QuizEntity extends Equatable {
       lessonId: map['lessonId'] as String,
       courseId: map['courseId'] as String,
       moduleId: map['moduleId'] as String,
-      questions: (map['questions'] as List)
-          .map((q) => QuestionEntity.fromMap(q as Map<String, dynamic>))
-          .toList(),
+      questions:
+          (map['questions'] as List)
+              .map((q) => QuestionEntity.fromMap(q as Map<String, dynamic>))
+              .toList(),
     );
   }
 }
-

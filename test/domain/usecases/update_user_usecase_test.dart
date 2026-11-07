@@ -16,16 +16,14 @@ class MockAuthRepository implements AuthRepository {
     String? workArea,
     String? specialty,
   ) async {
-    return UserEntity(
-      uid: 'test_uid',
-      email: email,
-      name: name,
-      role: role,
-    );
+    return UserEntity(uid: 'test_uid', email: email, name: name, role: role);
   }
 
   @override
-  Future<UserEntity> signInWithEmailAndPassword(String email, String password) async {
+  Future<UserEntity> signInWithEmailAndPassword(
+    String email,
+    String password,
+  ) async {
     return UserEntity(
       uid: 'test_uid',
       email: email,

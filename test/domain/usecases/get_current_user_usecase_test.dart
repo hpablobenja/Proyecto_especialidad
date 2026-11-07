@@ -17,22 +17,22 @@ class MockAuthRepository implements AuthRepository {
     String? workArea,
     String? specialty,
   ) async {
-    return userToReturn ?? UserEntity(
-      uid: 'test_uid',
-      email: email,
-      name: name,
-      role: role,
-    );
+    return userToReturn ??
+        UserEntity(uid: 'test_uid', email: email, name: name, role: role);
   }
 
   @override
-  Future<UserEntity> signInWithEmailAndPassword(String email, String password) async {
-    return userToReturn ?? UserEntity(
-      uid: 'test_uid',
-      email: email,
-      name: 'Test User',
-      role: 'student',
-    );
+  Future<UserEntity> signInWithEmailAndPassword(
+    String email,
+    String password,
+  ) async {
+    return userToReturn ??
+        UserEntity(
+          uid: 'test_uid',
+          email: email,
+          name: 'Test User',
+          role: 'student',
+        );
   }
 
   @override
@@ -63,37 +63,46 @@ void main() {
       usecase = GetCurrentUserUsecase(mockRepository);
     });
 
-    test('GetCurrentUserUsecase returns user when repository returns user', () async {
-      const testUser = UserEntity(
-        uid: 'user_123',
-        email: 'test@example.com',
-        name: 'Test User',
-        role: 'maestro',
-      );
-      mockRepository.userToReturn = testUser;
+    test(
+      'GetCurrentUserUsecase returns user when repository returns user',
+      () async {
+        const testUser = UserEntity(
+          uid: 'user_123',
+          email: 'test@example.com',
+          name: 'Test User',
+          role: 'maestro',
+        );
+        mockRepository.userToReturn = testUser;
 
-      final result = await usecase(NoParams());
+        final result = await usecase(NoParams());
 
-      expect(result, isNotNull);
-      expect(result?.uid, 'user_123');
-      expect(result?.email, 'test@example.com');
-      expect(result?.name, 'Test User');
-      expect(result?.role, 'maestro');
-    });
+        expect(result, isNotNull);
+        expect(result?.uid, 'user_123');
+        expect(result?.email, 'test@example.com');
+        expect(result?.name, 'Test User');
+        expect(result?.role, 'maestro');
+      },
+    );
 
-    test('GetCurrentUserUsecase returns null when repository returns null', () async {
-      mockRepository.userToReturn = null;
+    test(
+      'GetCurrentUserUsecase returns null when repository returns null',
+      () async {
+        mockRepository.userToReturn = null;
 
-      final result = await usecase(NoParams());
+        final result = await usecase(NoParams());
 
-      expect(result, isNull);
-    });
+        expect(result, isNull);
+      },
+    );
 
-    test('GetCurrentUserUsecase throws exception when repository throws', () async {
-      mockRepository.errorToThrow = Exception('Not authenticated');
+    test(
+      'GetCurrentUserUsecase throws exception when repository throws',
+      () async {
+        mockRepository.errorToThrow = Exception('Not authenticated');
 
-      expect(() => usecase(NoParams()), throwsException);
-    });
+        expect(() => usecase(NoParams()), throwsException);
+      },
+    );
 
     test('GetCurrentUserUsecase calls repository.getCurrentUser', () async {
       mockRepository.userToReturn = null;
@@ -125,19 +134,22 @@ void main() {
       expect(result?.specialty, testUser.specialty);
     });
 
-    test('GetCurrentUserUsecase handles user with optional fields null', () async {
-      const testUser = UserEntity(
-        uid: 'user_123',
-        email: 'test@example.com',
-        name: 'Test User',
-        role: 'student',
-      );
-      mockRepository.userToReturn = testUser;
+    test(
+      'GetCurrentUserUsecase handles user with optional fields null',
+      () async {
+        const testUser = UserEntity(
+          uid: 'user_123',
+          email: 'test@example.com',
+          name: 'Test User',
+          role: 'student',
+        );
+        mockRepository.userToReturn = testUser;
 
-      final result = await usecase(NoParams());
+        final result = await usecase(NoParams());
 
-      expect(result?.workArea, null);
-      expect(result?.specialty, null);
-    });
+        expect(result?.workArea, null);
+        expect(result?.specialty, null);
+      },
+    );
   });
 }

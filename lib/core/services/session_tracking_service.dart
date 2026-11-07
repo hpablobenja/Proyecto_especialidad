@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import './../../data/repositories/data_user_repository.dart';
+import '../../domain/entities/system_config_entity.dart';
 
 /// Servicio para tracking de tiempo de sesión del usuario
 /// Se encarga de iniciar, actualizar y finalizar sesiones automáticamente
@@ -13,9 +14,14 @@ class SessionTrackingService {
 
   late final DataUserRepository _dataUserRepository = DataUserRepository();
   Timer? _sessionTimer;
+  Timer? _warningTimer;
   bool _isSessionActive = false;
   int _currentSessionMinutes = 0;
   int _totalSessionMinutes = 0;
+
+  // Configuración dinámica
+  int _sessionWarningMinutes = 5;
+  int _maxSessionDurationMinutes = 120;
 
   static const String _currentSessionKey = 'current_session_minutes';
   static const String _totalSessionKey = 'total_session_minutes';
@@ -27,7 +33,7 @@ class SessionTrackingService {
     // Verificar si el rol es 'maestro'
     final prefs = await SharedPreferences.getInstance();
     final userRole = prefs.getString('user_role');
-    
+
     if (userRole != 'maestro') {
       return;
     }
@@ -42,12 +48,26 @@ class SessionTrackingService {
     _sessionTimer = Timer.periodic(const Duration(minutes: 1), (_) async {
       _currentSessionMinutes++;
       _totalSessionMinutes++;
-      
+
       // Guardar en SharedPreferences
       await _saveTimesToPrefs();
-      
+
+      // Verificar si se alcanzó el máximo de tiempo de sesión
+      if (_currentSessionMinutes >= _maxSessionDurationMinutes) {
+        await stopSessionTracking();
+        debugPrint('Sesión finalizada por tiempo máximo alcanzado');
+      }
+
       // No actualizamos en Firestore aquí para evitar llamadas cada minuto.
       // Se actualizará al entrar al Dashboard o al cerrar la sesión.
+    });
+
+    // Iniciar timer para advertencia de sesión
+    _warningTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      final remainingMinutes = _maxSessionDurationMinutes - _currentSessionMinutes;
+      if (remainingMinutes == _sessionWarningMinutes && remainingMinutes > 0) {
+        debugPrint('Advertencia: $remainingMinutes minutos restantes de sesión');
+      }
     });
   }
 
@@ -57,12 +77,23 @@ class SessionTrackingService {
 
     _sessionTimer?.cancel();
     _sessionTimer = null;
+    _warningTimer?.cancel();
+    _warningTimer = null;
     await _dataUserRepository.endSession();
     _isSessionActive = false;
-    
+
     // Resetear sesión actual pero mantener total
     _currentSessionMinutes = 0;
     await _saveTimesToPrefs();
+  }
+
+  /// Actualizar la configuración del servicio
+  void updateConfig(SystemConfigEntity config) {
+    _sessionWarningMinutes = config.sessionWarningMinutes;
+    _maxSessionDurationMinutes = config.maxSessionDurationMinutes;
+    debugPrint('SessionTrackingService config updated: '
+        'sessionWarningMinutes=$_sessionWarningMinutes, '
+        'maxSessionDurationMinutes=$_maxSessionDurationMinutes');
   }
 
   /// Cargar tiempos desde SharedPreferences

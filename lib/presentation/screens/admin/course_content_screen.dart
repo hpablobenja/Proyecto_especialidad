@@ -10,6 +10,7 @@ import '../../widgets/youtube_video_manager.dart';
 import 'quiz_management_screen.dart';
 import '../../../domain/entities/module_entity.dart';
 import '../../../domain/entities/lesson_entity.dart';
+import '../../../domain/entities/checkpoint_entity.dart';
 import '../../../core/utils/validation_utils.dart';
 
 class CourseContentScreen extends ConsumerStatefulWidget {
@@ -44,6 +45,7 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
   Future<void> _editLesson(ModuleEntity module, LessonEntity lesson) async {
     final titleCtrl = TextEditingController(text: lesson.title);
     final objCtrl = TextEditingController(text: lesson.objectives ?? '');
+    final orderCtrl = TextEditingController(text: lesson.orderIndex.toString());
     final formKey = GlobalKey<FormState>();
 
     final ok = await showDialog<bool>(
@@ -59,10 +61,11 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
                   TextFormField(
                     controller: titleCtrl,
                     decoration: const InputDecoration(labelText: 'Título'),
-                    validator: (v) => ValidationUtils.validateRequiredTextWithLetters(
-                      v,
-                      fieldName: 'El título de la lección',
-                    ),
+                    validator:
+                        (v) => ValidationUtils.validateRequiredTextWithLetters(
+                          v,
+                          fieldName: 'El título de la lección',
+                        ),
                   ),
                   TextFormField(
                     controller: objCtrl,
@@ -70,10 +73,29 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
                       labelText: 'Objetivos de la lección',
                     ),
                     maxLines: 3,
-                    validator: (v) => ValidationUtils.validateRequiredTextWithLetters(
-                      v,
-                      fieldName: 'Los objetivos de la lección',
+                    validator:
+                        (v) => ValidationUtils.validateRequiredTextWithLetters(
+                          v,
+                          fieldName: 'Los objetivos de la lección',
+                        ),
+                  ),
+                  TextFormField(
+                    controller: orderCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Orden de visualización',
+                      hintText: 'Número de orden',
                     ),
+                    keyboardType: TextInputType.number,
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) {
+                        return 'El orden es obligatorio';
+                      }
+                      final order = int.tryParse(v.trim());
+                      if (order == null || order < 0) {
+                        return 'Ingrese un número válido';
+                      }
+                      return null;
+                    },
                   ),
                 ],
               ),
@@ -103,12 +125,11 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
         courseId: lesson.courseId,
         moduleId: lesson.moduleId,
         title: titleCtrl.text.trim(),
-        contentDelta: lesson.contentDelta,
         objectives: objCtrl.text.trim().isEmpty ? null : objCtrl.text.trim(),
         media: lesson.media,
-        downloadableResources: lesson.downloadableResources,
-        orderIndex: lesson.orderIndex,
-        dripUnlockAt: lesson.dripUnlockAt,
+        strategies: lesson.strategies,
+        checkpoints: lesson.checkpoints,
+        orderIndex: int.parse(orderCtrl.text.trim()),
       );
       final success = await admin.updateLesson(updated);
       if (success) {
@@ -182,6 +203,7 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
   Future<void> _editModule(ModuleEntity module) async {
     final titleCtrl = TextEditingController(text: module.title);
     final descCtrl = TextEditingController(text: module.description ?? '');
+    final orderCtrl = TextEditingController(text: module.orderIndex.toString());
     final formKey = GlobalKey<FormState>();
 
     final ok = await showDialog<bool>(
@@ -197,10 +219,11 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
                   TextFormField(
                     controller: titleCtrl,
                     decoration: const InputDecoration(labelText: 'Título'),
-                    validator: (v) => ValidationUtils.validateRequiredTextWithLetters(
-                      v,
-                      fieldName: 'El título del módulo',
-                    ),
+                    validator:
+                        (v) => ValidationUtils.validateRequiredTextWithLetters(
+                          v,
+                          fieldName: 'El título del módulo',
+                        ),
                   ),
                   TextFormField(
                     controller: descCtrl,
@@ -208,10 +231,29 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
                       labelText: 'Descripción del módulo',
                     ),
                     maxLines: 3,
-                    validator: (v) => ValidationUtils.validateRequiredTextWithLetters(
-                      v,
-                      fieldName: 'La descripción del módulo',
+                    validator:
+                        (v) => ValidationUtils.validateRequiredTextWithLetters(
+                          v,
+                          fieldName: 'La descripción del módulo',
+                        ),
+                  ),
+                  TextFormField(
+                    controller: orderCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Orden de visualización',
+                      hintText: 'Número de orden',
                     ),
+                    keyboardType: TextInputType.number,
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) {
+                        return 'El orden es obligatorio';
+                      }
+                      final order = int.tryParse(v.trim());
+                      if (order == null || order < 0) {
+                        return 'Ingrese un número válido';
+                      }
+                      return null;
+                    },
                   ),
                 ],
               ),
@@ -241,12 +283,13 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
         courseId: module.courseId,
         title: titleCtrl.text.trim(),
         description: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
-        orderIndex: module.orderIndex,
+        orderIndex: int.parse(orderCtrl.text.trim()),
       );
       final success = await admin.updateModule(updated);
       if (success) {
-        // Replace in list
+        // Replace in list and reorder
         setState(() {
+          _modules.sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
           _modules =
               _modules.map((m) => m.id == updated.id ? updated : m).toList();
         });
@@ -414,13 +457,11 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
                         courseId: lesson.courseId,
                         moduleId: lesson.moduleId,
                         title: lesson.title,
-                        contentDelta: lesson.contentDelta,
                         objectives: lesson.objectives,
                         media: lesson.media,
-                        downloadableResources: lesson.downloadableResources,
                         strategies: strategies,
+                        checkpoints: lesson.checkpoints,
                         orderIndex: lesson.orderIndex,
-                        dripUnlockAt: lesson.dripUnlockAt,
                       );
                       final success = await admin.updateLesson(updated);
                       if (success) {
@@ -482,20 +523,22 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
                   TextFormField(
                     controller: titleCtrl,
                     decoration: const InputDecoration(labelText: 'Título'),
-                    validator: (v) => ValidationUtils.validateRequiredTextWithLetters(
-                      v,
-                      fieldName: 'El título de la estrategia',
-                    ),
+                    validator:
+                        (v) => ValidationUtils.validateRequiredTextWithLetters(
+                          v,
+                          fieldName: 'El título de la estrategia',
+                        ),
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: descCtrl,
                     decoration: const InputDecoration(labelText: 'Descripción'),
                     maxLines: 5,
-                    validator: (v) => ValidationUtils.validateRequiredTextWithLetters(
-                      v,
-                      fieldName: 'La descripción de la estrategia',
-                    ),
+                    validator:
+                        (v) => ValidationUtils.validateRequiredTextWithLetters(
+                          v,
+                          fieldName: 'La descripción de la estrategia',
+                        ),
                   ),
                 ],
               ),
@@ -518,6 +561,365 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
               ),
             ],
           ),
+    );
+  }
+
+  Future<void> _manageCheckpoints({
+    required ModuleEntity module,
+    required LessonEntity lesson,
+  }) async {
+    final checkpoints = List<CheckpointEntity>.from(
+      lesson.checkpoints ?? const <CheckpointEntity>[],
+    );
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text('Checkpoints de Video: ${lesson.title}'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (checkpoints.isEmpty)
+                      const Text('No hay checkpoints definidos.')
+                    else
+                      Flexible(
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: checkpoints.length,
+                          itemBuilder: (context, index) {
+                            final cp = checkpoints[index];
+                            return ListTile(
+                              title: Text('Min: ${cp.triggerPositionSeconds}s'),
+                              subtitle: Text(
+                                cp.question,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit),
+                                    onPressed: () async {
+                                      final result =
+                                          await _editCheckpointDialog(
+                                            context,
+                                            lessonId: lesson.id,
+                                            checkpoint: cp,
+                                          );
+                                      if (result != null) {
+                                        setState(() {
+                                          checkpoints[index] = result;
+                                        });
+                                      }
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete),
+                                    onPressed: () {
+                                      setState(() {
+                                        checkpoints.removeAt(index);
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final result = await _editCheckpointDialog(
+                          context,
+                          lessonId: lesson.id,
+                        );
+                        if (result != null) {
+                          setState(() {
+                            checkpoints.add(result);
+                          });
+                        }
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text('Agregar Checkpoint'),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    try {
+                      final admin = ref.read(adminContentStateProvider);
+                      final updated = LessonEntity(
+                        id: lesson.id,
+                        courseId: lesson.courseId,
+                        moduleId: lesson.moduleId,
+                        title: lesson.title,
+                        objectives: lesson.objectives,
+                        media: lesson.media,
+                        strategies: lesson.strategies,
+                        checkpoints: checkpoints,
+                        orderIndex: lesson.orderIndex,
+                      );
+                      final success = await admin.updateLesson(updated);
+                      if (success) {
+                        await _loadLessons(module.id);
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Checkpoints actualizados correctamente',
+                            ),
+                          ),
+                        );
+                      } else if (admin.error != null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(admin.error!),
+                            backgroundColor: AppColors.errorColor,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error al actualizar checkpoints: $e'),
+                          backgroundColor: AppColors.errorColor,
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text('Guardar Cambios'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<CheckpointEntity?> _editCheckpointDialog(
+    BuildContext context, {
+    required String lessonId,
+    CheckpointEntity? checkpoint,
+  }) async {
+    final questionCtrl = TextEditingController(
+      text: checkpoint?.question ?? '',
+    );
+    final option1Ctrl = TextEditingController(
+      text:
+          checkpoint != null && checkpoint.options.isNotEmpty
+              ? checkpoint.options[0]
+              : '',
+    );
+    final option2Ctrl = TextEditingController(
+      text:
+          checkpoint != null && checkpoint.options.length > 1
+              ? checkpoint.options[1]
+              : '',
+    );
+    final option3Ctrl = TextEditingController(
+      text:
+          checkpoint != null && checkpoint.options.length > 2
+              ? checkpoint.options[2]
+              : '',
+    );
+    final minutesCtrl = TextEditingController(
+      text:
+          checkpoint != null
+              ? (checkpoint.triggerPositionSeconds ~/ 60).toString()
+              : '',
+    );
+    final secondsCtrl = TextEditingController(
+      text:
+          checkpoint != null
+              ? (checkpoint.triggerPositionSeconds % 60).toString()
+              : '',
+    );
+    final formKey = GlobalKey<FormState>();
+    int correctOptionIndex = checkpoint?.correctOptionIndex ?? 0;
+
+    return showDialog<CheckpointEntity>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text(
+                checkpoint == null ? 'Nuevo Checkpoint' : 'Editar Checkpoint',
+              ),
+              content: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextFormField(
+                        controller: questionCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Pregunta *',
+                        ),
+                        maxLines: 3,
+                        validator:
+                            (v) =>
+                                ValidationUtils.validateRequiredTextWithLetters(
+                                  v,
+                                  fieldName: 'La pregunta',
+                                ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Momento de aparición:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: minutesCtrl,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Minutos',
+                                hintText: '0',
+                              ),
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) {
+                                  return 'Obligatorio';
+                                }
+                                final mins = int.tryParse(v.trim());
+                                if (mins == null || mins < 0) {
+                                  return 'Inválido';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextFormField(
+                              controller: secondsCtrl,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Segundos',
+                                hintText: '0-59',
+                              ),
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) return null;
+                                final secs = int.tryParse(v.trim());
+                                if (secs == null || secs < 0 || secs >= 60) {
+                                  return '0-59';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Opciones de respuesta (selección múltiple):',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      ...List.generate(3, (index) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Row(
+                            children: [
+                              Radio<int>(
+                                value: index,
+                                groupValue: correctOptionIndex,
+                                onChanged: (value) {
+                                  setState(() {
+                                    correctOptionIndex = value!;
+                                  });
+                                },
+                              ),
+                              Expanded(
+                                child: TextFormField(
+                                  controller:
+                                      [
+                                        option1Ctrl,
+                                        option2Ctrl,
+                                        option3Ctrl,
+                                      ][index],
+                                  decoration: InputDecoration(
+                                    labelText: 'Opción ${index + 1} *',
+                                  ),
+                                  validator:
+                                      (v) =>
+                                          ValidationUtils.validateRequiredTextWithLetters(
+                                            v,
+                                            fieldName: 'La opción ${index + 1}',
+                                          ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Seleccione la opción correcta con el radio button.',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (formKey.currentState!.validate()) {
+                      final mins = int.tryParse(minutesCtrl.text.trim()) ?? 0;
+                      final secs = int.tryParse(secondsCtrl.text.trim()) ?? 0;
+                      final triggerSeconds = (mins * 60) + secs;
+
+                      final options = [
+                        option1Ctrl.text.trim(),
+                        option2Ctrl.text.trim(),
+                        option3Ctrl.text.trim(),
+                      ];
+
+                      final newCheckpoint = CheckpointEntity(
+                        id:
+                            checkpoint?.id ??
+                            'checkpoint_${DateTime.now().millisecondsSinceEpoch}',
+                        lessonId: lessonId,
+                        triggerPositionSeconds: triggerSeconds,
+                        question: questionCtrl.text.trim(),
+                        options: options,
+                        correctOptionIndex: correctOptionIndex,
+                      );
+
+                      Navigator.pop(context, newCheckpoint);
+                    }
+                  },
+                  child: const Text('Guardar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -596,6 +998,7 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
   Future<void> _addModule() async {
     final titleCtrl = TextEditingController();
     final descCtrl = TextEditingController();
+    final orderCtrl = TextEditingController(text: '${_modules.length}');
     final formKey = GlobalKey<FormState>();
 
     final ok = await showDialog<bool>(
@@ -613,10 +1016,11 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
                     decoration: const InputDecoration(
                       labelText: 'Título del módulo',
                     ),
-                    validator: (v) => ValidationUtils.validateRequiredTextWithLetters(
-                      v,
-                      fieldName: 'El título del módulo',
-                    ),
+                    validator:
+                        (v) => ValidationUtils.validateRequiredTextWithLetters(
+                          v,
+                          fieldName: 'El título del módulo',
+                        ),
                   ),
                   TextFormField(
                     controller: descCtrl,
@@ -624,10 +1028,29 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
                       labelText: 'Descripción del módulo',
                     ),
                     maxLines: 3,
-                    validator: (v) => ValidationUtils.validateRequiredTextWithLetters(
-                      v,
-                      fieldName: 'La descripción del módulo',
+                    validator:
+                        (v) => ValidationUtils.validateRequiredTextWithLetters(
+                          v,
+                          fieldName: 'La descripción del módulo',
+                        ),
+                  ),
+                  TextFormField(
+                    controller: orderCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Orden de visualización',
+                      hintText: 'Número de orden',
                     ),
+                    keyboardType: TextInputType.number,
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) {
+                        return 'El orden es obligatorio';
+                      }
+                      final order = int.tryParse(v.trim());
+                      if (order == null || order < 0) {
+                        return 'Ingrese un número válido';
+                      }
+                      return null;
+                    },
                   ),
                 ],
               ),
@@ -657,11 +1080,14 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
         courseId: widget.courseId,
         title: titleCtrl.text.trim(),
         description: descCtrl.text.trim(),
-        orderIndex: _modules.length,
+        orderIndex: int.parse(orderCtrl.text.trim()),
       );
       final created = await admin.createModule(module);
       if (created != null) {
-        setState(() => _modules = [..._modules, created]);
+        setState(() {
+          _modules.add(created);
+          _modules.sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
+        });
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -676,6 +1102,9 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
   Future<void> _addLesson(ModuleEntity module) async {
     final titleCtrl = TextEditingController();
     final objCtrl = TextEditingController();
+    final orderCtrl = TextEditingController(
+      text: '${(_lessonsByModule[module.id] ?? []).length}',
+    );
     final formKey = GlobalKey<FormState>();
 
     final ok = await showDialog<bool>(
@@ -693,10 +1122,11 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
                     decoration: const InputDecoration(
                       labelText: 'Título de la lección',
                     ),
-                    validator: (v) => ValidationUtils.validateRequiredTextWithLetters(
-                      v,
-                      fieldName: 'El título de la lección',
-                    ),
+                    validator:
+                        (v) => ValidationUtils.validateRequiredTextWithLetters(
+                          v,
+                          fieldName: 'El título de la lección',
+                        ),
                   ),
                   TextFormField(
                     controller: objCtrl,
@@ -704,10 +1134,29 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
                       labelText: 'Objetivos de la lección',
                     ),
                     maxLines: 3,
-                    validator: (v) => ValidationUtils.validateRequiredTextWithLetters(
-                      v,
-                      fieldName: 'Los objetivos de la lección',
+                    validator:
+                        (v) => ValidationUtils.validateRequiredTextWithLetters(
+                          v,
+                          fieldName: 'Los objetivos de la lección',
+                        ),
+                  ),
+                  TextFormField(
+                    controller: orderCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Orden de visualización',
+                      hintText: 'Número de orden',
                     ),
+                    keyboardType: TextInputType.number,
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) {
+                        return 'El orden es obligatorio';
+                      }
+                      final order = int.tryParse(v.trim());
+                      if (order == null || order < 0) {
+                        return 'Ingrese un número válido';
+                      }
+                      return null;
+                    },
                   ),
                 ],
               ),
@@ -732,23 +1181,24 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
 
     try {
       final admin = ref.read(adminContentStateProvider);
-      final current = _lessonsByModule[module.id] ?? [];
       final lesson = LessonEntity(
         id: '',
         courseId: widget.courseId,
         moduleId: module.id,
         title: titleCtrl.text.trim(),
-        contentDelta: null,
         objectives: objCtrl.text.trim().isEmpty ? null : objCtrl.text.trim(),
         media: const [],
-        downloadableResources: const [],
-        orderIndex: current.length,
-        dripUnlockAt: null,
+        orderIndex: int.parse(orderCtrl.text.trim()),
       );
       final created = await admin.createLesson(lesson);
       if (created != null) {
         setState(() {
-          _lessonsByModule[module.id] = [...current, created];
+          final lessons = <LessonEntity>[
+            ...(_lessonsByModule[module.id] ?? []),
+            created,
+          ];
+          lessons.sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
+          _lessonsByModule[module.id] = lessons;
         });
       }
     } catch (e) {
@@ -926,6 +1376,16 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
                                           Icons.lightbulb_outline,
                                         ),
                                       ),
+                                      IconButton(
+                                        tooltip:
+                                            'Gestionar checkpoints de video',
+                                        onPressed:
+                                            () => _manageCheckpoints(
+                                              module: m,
+                                              lesson: l,
+                                            ),
+                                        icon: const Icon(Icons.quiz_outlined),
+                                      ),
                                     ],
                                   ),
                                 ],
@@ -1039,7 +1499,7 @@ class _CourseContentScreenState extends ConsumerState<CourseContentScreen> {
         moduleId: module.id,
         lessonId: lesson.id,
         userId: user.uid,
-        userName: user.email,
+        userName: user.name ?? user.email,
         text: textCtrl.text,
       );
       if (ok) {

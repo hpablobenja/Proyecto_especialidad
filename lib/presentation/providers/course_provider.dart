@@ -41,7 +41,11 @@ class CourseProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> createCourse(String title, String description, {String targetAudience = 'General'}) async {
+  Future<bool> createCourse(
+    String title,
+    String description, {
+    String targetAudience = 'General',
+  }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -49,7 +53,7 @@ class CourseProvider extends ChangeNotifier {
     try {
       final created = await createCourseUsecase.call(
         CreateCourseParams(
-          title: title, 
+          title: title,
           description: description,
           targetAudience: targetAudience,
         ),

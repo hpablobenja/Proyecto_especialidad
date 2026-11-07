@@ -7,7 +7,10 @@ class ListLessonsUsecase {
   final ContentRepository repo;
   ListLessonsUsecase(this.repo);
 
-  Future<List<LessonEntity>> call({required String courseId, required String moduleId}) async {
+  Future<List<LessonEntity>> call({
+    required String courseId,
+    required String moduleId,
+  }) async {
     return repo.listLessons(courseId, moduleId);
   }
 }

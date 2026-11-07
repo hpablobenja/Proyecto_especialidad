@@ -10,7 +10,14 @@ class UserModel extends UserEntity {
     required String role,
     String? workArea,
     String? specialty,
-  }) : super(uid: uid, email: email, name: name, role: role, workArea: workArea, specialty: specialty);
+  }) : super(
+         uid: uid,
+         email: email,
+         name: name,
+         role: role,
+         workArea: workArea,
+         specialty: specialty,
+       );
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
     return UserModel(

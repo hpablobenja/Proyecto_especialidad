@@ -8,6 +8,7 @@ import '../../../domain/entities/module_entity.dart';
 import '../../../domain/entities/lesson_entity.dart';
 import '../../../domain/entities/media_resource.dart';
 import '../../../domain/entities/comment_entity.dart';
+import '../../../domain/entities/checkpoint_entity.dart';
 
 abstract class ContentRemoteDataSource {
   Future<List<CourseEntity>> listCourses();
@@ -69,7 +70,7 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
   CollectionReference<Map<String, dynamic>> _modulesCol(String courseId) =>
       _coursesCol.doc(courseId).collection('modules');
   CollectionReference<Map<String, dynamic>> get _rootLessonsCol =>
-      firestore.collection('lecciones');
+      firestore.collection('lessons');
   CollectionReference<Map<String, dynamic>> _commentsCol(
     String courseId,
     String moduleId,
@@ -165,37 +166,36 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
     'courseId': l.courseId,
     'moduleId': l.moduleId,
     'title': l.title,
-    'contentDelta': l.contentDelta,
     'objectives': l.objectives,
     'media': l.media.map(_mediaToMap).toList(),
-    'downloadableResources': l.downloadableResources.map(_mediaToMap).toList(),
     'strategies': l.strategies,
     'orderIndex': l.orderIndex,
-    'dripUnlockAt': l.dripUnlockAt,
+    'checkpoints': l.checkpoints?.map((cp) => cp.toMap()).toList(),
   };
 
   LessonEntity _lessonFromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data() ?? {};
     final mediaList = (d['media'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-    final resList =
-        (d['downloadableResources'] as List?)?.cast<Map<String, dynamic>>() ??
-        [];
     final strategiesList =
         (d['strategies'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     final strategies =
         strategiesList.map((s) => s.cast<String, String>()).toList();
+    final checkpointsList =
+        (d['checkpoints'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final checkpoints =
+        checkpointsList
+            .map((cp) => CheckpointEntity.fromMap(cp.cast<String, dynamic>()))
+            .toList();
     return LessonEntity(
       id: doc.id,
       courseId: (d['courseId'] ?? '') as String,
       moduleId: (d['moduleId'] ?? '') as String,
       title: (d['title'] ?? '') as String,
-      contentDelta: (d['contentDelta'] as List?)?.cast<dynamic>(),
       objectives: d['objectives'] as String?,
       media: mediaList.map(_mediaFromMap).toList(),
-      downloadableResources: resList.map(_mediaFromMap).toList(),
       strategies: strategies,
       orderIndex: (d['orderIndex'] ?? 0) as int,
-      dripUnlockAt: (d['dripUnlockAt'] as Timestamp?)?.toDate(),
+      checkpoints: checkpoints,
     );
   }
 

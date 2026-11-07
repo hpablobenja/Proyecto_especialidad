@@ -30,10 +30,14 @@ class NotificationModel {
       type: data['type'] ?? 'info',
       courseId: data['courseId'],
       isRead: data['isRead'] ?? false,
-      createdAt: data['createdAt'] != null 
-          ? (data['createdAt'] as Timestamp).toDate() 
-          : DateTime.now(),
-      readAt: data['readAt'] != null ? (data['readAt'] as Timestamp).toDate() : null,
+      createdAt:
+          data['createdAt'] != null
+              ? (data['createdAt'] as Timestamp).toDate()
+              : DateTime.now(),
+      readAt:
+          data['readAt'] != null
+              ? (data['readAt'] as Timestamp).toDate()
+              : null,
     );
   }
 

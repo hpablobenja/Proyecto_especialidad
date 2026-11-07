@@ -1,5 +1,6 @@
 // lib/core/di/riverpod_providers.dart
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -9,6 +10,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import '../../data/datasources/remote/auth_remote_datasource.dart';
 import '../../data/datasources/remote/course_remote_datasource.dart';
 import '../../data/datasources/remote/content_remote_datasource.dart';
+import '../../data/datasources/remote/video_tracking_remote_datasource.dart';
 
 // Repositories
 import '../../data/repositories/auth_repository_impl.dart';
@@ -67,6 +69,7 @@ import '../../domain/usecases/content/add_comment_usecase.dart'
     as content_add_comment;
 import '../../domain/usecases/content/delete_comment_usecase.dart'
     as content_delete_comment;
+import '../../domain/usecases/content/import_excel_usecase.dart';
 
 // Presentation Providers
 import '../../presentation/providers/auth_provider.dart';
@@ -80,6 +83,11 @@ import '../../presentation/providers/dashboard_provider.dart';
 import '../../presentation/providers/connectivity_provider.dart';
 import '../../core/services/pdf_generator_service.dart';
 import '../../core/services/offline_cache_service.dart';
+import '../../core/services/excel_import_service.dart';
+import '../../core/services/quiz_offline_service.dart';
+import '../../core/services/session_tracking_service.dart';
+import '../../core/services/system_config_service.dart';
+import '../../domain/entities/system_config_entity.dart';
 
 // ----------------------- External Libraries Providers -----------------------
 final firebaseAuthProvider = Provider<FirebaseAuth>(
@@ -92,6 +100,14 @@ final firebaseStorageProvider = Provider<FirebaseStorage>(
   (ref) => FirebaseStorage.instance,
 );
 
+// ----------------------- Video Tracking Remote DataSource Provider -----------------------
+final videoTrackingRemoteDataSourceProvider =
+    Provider<VideoTrackingRemoteDataSource>((ref) {
+      return VideoTrackingRemoteDataSource(
+        firestore: ref.watch(firestoreProvider),
+      );
+    });
+
 // ----------------------- App Services Providers -----------------------
 final pdfGeneratorServiceProvider = Provider<PdfGeneratorService>((ref) {
   return PdfGeneratorService();
@@ -99,6 +115,25 @@ final pdfGeneratorServiceProvider = Provider<PdfGeneratorService>((ref) {
 
 final offlineCacheServiceProvider = Provider<OfflineCacheService>((ref) {
   return OfflineCacheService();
+});
+
+final excelImportServiceProvider = Provider<ExcelImportService>((ref) {
+  return ExcelImportService();
+});
+
+final quizOfflineServiceProvider = Provider<QuizOfflineService>((ref) {
+  final service = QuizOfflineService();
+  ref.onDispose(() => service.close());
+  return service;
+});
+
+final systemConfigServiceProvider = Provider<SystemConfigService>((ref) {
+  return SystemConfigService(firestore: ref.watch(firestoreProvider));
+});
+
+final systemConfigProvider = FutureProvider<SystemConfigEntity>((ref) async {
+  final service = ref.watch(systemConfigServiceProvider);
+  return await service.getConfig();
 });
 
 // ----------------------- Data Sources Providers -----------------------
@@ -323,6 +358,10 @@ final deleteCommentUsecaseProvider =
       );
     });
 
+final importExcelUsecaseProvider = Provider<ImportExcelUsecase>((ref) {
+  return ImportExcelUsecase(ref.watch(excelImportServiceProvider));
+});
+
 // ----------------------- ChangeNotifier Providers -----------------------
 
 final authStateProvider = ChangeNotifierProvider<AuthProvider>((ref) {
@@ -406,4 +445,15 @@ final connectivityStateProvider = ChangeNotifierProvider<ConnectivityProvider>((
 ) {
   ref.keepAlive();
   return ConnectivityProvider();
+});
+
+/// Provider para inicializar SessionTrackingService con configuración
+final sessionTrackingConfigProvider = FutureProvider<void>((ref) async {
+  try {
+    final config = await ref.watch(systemConfigProvider.future);
+    SessionTrackingService().updateConfig(config);
+    debugPrint('SessionTrackingService initialized with config');
+  } catch (e) {
+    debugPrint('Error initializing SessionTrackingService config: $e');
+  }
 });

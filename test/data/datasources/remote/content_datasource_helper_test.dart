@@ -8,11 +8,14 @@ void main() {
       expect(ContentRemoteDataSource, isNotNull);
     });
 
-    test('ContentRemoteDataSourceImpl is implemented with Firestore and Storage dependencies', () {
-      expect(ContentRemoteDataSourceImpl, isNotNull);
-      expect(ContentRemoteDataSourceImpl.new, isA<Function>());
-      expect(ContentRemoteDataSourceImpl, isA<Type>());
-    });
+    test(
+      'ContentRemoteDataSourceImpl is implemented with Firestore and Storage dependencies',
+      () {
+        expect(ContentRemoteDataSourceImpl, isNotNull);
+        expect(ContentRemoteDataSourceImpl.new, isA<Function>());
+        expect(ContentRemoteDataSourceImpl, isA<Type>());
+      },
+    );
   });
 
   group('MediaUploadRequest Tests', () {

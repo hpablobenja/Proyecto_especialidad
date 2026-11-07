@@ -32,29 +32,44 @@ void main() {
       test('returns default message for unknown error code', () {
         final error = FirebaseAuthException(code: 'unknown-error');
         final result = FirebaseUtils.handleFirebaseAuthError(error);
-        expect(result, 'Ocurrió un error inesperado. Por favor, intente de nuevo más tarde.');
+        expect(
+          result,
+          'Ocurrió un error inesperado. Por favor, intente de nuevo más tarde.',
+        );
       });
 
       test('returns default message for empty code', () {
         final error = FirebaseAuthException(code: '');
         final result = FirebaseUtils.handleFirebaseAuthError(error);
-        expect(result, 'Ocurrió un error inesperado. Por favor, intente de nuevo más tarde.');
+        expect(
+          result,
+          'Ocurrió un error inesperado. Por favor, intente de nuevo más tarde.',
+        );
       });
 
       test('returns default message for weak-password error', () {
         final error = FirebaseAuthException(code: 'weak-password');
         final result = FirebaseUtils.handleFirebaseAuthError(error);
-        expect(result, 'Ocurrió un error inesperado. Por favor, intente de nuevo más tarde.');
+        expect(
+          result,
+          'Ocurrió un error inesperado. Por favor, intente de nuevo más tarde.',
+        );
       });
 
       test('returns default message for too-many-requests error', () {
         final error = FirebaseAuthException(code: 'too-many-requests');
         final result = FirebaseUtils.handleFirebaseAuthError(error);
-        expect(result, 'Ocurrió un error inesperado. Por favor, intente de nuevo más tarde.');
+        expect(
+          result,
+          'Ocurrió un error inesperado. Por favor, intente de nuevo más tarde.',
+        );
       });
 
       test('handles error with message', () {
-        final error = FirebaseAuthException(code: 'user-not-found', message: 'Custom message');
+        final error = FirebaseAuthException(
+          code: 'user-not-found',
+          message: 'Custom message',
+        );
         final result = FirebaseUtils.handleFirebaseAuthError(error);
         expect(result, 'No se encontró un usuario con ese correo electrónico.');
       });

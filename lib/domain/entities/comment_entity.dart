@@ -27,14 +27,14 @@ class CommentEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        courseId,
-        moduleId,
-        lessonId,
-        userId,
-        userName,
-        text,
-        createdAt,
-        updatedAt,
-      ];
+    id,
+    courseId,
+    moduleId,
+    lessonId,
+    userId,
+    userName,
+    text,
+    createdAt,
+    updatedAt,
+  ];
 }

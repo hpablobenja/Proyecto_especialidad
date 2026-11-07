@@ -28,8 +28,9 @@ void main() {
         ),
       ];
 
-      when(mockContentRemoteDataSource.listCourses())
-          .thenAnswer((_) async => expectedCourses);
+      when(
+        mockContentRemoteDataSource.listCourses(),
+      ).thenAnswer((_) async => expectedCourses);
 
       final result = await contentRepositoryImpl.listCourses();
 
@@ -45,8 +46,9 @@ void main() {
         targetAudience: 'Todos',
       );
 
-      when(mockContentRemoteDataSource.createCourse(course))
-          .thenAnswer((_) async => course);
+      when(
+        mockContentRemoteDataSource.createCourse(course),
+      ).thenAnswer((_) async => course);
 
       final result = await contentRepositoryImpl.createCourse(course);
 

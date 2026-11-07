@@ -14,29 +14,28 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      scaffoldBackgroundColor: AppColors.backgroundLight,
+      scaffoldBackgroundColor: AppColors.scaffoldBackground,
       fontFamily: AppStyles.fontFamily,
-
       // Color Scheme
       colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.primaryBlue,
+        seedColor: const Color(0xFF0D9488), // Violeta/morado principal
         brightness: Brightness.light,
-        primary: AppColors.primaryBlue,
+        primary: const Color(0xFF0D9488),
         onPrimary: Colors.white,
-        primaryContainer: Colors.green.shade100,
-        onPrimaryContainer: Colors.green.shade900,
-        secondary: AppColors.primaryBlue,
+        primaryContainer: const Color(0xFFE8E0F7),
+        onPrimaryContainer: const Color(0xFF2D3748),
+        secondary: const Color(0xFF0D9488),
         onSecondary: Colors.white,
         secondaryContainer: const Color(0xFFFFE0B2),
-        onSecondaryContainer: AppColors.textPrimary,
+        onSecondaryContainer: const Color(0xFF2D3748),
         tertiary: AppColors.accentGreen,
         onTertiary: Colors.white,
         tertiaryContainer: const Color(0xFFE0F2F1),
-        onTertiaryContainer: AppColors.textPrimary,
-        surface: AppColors.surfaceLight,
-        onSurface: AppColors.textPrimary,
-        background: AppColors.backgroundLight,
-        onBackground: AppColors.textPrimary,
+        onTertiaryContainer: const Color(0xFF2D3748),
+        surface: AppColors.cardBackground,
+        onSurface: const Color(0xFF2D3748),
+        background: AppColors.scaffoldBackground,
+        onBackground: const Color(0xFF2D3748),
         error: AppColors.error,
         onError: Colors.white,
         errorContainer: const Color(0xFFFFEBEE),
@@ -47,15 +46,56 @@ class AppTheme {
         scrim: Colors.black26,
         inverseSurface: AppColors.surfaceDark,
         onInverseSurface: AppColors.textPrimaryDark,
-        inversePrimary: AppColors.primaryBlueLight,
+        inversePrimary: const Color(0xFFB8A3E8),
       ),
 
       // Text Theme
-      textTheme: _buildTextTheme(false),
+      textTheme: _buildTextTheme(false).copyWith(
+        // Sobrescribir colores de texto para usar tonos más oscuros pero suaves
+        displayLarge: AppStyles.displayLarge.copyWith(
+          color: const Color(0xFF2D3748),
+        ),
+        displayMedium: AppStyles.displayMedium.copyWith(
+          color: const Color(0xFF2D3748),
+        ),
+        displaySmall: AppStyles.displaySmall.copyWith(
+          color: const Color(0xFF2D3748),
+        ),
+        headlineLarge: AppStyles.headlineLarge.copyWith(
+          color: const Color(0xFF2D3748),
+        ),
+        headlineMedium: AppStyles.headlineMedium.copyWith(
+          color: const Color(0xFF2D3748),
+        ),
+        headlineSmall: AppStyles.headlineSmall.copyWith(
+          color: const Color(0xFF2D3748),
+        ),
+        titleLarge: AppStyles.titleLarge.copyWith(
+          color: const Color(0xFF2D3748),
+        ),
+        titleMedium: AppStyles.titleMedium.copyWith(
+          color: const Color(0xFF2D3748),
+        ),
+        titleSmall: AppStyles.titleSmall.copyWith(
+          color: const Color(0xFF2D3748),
+        ),
+        bodyLarge: AppStyles.bodyLarge.copyWith(color: const Color(0xFF2D3748)),
+        bodyMedium: AppStyles.bodyMedium.copyWith(
+          color: const Color(0xFF2D3748),
+        ),
+        bodySmall: AppStyles.bodySmall.copyWith(color: const Color(0xFF4A5568)),
+        labelLarge: AppStyles.labelLarge.copyWith(
+          color: const Color(0xFF2D3748),
+        ),
+        labelMedium: AppStyles.labelMedium.copyWith(
+          color: const Color(0xFF4A5568),
+        ),
+        labelSmall: AppStyles.labelSmall.copyWith(color: AppColors.textMuted),
+      ),
 
       // App Bar Theme
       appBarTheme: AppBarTheme(
-        backgroundColor: const Color.fromARGB(255, 145, 124, 217),
+        backgroundColor: const Color(0xFF0D9488), // Violeta/morado consistente
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
@@ -68,9 +108,9 @@ class AppTheme {
 
       // Card Theme
       cardTheme: CardThemeData(
-        color: AppColors.cardLight,
-        elevation: 2,
-        shadowColor: Colors.black.withOpacity(0.08),
+        color: AppColors.cardBackground,
+        elevation: 0,
+        shadowColor: AppColors.cardShadow,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(_cardRadius),
         ),
@@ -170,9 +210,9 @@ class AppTheme {
 
       // Bottom Navigation Bar Theme
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: Color.fromARGB(255, 212, 221, 240),
-        selectedItemColor: Color.fromARGB(255, 1, 1, 1),
-        unselectedItemColor: Colors.grey,
+        backgroundColor: Colors.white,
+        selectedItemColor: Color(0xFF917CDC), // Violeta/morado activo
+        unselectedItemColor: AppColors.navInactive, // Gris neutro inactivo
         type: BottomNavigationBarType.fixed,
         elevation: 8,
         selectedLabelStyle: TextStyle(
@@ -195,15 +235,32 @@ class AppTheme {
         ),
       ),
 
-      // Chip Theme
+      // Chip Theme (Filtros/Píldoras)
       chipTheme: ChipThemeData(
-        backgroundColor: Colors.white,
-        selectedColor: Colors.green.shade100,
+        backgroundColor: const Color(
+          0xFFF1F4F8,
+        ), // Fondo gris claro no seleccionado
+        selectedColor: const Color.fromRGBO(
+          220,
+          217,
+          221,
+          1,
+        ), // Color sólido seleccionado
         disabledColor: AppColors.textMuted.withOpacity(0.1),
-        labelStyle: AppStyles.labelMedium,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        elevation: 1,
-        pressElevation: 2,
+        labelStyle: AppStyles.labelMedium.copyWith(
+          color: const Color(0xFF2D3748),
+        ),
+        secondaryLabelStyle: AppStyles.labelMedium.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: AppColors.borderLight, width: 1),
+        ),
+        elevation: 0,
+        pressElevation: 0,
+        side: const BorderSide(color: AppColors.borderLight, width: 1),
       ),
 
       // Divider Theme
@@ -305,25 +362,22 @@ class AppTheme {
 
       // App Bar Theme
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.backgroundDark,
-        foregroundColor: AppColors.textPrimaryDark,
+        backgroundColor: const Color(0xFF0D9488), // Violeta/morado consistente
+        foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
         titleTextStyle: AppStyles.headlineMedium.copyWith(
-          color: AppColors.textPrimaryDark,
+          color: Colors.white,
           fontWeight: FontWeight.w600,
         ),
-        iconTheme: const IconThemeData(
-          color: AppColors.textPrimaryDark,
-          size: 24,
-        ),
+        iconTheme: const IconThemeData(color: Colors.white, size: 24),
       ),
 
       // Card Theme
       cardTheme: CardThemeData(
         color: AppColors.cardDark,
-        elevation: 4,
-        shadowColor: Colors.black.withOpacity(0.3),
+        elevation: 0,
+        shadowColor: Colors.black.withOpacity(0.15),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(_cardRadius),
         ),
@@ -426,7 +480,7 @@ class AppTheme {
       // Bottom Navigation Bar Theme
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.backgroundDark,
-        selectedItemColor: AppColors.primaryBlue,
+        selectedItemColor: const Color(0xFF0D9488), // Violeta/morado activo
         unselectedItemColor: AppColors.textSecondaryDark,
         type: BottomNavigationBarType.fixed,
         elevation: 8,
@@ -450,15 +504,25 @@ class AppTheme {
         ),
       ),
 
-      // Chip Theme
+      // Chip Theme (Filtros/Píldoras)
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.surfaceDark,
-        selectedColor: AppColors.primaryBlue,
+        selectedColor: const Color(0xFF0D9488),
         disabledColor: AppColors.textMutedDark.withOpacity(0.1),
-        labelStyle: AppStyles.labelMedium,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        elevation: 2,
-        pressElevation: 4,
+        labelStyle: AppStyles.labelMedium.copyWith(
+          color: AppColors.textPrimaryDark,
+        ),
+        secondaryLabelStyle: AppStyles.labelMedium.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: AppColors.borderDark, width: 1),
+        ),
+        elevation: 0,
+        pressElevation: 0,
+        side: const BorderSide(color: AppColors.borderDark, width: 1),
       ),
 
       // Divider Theme

@@ -8,7 +8,8 @@ class UserEntity extends Equatable {
   final String name;
   final String role; // 'maestro' o 'admin'
   final String? workArea; // 'Urbano' o 'Rural'
-  final String? specialty; // 'Educación Inicial', 'Educación Primaria', 'Matemática', 'Biología y Geografía', 'Física', 'Química', 'Lengua Extranjera', 'Artes Plásticas', 'Educación Musical', 'Otros'
+  final String?
+  specialty; // 'Educación Inicial', 'Educación Primaria', 'Matemática', 'Biología y Geografía', 'Física', 'Química', 'Lengua Extranjera', 'Artes Plásticas', 'Educación Musical', 'Otros'
 
   const UserEntity({
     required this.uid,

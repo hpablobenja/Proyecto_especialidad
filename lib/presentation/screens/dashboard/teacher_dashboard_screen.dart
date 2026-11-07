@@ -1,14 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_styles.dart';
-import '../../../data/models/data_user_model.dart';
+import '../../../data/models/data_user_hive.dart';
 import '../../../data/repositories/data_user_repository.dart';
-import '../../../core/di/riverpod_providers.dart';
-import '../../../domain/usecases/courses/get_course_progress_usecase.dart';
+import '../../../core/services/dashboard_sync_service.dart';
 
 class TeacherDashboardScreen extends ConsumerStatefulWidget {
   const TeacherDashboardScreen({super.key});
@@ -18,30 +16,79 @@ class TeacherDashboardScreen extends ConsumerStatefulWidget {
       _TeacherDashboardScreenState();
 }
 
-class _TeacherDashboardScreenState
-    extends ConsumerState<TeacherDashboardScreen> {
+class _TeacherDashboardScreenState extends ConsumerState<TeacherDashboardScreen>
+    with WidgetsBindingObserver {
   final DataUserRepository _dataUserRepository = DataUserRepository();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final DashboardSyncService _dashboardSyncService = DashboardSyncService();
   StreamSubscription? _userDataSubscription;
   StreamSubscription? _userProgressSubscription;
+  Timer? _sessionTimer;
+  // Evita que múltiples sincronizaciones concurrentes se ejecuten a la vez
+  bool _syncInProgress = false;
+  // Debounce para el listener de datos del usuario
+  Timer? _userDataDebounce;
 
-  DataUserModel? _userData;
+  DataUserHive? _localData;
   int _totalCourses = 0;
   int _completedCourses = 0;
   int _inProgressCourses = 0;
   bool _isLoading = true;
+  bool _isSyncing = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadDashboardData();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _userDataSubscription?.cancel();
     _userProgressSubscription?.cancel();
+    _sessionTimer?.cancel();
+    _userDataDebounce?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        // App está en primer plano, recalcular tiempo y reiniciar timer
+        if (_localData != null && _localData!.sessionStartTime != null) {
+          final currentDuration =
+              DateTime.now()
+                  .difference(_localData!.sessionStartTime!)
+                  .inMinutes;
+          setState(() {
+            _localData = DataUserHive(
+              userId: _localData!.userId,
+              currentSessionMinutes: currentDuration,
+              totalSessionMinutes: _localData!.totalSessionMinutes,
+              sessionStartTime: _localData!.sessionStartTime,
+              lastSessionEnd: _localData!.lastSessionEnd,
+              categoryProgress: _localData!.categoryProgress,
+              overallProgress: _localData!.overallProgress,
+              unlockedAchievements: _localData!.unlockedAchievements,
+              updatedAt: _localData!.updatedAt,
+              totalCourses: _localData!.totalCourses,
+              completedCourses: _localData!.completedCourses,
+              inProgressCourses: _localData!.inProgressCourses,
+            );
+          });
+          _startSessionTimer();
+        }
+        break;
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.detached:
+      case AppLifecycleState.hidden:
+        // App está en segundo plano o cerrándose, detener timer
+        _sessionTimer?.cancel();
+        break;
+    }
   }
 
   Future<void> _loadDashboardData() async {
@@ -62,137 +109,254 @@ class _TeacherDashboardScreenState
       _isLoading = true;
     });
 
-    // Actualizar tiempo de sesión al ingresar a la pantalla
-    await _dataUserRepository.updateCurrentSession();
+    // Cargar datos locales primero
+    final localData = await _dashboardSyncService.getLocalDashboardData(userId);
+    if (localData != null) {
+      // Recalcular tiempo actual basándose en sessionStartTime
+      DataUserHive updatedData = localData;
+      if (localData.sessionStartTime != null) {
+        final currentDuration =
+            DateTime.now().difference(localData.sessionStartTime!).inMinutes;
+        updatedData = DataUserHive(
+          userId: localData.userId,
+          currentSessionMinutes: currentDuration,
+          totalSessionMinutes: localData.totalSessionMinutes,
+          sessionStartTime: localData.sessionStartTime,
+          lastSessionEnd: localData.lastSessionEnd,
+          categoryProgress: localData.categoryProgress,
+          overallProgress: localData.overallProgress,
+          unlockedAchievements: localData.unlockedAchievements,
+          updatedAt: localData.updatedAt,
+          totalCourses: localData.totalCourses,
+          completedCourses: localData.completedCourses,
+          inProgressCourses: localData.inProgressCourses,
+        );
+        // Guardar el tiempo actualizado localmente
+        await _dashboardSyncService.saveLocalDashboardData(updatedData);
+      }
 
-    // Asegurar que el documento del usuario existe antes de escuchar
-    await _dataUserRepository.getUserData();
+      setState(() {
+        _localData = updatedData;
+        _totalCourses = updatedData.totalCourses;
+        _completedCourses = updatedData.completedCourses;
+        _inProgressCourses = updatedData.inProgressCourses;
+        _isLoading = false;
+      });
 
-    // Escuchar cambios en dataUser en tiempo real (tiempos de sesión)
+      // Sincronizar desde Firestore en segundo plano sin bloquear la UI
+      _syncFromFirestore(userId).catchError(
+        (e) => debugPrint('Error en sync background: $e'),
+      );
+    } else {
+      // Si no hay datos locales, sincronizar desde Firestore (primera carga)
+      await _syncFromFirestore(userId);
+    }
+
+    // Escuchar cambios en dataUser en tiempo real para actualizar tiempos de sesión.
+    // Se usa debounce de 2 segundos para evitar escrituras y setState en ráfaga
+    // cuando Firestore emite múltiples snapshots al recuperar la conexión.
     _userDataSubscription = _dataUserRepository.getUserDataStream().listen((
       userData,
     ) {
       if (mounted) {
-        setState(() {
-          _userData = userData;
-          _isLoading = false;
+        // Cancelar debounce previo y esperar 2 s antes de procesar
+        _userDataDebounce?.cancel();
+        _userDataDebounce = Timer(const Duration(seconds: 2), () {
+          if (mounted) {
+            _updateLocalSessionTimes(userId, userData);
+          }
         });
       }
     });
 
-    // Escuchar cambios en userProgress para calcular cursos y progreso
-    _userProgressSubscription = _firestore
-        .collection('userProgress')
-        .where('userId', isEqualTo: userId)
-        .snapshots()
-        .listen((snapshot) {
-          if (mounted) {
-            _calculateProgressFromUserProgress(snapshot);
-          }
-        });
+    // Iniciar timer para actualizar tiempos cada minuto
+    _startSessionTimer();
   }
 
-  Future<void> _calculateProgressFromUserProgress(
-    QuerySnapshot<Map<String, dynamic>> snapshot,
-  ) async {
-    // Agrupar progreso por courseId
-    final Map<String, List<QueryDocumentSnapshot<Map<String, dynamic>>>>
-    courseProgress = {};
-    for (var doc in snapshot.docs) {
-      final data = doc.data();
-      final courseId = data['courseId'] as String?;
-      if (courseId != null) {
-        courseProgress.putIfAbsent(courseId, () => []).add(doc);
-      }
-    }
+  void _startSessionTimer() {
+    _sessionTimer?.cancel();
 
-    int completed = 0;
-    int inProgress = 0;
+    // Actualizar inmediatamente al iniciar (tick 0) para no esperar 1 minuto
+    _tickSessionTimer();
 
-    // Calcular categorías y progreso
-    final Map<String, int> categoryProgress = {};
-    final Map<String, int> categoryTotals = {};
+    _sessionTimer = Timer.periodic(const Duration(minutes: 1), (timer) async {
+      _tickSessionTimer();
+    });
+  }
 
-    // Obtener información de cursos en paralelo
-    final courseIds = courseProgress.keys.toList();
-    final courseDocs = await Future.wait(
-      courseIds.map(
-        (courseId) => _firestore.collection('courses').doc(courseId).get(),
-      ),
-    );
+  /// Calcula el tiempo de sesión actual y actualiza el estado local.
+  /// Se llama al iniciar el timer y cada minuto posterior.
+  Future<void> _tickSessionTimer() async {
+    if (_localData == null || _localData!.sessionStartTime == null) return;
 
-    for (var i = 0; i < courseDocs.length; i++) {
-      final courseDoc = courseDocs[i];
-      final courseId = courseIds[i];
-      final progressDocs = courseProgress[courseId]!;
-
-      if (courseDoc.exists) {
-        final courseData = courseDoc.data();
-        final category = courseData?['targetAudience'] as String? ?? 'Otro';
-        categoryTotals[category] = (categoryTotals[category] ?? 0) + 1;
-
-        // Obtener el total de lecciones de este curso
-        final lessonsSnapshot =
-            await _firestore
-                .collection('lecciones')
-                .where('courseId', isEqualTo: courseId)
-                .get();
-        final totalLessons = lessonsSnapshot.docs.length;
-
-        // Verificar si todas las lecciones registradas están completadas
-        bool allRecordedCompleted = progressDocs.every((doc) {
-          final data = doc.data();
-          final status = data['status'] as String?;
-          return status == 'completed';
-        });
-
-        bool hasProgress = progressDocs.any((doc) {
-          final data = doc.data();
-          final status = data['status'] as String?;
-          return status == 'in_progress' || status == 'completed';
-        });
-
-        // El curso está completado solo si tiene lecciones, y el usuario ha completado todas.
-        bool isFullyCompleted = false;
-        if (totalLessons > 0 &&
-            progressDocs.length >= totalLessons &&
-            allRecordedCompleted) {
-          isFullyCompleted = true;
-        }
-
-        if (isFullyCompleted) {
-          completed++;
-          categoryProgress[category] = (categoryProgress[category] ?? 0) + 1;
-        } else if (hasProgress) {
-          inProgress++;
-        }
-      }
-    }
-
-    // Actualizar progreso por categoría en dataUser
-    for (var category in categoryTotals.keys) {
-      final progress =
-          categoryTotals[category]! > 0
-              ? ((categoryProgress[category] ?? 0) /
-                      categoryTotals[category]!) *
-                  100
-              : 0.0;
-      await _dataUserRepository.updateCategoryProgress(category, progress);
-    }
+    // Calcular tiempo actual localmente sin escribir a Firebase
+    final currentDuration =
+        DateTime.now().difference(_localData!.sessionStartTime!).inMinutes;
 
     if (mounted) {
       setState(() {
-        _totalCourses = courseProgress.length;
-        _completedCourses = completed;
-        _inProgressCourses = inProgress;
-        _isLoading = false;
+        _localData = DataUserHive(
+          userId: _localData!.userId,
+          currentSessionMinutes: currentDuration,
+          totalSessionMinutes: _localData!.totalSessionMinutes,
+          sessionStartTime: _localData!.sessionStartTime,
+          lastSessionEnd: _localData!.lastSessionEnd,
+          categoryProgress: _localData!.categoryProgress,
+          overallProgress: _localData!.overallProgress,
+          unlockedAchievements: _localData!.unlockedAchievements,
+          updatedAt: _localData!.updatedAt,
+          totalCourses: _localData!.totalCourses,
+          completedCourses: _localData!.completedCourses,
+          inProgressCourses: _localData!.inProgressCourses,
+        );
+      });
+
+      // Guardar solo localmente
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('user_id');
+      if (userId != null) {
+        await _dashboardSyncService.saveLocalDashboardData(_localData!);
+      }
+    }
+  }
+
+  Future<void> _syncFromFirestore(String userId) async {
+    // Evitar sincronizaciones concurrentes
+    if (_syncInProgress) {
+      debugPrint('Sync ya en progreso, omitiendo nueva solicitud');
+      return;
+    }
+    _syncInProgress = true;
+
+    if (mounted) {
+      setState(() {
+        _isSyncing = true;
+      });
+    }
+
+    try {
+      // Obtener datos locales y de Firestore para comparar
+      final localData =
+          await _dashboardSyncService.getLocalDashboardData(userId);
+      final firestoreData = await _dataUserRepository.getUserData();
+
+      if (localData != null && firestoreData != null) {
+        // Comparar tiempos: si local es mayor, sincronizar hacia Firestore
+        final localTotalMinutes =
+            localData.totalSessionMinutes + localData.currentSessionMinutes;
+        final firestoreTotalMinutes =
+            firestoreData.totalSessionMinutes +
+            firestoreData.currentSessionMinutes;
+
+        if (localTotalMinutes > firestoreTotalMinutes) {
+          // Local tiene datos más recientes, sincronizar hacia Firestore
+          await _dashboardSyncService.syncToFirestore(userId);
+          debugPrint(
+            'Sincronizado hacia Firestore: local ($localTotalMinutes min) > Firestore ($firestoreTotalMinutes min)',
+          );
+        } else if (firestoreTotalMinutes > localTotalMinutes) {
+          // Firestore tiene datos más recientes, sincronizar desde Firestore
+          await _dashboardSyncService.syncFromFirestore(userId);
+          debugPrint(
+            'Sincronizado desde Firestore: Firestore ($firestoreTotalMinutes min) > local ($localTotalMinutes min)',
+          );
+        } else {
+          // Datos iguales, solo recargar estadísticas de cursos
+          await _dashboardSyncService.syncFromFirestore(userId);
+          debugPrint('Datos iguales, recargando estadísticas de cursos');
+        }
+
+        // Recargar datos locales después de sincronizar
+        final updatedLocalData =
+            await _dashboardSyncService.getLocalDashboardData(userId);
+        if (updatedLocalData != null && mounted) {
+          setState(() {
+            _localData = updatedLocalData;
+            _totalCourses = updatedLocalData.totalCourses;
+            _completedCourses = updatedLocalData.completedCourses;
+            _inProgressCourses = updatedLocalData.inProgressCourses;
+            _isLoading = false;
+          });
+        }
+      } else {
+        // Si no hay datos locales, sincronizar desde Firestore
+        final success = await _dashboardSyncService.syncFromFirestore(userId);
+        if (success) {
+          final newLocalData =
+              await _dashboardSyncService.getLocalDashboardData(userId);
+          if (newLocalData != null && mounted) {
+            setState(() {
+              _localData = newLocalData;
+              _totalCourses = newLocalData.totalCourses;
+              _completedCourses = newLocalData.completedCourses;
+              _inProgressCourses = newLocalData.inProgressCourses;
+              _isLoading = false;
+            });
+          }
+        }
+      }
+    } finally {
+      _syncInProgress = false;
+      if (mounted) {
+        setState(() {
+          _isSyncing = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _updateLocalSessionTimes(String userId, dynamic userData) async {
+    if (_localData == null) return;
+
+    // Recalcular currentSessionMinutes localmente desde sessionStartTime.
+    // No usamos userData.currentSessionMinutes porque Firestore lo resetea a 0
+    // al iniciar sesión y solo lo actualiza al cerrarla; usar ese valor
+    // provocaría que el indicador de "Sesión Actual" siempre muestre 0.
+    final DateTime? startTime = userData.sessionStartTime as DateTime?;
+    final int currentMins =
+        startTime != null
+            ? DateTime.now().difference(startTime).inMinutes
+            : (_localData!.sessionStartTime != null
+                ? DateTime.now()
+                    .difference(_localData!.sessionStartTime!)
+                    .inMinutes
+                : _localData!.currentSessionMinutes);
+
+    // totalSessionMinutes de Firestore contiene solo sesiones anteriores
+    // (endSession suma la duración al total y pone currentSessionMinutes = 0).
+    // No duplicamos sumando currentSessionMinutes aquí; eso lo hace
+    // totalSessionFormatted en DataUserHive.
+    final int totalMins = userData.totalSessionMinutes as int;
+
+    final updatedData = DataUserHive(
+      userId: _localData!.userId,
+      currentSessionMinutes: currentMins,
+      totalSessionMinutes: totalMins,
+      sessionStartTime: startTime ?? _localData!.sessionStartTime,
+      lastSessionEnd: userData.lastSessionEnd ?? _localData!.lastSessionEnd,
+      categoryProgress:
+          userData.categoryProgress ?? _localData!.categoryProgress,
+      overallProgress: userData.overallProgress ?? _localData!.overallProgress,
+      unlockedAchievements:
+          userData.unlockedAchievements ?? _localData!.unlockedAchievements,
+      updatedAt: userData.updatedAt ?? _localData!.updatedAt,
+      totalCourses: _localData!.totalCourses,
+      completedCourses: _localData!.completedCourses,
+      inProgressCourses: _localData!.inProgressCourses,
+    );
+
+    await _dashboardSyncService.saveLocalDashboardData(updatedData);
+
+    if (mounted) {
+      setState(() {
+        _localData = updatedData;
       });
     }
   }
 
   List<Map<String, dynamic>> _generateAchievements() {
     final achievements = <Map<String, dynamic>>[];
-    if (_userData == null) return achievements;
+    if (_localData == null) return achievements;
 
     // Logro: Primer curso completado
     achievements.add({
@@ -218,7 +382,7 @@ class _TeacherDashboardScreenState
       'description': 'Acumulaste 10 horas de capacitación',
       'icon': Icons.access_time,
       'color': Colors.blue,
-      'unlocked': _userData!.totalSessionMinutes >= 600,
+      'unlocked': _localData!.totalSessionMinutes >= 600,
     });
 
     return achievements;
@@ -246,12 +410,44 @@ class _TeacherDashboardScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Mi Dashboard',
-                    style: AppStyles.headline1.copyWith(
-                      color: Colors.white,
-                      fontSize: 28,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Mi Dashboard',
+                          style: AppStyles.headline1.copyWith(
+                            color: Colors.white,
+                            fontSize: 28,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon:
+                            _isSyncing
+                                ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                )
+                                : const Icon(Icons.sync, color: Colors.white),
+                        onPressed:
+                            _isSyncing
+                                ? null
+                                : () async {
+                                  final prefs =
+                                      await SharedPreferences.getInstance();
+                                  final userId = prefs.getString('user_id');
+                                  if (userId != null) {
+                                    await _syncFromFirestore(userId);
+                                  }
+                                },
+                      ),
+                    ],
                   ),
 
                   const SizedBox(height: 8),
@@ -297,53 +493,69 @@ class _TeacherDashboardScreenState
 
   Widget _buildProgressCard() {
     return Card(
-      elevation: 4,
+      elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Progreso General',
-                  style: AppStyles.headlineMedium.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  '${_userData?.overallProgress.toStringAsFixed(1) ?? '0.0'}%',
-                  style: AppStyles.headlineMedium.copyWith(
-                    color: AppColors.primaryColor,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: LinearProgressIndicator(
-                value: (_userData?.overallProgress ?? 0) / 100,
-                backgroundColor: Colors.grey[200],
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  _getProgressColor(_userData?.overallProgress ?? 0),
-                ),
-                minHeight: 12,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildStatItem('Cursos Totales', _totalCourses.toString()),
-                _buildStatItem('Completados', _completedCourses.toString()),
-                _buildStatItem('En Progreso', _inProgressCourses.toString()),
-              ],
+      shadowColor: const Color(0x0A000000),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0x0A000000),
+              blurRadius: 8,
+              spreadRadius: 0,
+              offset: const Offset(0, 2),
             ),
           ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Progreso General',
+                    style: AppStyles.headlineMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF2D3748),
+                    ),
+                  ),
+                  Text(
+                    '${_localData?.overallProgress.toStringAsFixed(1) ?? '0.0'}%',
+                    style: AppStyles.headlineMedium.copyWith(
+                      color: const Color(0xFF917CDC),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: LinearProgressIndicator(
+                  value: (_localData?.overallProgress ?? 0) / 100,
+                  backgroundColor: const Color(0xFFF1F4F8),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    _getProgressColor(_localData?.overallProgress ?? 0),
+                  ),
+                  minHeight: 12,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildStatItem('Cursos Totales', _totalCourses.toString()),
+                  _buildStatItem('Completados', _completedCourses.toString()),
+                  _buildStatItem('En Progreso', _inProgressCourses.toString()),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -356,8 +568,8 @@ class _TeacherDashboardScreenState
           Text(
             value,
             style: AppStyles.headlineMedium.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.primaryColor,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF917CDC),
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -365,7 +577,7 @@ class _TeacherDashboardScreenState
             label,
             style: AppStyles.bodyText1.copyWith(
               fontSize: 12,
-              color: Colors.grey[600],
+              color: const Color(0xFF4A5568),
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -393,13 +605,13 @@ class _TeacherDashboardScreenState
           children: [
             _buildMetricCard(
               'Sesión Actual',
-              _userData?.currentSessionFormatted ?? '0m',
+              _localData?.currentSessionFormatted ?? '0m',
               Icons.access_time,
               Colors.blue,
             ),
             _buildMetricCard(
               'Tiempo Total',
-              _userData?.totalSessionFormatted ?? '0m',
+              _localData?.totalSessionFormatted ?? '0m',
               Icons.schedule,
               Colors.green,
             ),
@@ -428,85 +640,114 @@ class _TeacherDashboardScreenState
     Color color,
   ) {
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 4),
-            FittedBox(
-              child: Text(
-                value,
-                style: AppStyles.headlineMedium.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-            ),
-            const SizedBox(height: 5),
-            Flexible(
-              child: Text(
-                title,
-                style: AppStyles.bodyText1.copyWith(
-                  fontSize: 10,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0x0A000000),
+              blurRadius: 8,
+              spreadRadius: 0,
+              offset: const Offset(0, 2),
             ),
           ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color, size: 28),
+              const SizedBox(height: 4),
+              FittedBox(
+                child: Text(
+                  value,
+                  style: AppStyles.headlineMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 5),
+              Flexible(
+                child: Text(
+                  title,
+                  style: AppStyles.bodyText1.copyWith(
+                    fontSize: 10,
+                    color: const Color(0xFF4A5568),
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildCategoryProgress() {
-    final categoryProgress = _userData?.categoryProgress ?? {};
+    final categoryProgress = _localData?.categoryProgress ?? {};
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Progreso por Categoría',
-              style: AppStyles.headlineMedium.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildCategoryItem(
-              'Ciencias Sociales',
-              categoryProgress['Ciencias Sociales'] ?? 0.0,
-              Colors.blue,
-            ),
-            const SizedBox(height: 12),
-            _buildCategoryItem(
-              'Ciencias Naturales',
-              categoryProgress['Ciencias Naturales'] ?? 0.0,
-              Colors.green,
-            ),
-            const SizedBox(height: 12),
-            _buildCategoryItem(
-              'Comunicación y Lenguaje',
-              categoryProgress['Comunicación y Lenguaje'] ?? 0.0,
-              Colors.orange,
-            ),
-            const SizedBox(height: 12),
-            _buildCategoryItem(
-              'Alternativa',
-              categoryProgress['Alternativa'] ?? 0.0,
-              Colors.purple,
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0x0A000000),
+              blurRadius: 8,
+              spreadRadius: 0,
+              offset: const Offset(0, 2),
             ),
           ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Progreso por Categoría',
+                style: AppStyles.headlineMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF2D3748),
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildCategoryItem(
+                'Ciencias Sociales',
+                categoryProgress['Ciencias Sociales'] ?? 0.0,
+                Colors.blue,
+              ),
+              const SizedBox(height: 12),
+              _buildCategoryItem(
+                'Ciencias Naturales',
+                categoryProgress['Ciencias Naturales'] ?? 0.0,
+                Colors.green,
+              ),
+              const SizedBox(height: 12),
+              _buildCategoryItem(
+                'Comunicación y Lenguaje',
+                categoryProgress['Comunicación y Lenguaje'] ?? 0.0,
+                Colors.orange,
+              ),
+              const SizedBox(height: 12),
+              _buildCategoryItem(
+                'Alternativa',
+                categoryProgress['Alternativa'] ?? 0.0,
+                Colors.purple,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -521,13 +762,16 @@ class _TeacherDashboardScreenState
           children: [
             Text(
               category,
-              style: AppStyles.bodyText1.copyWith(fontWeight: FontWeight.w500),
+              style: AppStyles.bodyText1.copyWith(
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF2D3748),
+              ),
             ),
             Text(
               '${progress.toStringAsFixed(0)}%',
               style: AppStyles.bodyText1.copyWith(
                 color: color,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -537,7 +781,7 @@ class _TeacherDashboardScreenState
           borderRadius: BorderRadius.circular(6),
           child: LinearProgressIndicator(
             value: progress / 100,
-            backgroundColor: Colors.grey[200],
+            backgroundColor: const Color(0xFFF1F4F8),
             valueColor: AlwaysStoppedAnimation<Color>(color),
             minHeight: 8,
           ),
@@ -549,50 +793,67 @@ class _TeacherDashboardScreenState
   Widget _buildAchievementsSection() {
     final achievements = _generateAchievements();
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Logros',
-                  style: AppStyles.headlineMedium.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  '${achievements.where((a) => a['unlocked']).length}/${achievements.length}',
-                  style: AppStyles.bodyText1.copyWith(color: Colors.grey[600]),
-                ),
-              ],
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0x0A000000),
+              blurRadius: 8,
+              spreadRadius: 0,
+              offset: const Offset(0, 2),
             ),
-            const SizedBox(height: 16),
-            if (achievements.isEmpty)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Text(
-                    'Completa cursos para desbloquear logros',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-              )
-            else
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: achievements.length,
-                itemBuilder: (context, index) {
-                  final achievement = achievements[index];
-                  return _buildAchievementItem(achievement);
-                },
-              ),
           ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Logros',
+                    style: AppStyles.headlineMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF2D3748),
+                    ),
+                  ),
+                  Text(
+                    '${achievements.where((a) => a['unlocked']).length}/${achievements.length}',
+                    style: AppStyles.bodyText1.copyWith(
+                      color: const Color(0xFF4A5568),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (achievements.isEmpty)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Text(
+                      'Completa cursos para desbloquear logros',
+                      style: TextStyle(color: Color(0xFF4A5568)),
+                    ),
+                  ),
+                )
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: achievements.length,
+                  itemBuilder: (context, index) {
+                    final achievement = achievements[index];
+                    return _buildAchievementItem(achievement);
+                  },
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -609,10 +870,10 @@ class _TeacherDashboardScreenState
           color:
               isUnlocked
                   ? achievement['color'].withAlpha((0.1 * 255).round())
-                  : Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(10),
+                  : const Color(0xFFF1F4F8),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isUnlocked ? achievement['color'] : Theme.of(context).colorScheme.outlineVariant,
+            color: isUnlocked ? achievement['color'] : const Color(0xFFE2E8F0),
             width: isUnlocked ? 2 : 1,
           ),
         ),
@@ -621,7 +882,8 @@ class _TeacherDashboardScreenState
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: isUnlocked ? achievement['color'] : Theme.of(context).colorScheme.surfaceContainerHighest,
+                color:
+                    isUnlocked ? achievement['color'] : const Color(0xFFCBD5E1),
                 shape: BoxShape.circle,
               ),
               child: Icon(achievement['icon'], color: Colors.white, size: 24),
@@ -634,8 +896,11 @@ class _TeacherDashboardScreenState
                   Text(
                     achievement['title'],
                     style: AppStyles.bodyText1.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: isUnlocked ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                      color:
+                          isUnlocked
+                              ? const Color(0xFF2D3748)
+                              : const Color(0xFF4A5568),
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -643,7 +908,10 @@ class _TeacherDashboardScreenState
                     achievement['description'],
                     style: AppStyles.bodyText1.copyWith(
                       fontSize: 12,
-                      color: isUnlocked ? Theme.of(context).colorScheme.onSurfaceVariant : Theme.of(context).colorScheme.outline,
+                      color:
+                          isUnlocked
+                              ? const Color(0xFF4A5568)
+                              : const Color(0xFFA0AEC0),
                     ),
                   ),
                 ],
@@ -652,7 +920,7 @@ class _TeacherDashboardScreenState
             if (isUnlocked)
               const Icon(Icons.check_circle, color: Colors.green, size: 24)
             else
-              Icon(Icons.lock, color: Theme.of(context).colorScheme.outline, size: 24),
+              const Icon(Icons.lock, color: Color(0xFFA0AEC0), size: 24),
           ],
         ),
       ),
@@ -661,46 +929,61 @@ class _TeacherDashboardScreenState
 
   Widget _buildHoursCard() {
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.primaryColor.withAlpha((0.1 * 255).round()),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.schedule,
-                color: AppColors.primaryColor,
-                size: 32,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Tiempo en Sesión',
-                    style: AppStyles.headlineMedium.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Actual: ${_userData?.currentSessionFormatted ?? '0m'} | Total: ${_userData?.totalSessionFormatted ?? '0m'}',
-                    style: AppStyles.bodyText1.copyWith(
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0x0A000000),
+              blurRadius: 8,
+              spreadRadius: 0,
+              offset: const Offset(0, 2),
             ),
           ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF917CDC).withAlpha((0.1 * 255).round()),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.schedule,
+                  color: const Color(0xFF917CDC),
+                  size: 32,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Tiempo en Sesión',
+                      style: AppStyles.headlineMedium.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF2D3748),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Actual: ${_localData?.currentSessionFormatted ?? '0m'} | Total: ${_localData?.totalSessionFormatted ?? '0m'}',
+                      style: AppStyles.bodyText1.copyWith(
+                        color: const Color(0xFF4A5568),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

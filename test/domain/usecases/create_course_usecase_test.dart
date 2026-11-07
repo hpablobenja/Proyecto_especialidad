@@ -108,16 +108,19 @@ void main() {
       expect(mockRepository, isNotNull);
     });
 
-    test('CreateCourseUsecase throws exception when repository throws', () async {
-      mockRepository.errorToThrow = Exception('Repository error');
-      final params = CreateCourseParams(
-        title: 'Course',
-        description: 'Description',
-        targetAudience: 'General',
-      );
+    test(
+      'CreateCourseUsecase throws exception when repository throws',
+      () async {
+        mockRepository.errorToThrow = Exception('Repository error');
+        final params = CreateCourseParams(
+          title: 'Course',
+          description: 'Description',
+          targetAudience: 'General',
+        );
 
-      expect(() => usecase(params), throwsException);
-    });
+        expect(() => usecase(params), throwsException);
+      },
+    );
 
     test('CreateCourseUsecase handles special characters in title', () async {
       final params = CreateCourseParams(

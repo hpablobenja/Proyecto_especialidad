@@ -6,7 +6,10 @@ import '../usecase.dart';
 class ReorderModulesParams {
   final String courseId;
   final List<String> orderedModuleIds;
-  ReorderModulesParams({required this.courseId, required this.orderedModuleIds});
+  ReorderModulesParams({
+    required this.courseId,
+    required this.orderedModuleIds,
+  });
 }
 
 class ReorderModulesUsecase implements Usecase<void, ReorderModulesParams> {

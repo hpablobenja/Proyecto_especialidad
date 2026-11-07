@@ -4,7 +4,7 @@ import 'package:redmaestra1/data/models/notification_model.dart';
 
 class FakeDocumentSnapshot implements DocumentSnapshot<Map<String, dynamic>> {
   FakeDocumentSnapshot({required this.id, required Map<String, dynamic>? data})
-      : _data = data ?? const {};
+    : _data = data ?? const {};
 
   @override
   final String id;
@@ -139,10 +139,7 @@ void main() {
         createdAt: now,
       );
 
-      final updated = original.copyWith(
-        title: 'Updated Title',
-        isRead: true,
-      );
+      final updated = original.copyWith(title: 'Updated Title', isRead: true);
 
       expect(updated.id, original.id);
       expect(updated.title, 'Updated Title');

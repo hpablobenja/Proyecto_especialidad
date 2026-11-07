@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/entities/lesson_entity.dart';
 import '../../../core/di/riverpod_providers.dart';
+import '../../widgets/offline_lesson_badge.dart';
 import 'lesson_player_screen.dart';
 import 'lesson_documentation_screen.dart';
 import 'quiz_screen.dart';
@@ -16,6 +17,11 @@ class LessonOptionsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Guardar automáticamente la lección en local al ingresar a sus opciones
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(offlineCacheServiceProvider).cacheLastLesson(lesson);
+    });
+
     final connectivity = ref.watch(connectivityStateProvider);
     final isOffline = !connectivity.isOnline;
 
@@ -23,88 +29,104 @@ class LessonOptionsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(lesson.title, maxLines: 1, overflow: TextOverflow.ellipsis),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Selecciona una opción',
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            if (isOffline)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
-                child: Text(
-                  'Modo offline: Solo documentación disponible',
-                  style: TextStyle(
-                    color: Colors.orange.shade700,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  textAlign: TextAlign.center,
+      body: Column(
+        children: [
+          const OfflineLessonBadge(),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Selecciona una opción',
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                    if (isOffline)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
+                        child: Text(
+                          'Modo offline: El cuestionario se guardará localmente',
+                          style: TextStyle(
+                            color: Colors.orange.shade700,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    const SizedBox(height: 32),
+                    _OptionCard(
+                      icon: Icons.play_circle_filled,
+                      title: 'Reproducir el video',
+                      description:
+                          isOffline
+                              ? 'Ver la lección (copia local o streaming)'
+                              : 'Ver la lección en video',
+                      color: Colors.blue,
+                      isEnabled:
+                          true, // Siempre habilitado (reproduce offline si está descargado)
+                      onTap: () {
+                        // Marcar como "en curso" cuando se selecciona reproducir video
+                        final auth = ref.read(authStateProvider);
+                        final progress = ref.read(progressStateProvider);
+                        if (auth.currentUser != null) {
+                          progress.markLessonInProgress(
+                            userId: auth.currentUser!.uid,
+                            courseId: lesson.courseId,
+                            moduleId: lesson.moduleId,
+                            lessonId: lesson.id,
+                          );
+                        }
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => LessonPlayerScreen(lesson: lesson),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    _OptionCard(
+                      icon: Icons.description,
+                      title: 'Ver la documentación de la lección',
+                      description: 'Leer el contenido escrito de la lección',
+                      color: Colors.green,
+                      isEnabled: true, // Always enabled
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder:
+                                (_) =>
+                                    LessonDocumentationScreen(lesson: lesson),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    _OptionCard(
+                      icon: Icons.quiz,
+                      title: 'Cuestionario de conocimientos',
+                      description: 'Evaluar tu comprensión de la lección',
+                      color: Colors.orange,
+                      isEnabled:
+                          true, // Habilitado en modo offline (se guarda localmente)
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => QuizScreen(lesson: lesson),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
-            const SizedBox(height: 32),
-            _OptionCard(
-              icon: Icons.play_circle_filled,
-              title: 'Reproducir el video',
-              description: 'Ver la lección en video',
-              color: Colors.blue,
-              isEnabled: !isOffline,
-              onTap: () {
-                // Marcar como "en curso" cuando se selecciona reproducir video
-                final auth = ref.read(authStateProvider);
-                final progress = ref.read(progressStateProvider);
-                if (auth.currentUser != null) {
-                  progress.markLessonInProgress(
-                    userId: auth.currentUser!.uid,
-                    courseId: lesson.courseId,
-                    moduleId: lesson.moduleId,
-                    lessonId: lesson.id,
-                  );
-                }
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => LessonPlayerScreen(lesson: lesson),
-                  ),
-                );
-              },
             ),
-            const SizedBox(height: 16),
-            _OptionCard(
-              icon: Icons.description,
-              title: 'Ver la documentación de la lección',
-              description: 'Leer el contenido escrito de la lección',
-              color: Colors.green,
-              isEnabled: true, // Always enabled
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => LessonDocumentationScreen(lesson: lesson),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            _OptionCard(
-              icon: Icons.quiz,
-              title: 'Cuestionario de conocimientos',
-              description: 'Evaluar tu comprensión de la lección',
-              color: Colors.orange,
-              isEnabled: !isOffline,
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => QuizScreen(lesson: lesson)),
-                );
-              },
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

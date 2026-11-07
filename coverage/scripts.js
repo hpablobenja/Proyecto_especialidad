@@ -1,3 +1,4 @@
+
 const fs = require("fs");
 
 // Leer archivo lcov.info
@@ -33,10 +34,12 @@ function coverage(group) {
   return group.lf > 0 ? ((group.lh / group.lf) * 100).toFixed(2) : "0.00";
 }
 
-// Mostrar solo porcentajes por capa
-console.log("Cobertura por capa (%)");
+// Mostrar resultados por capa
+console.log("Cobertura por capa");
 for (const [key, val] of Object.entries(groups)) {
-  console.log(`${key}: ${coverage(val)} %`);
+  console.log(
+    `${key}: ${val.lh} / ${val.lf} → ${coverage(val)} %`
+  );
 }
 
 // Calcular cobertura global
@@ -44,4 +47,5 @@ const totalLF = groups.domain.lf + groups.data.lf + groups.presentation.lf;
 const totalLH = groups.domain.lh + groups.data.lh + groups.presentation.lh;
 const totalCoverage = totalLF > 0 ? ((totalLH / totalLF) * 100).toFixed(2) : "0.00";
 
-//console.log(`Total Global: ${totalCoverage} %`);
+console.log("\nCobertura global");
+console.log(`${totalLH} / ${totalLF} → ${totalCoverage} %`);

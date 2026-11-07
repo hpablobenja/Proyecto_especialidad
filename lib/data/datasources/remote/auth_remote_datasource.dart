@@ -97,10 +97,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       if (!doc.exists) {
         // Si no existe el doc de Firestore, lo creamos con datos mínimos
         final userModel = UserModel(
-          uid: uid, 
-          email: user.email ?? email, 
+          uid: uid,
+          email: user.email ?? email,
           name: user.displayName ?? 'Usuario',
-          role: 'user'
+          role: 'user',
         );
         await userRef.set(userModel.toMap());
         return userModel;
@@ -113,12 +113,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           throw Exception('Usuario no encontrado');
         case 'wrong-password':
           throw Exception('Contraseña incorrecta');
+        case 'invalid-credential':
+          throw Exception('Credenciales incorrectas. Verifica tu correo y contraseña');
         case 'invalid-email':
           throw Exception('Correo electrónico inválido');
         case 'user-disabled':
           throw Exception('La cuenta de usuario está deshabilitada');
         case 'too-many-requests':
-          throw Exception('Demasiados intentos, inténtalo más tarde');
+          throw Exception('Demasiados intentos fallidos. Inténtalo más tarde');
         default:
           throw Exception('Error de autenticación: ${e.message ?? e.code}');
       }
@@ -146,13 +148,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<void> updateUser(UserModel user) async {
     try {
       await firestore.collection('users').doc(user.uid).update(user.toMap());
-      
+
       // También podríamos actualizar el perfil de FirebaseAuth si es necesario (nombre, foto)
       final currentUser = firebaseAuth.currentUser;
       if (currentUser != null && currentUser.uid == user.uid) {
-         await currentUser.updateDisplayName(user.name);
+        await currentUser.updateDisplayName(user.name);
       }
-
     } on FirebaseException catch (e) {
       throw Exception('Error al actualizar usuario: ${e.message ?? e.code}');
     }
@@ -171,7 +172,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         case 'too-many-requests':
           throw Exception('Demasiados intentos, inténtalo más tarde');
         default:
-          throw Exception('Error al enviar correo de restablecimiento: ${e.message ?? e.code}');
+          throw Exception(
+            'Error al enviar correo de restablecimiento: ${e.message ?? e.code}',
+          );
       }
     }
   }

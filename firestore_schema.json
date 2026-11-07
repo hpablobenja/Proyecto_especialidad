@@ -1,0 +1,223 @@
+{
+  "courses": {
+    "campos": {
+      "targetAudience": "string",
+      "id": "string",
+      "title": "string",
+      "description": "string",
+      "status": "string",
+      "createdAt": "timestamp",
+      "updatedAt": "timestamp"
+    },
+    "subcollections": {
+      "modules": {
+        "campos": {
+          "description": "string",
+          "orderIndex": "number",
+          "title": "string",
+          "courseId": "string"
+        },
+        "subcollections": {}
+      }
+    }
+  },
+  "dataUser": {
+    "campos": {
+      "unlockedAchievements": [
+        "unknown"
+      ],
+      "userId": "string",
+      "currentSessionMinutes": "number",
+      "overallProgress": "number",
+      "categoryProgress": {
+        "Alternativa": "number",
+        "Otro(Especificar)": "number",
+        "Ciencias Sociales": "number",
+        "Comunicación y Lenguaje": "number",
+        "Ciencias Naturales": "number"
+      },
+      "sessionStartTime": "null",
+      "totalSessionMinutes": "number",
+      "updatedAt": "timestamp",
+      "lastSessionEnd": "timestamp"
+    },
+    "subcollections": {}
+  },
+  "lessons": {
+    "campos": {
+      "orderIndex": "number",
+      "moduleId": "string",
+      "title": "string",
+      "courseId": "string",
+      "media": [
+        {
+          "metadata": {
+            "provider": "string",
+            "durationSeconds": "number",
+            "videoId": "string"
+          },
+          "filename": "string",
+          "durationSeconds": "number",
+          "id": "string",
+          "mimeType": "string",
+          "url": "string",
+          "sizeBytes": "number"
+        }
+      ],
+      "objectives": "string",
+      "checkpoints": [
+        {
+          "passedAt": "null",
+          "isPassed": "boolean",
+          "question": "string",
+          "firstAttemptAt": "null",
+          "options": [
+            "string"
+          ],
+          "lessonId": "string",
+          "triggerPositionSeconds": "number",
+          "correctOptionIndex": "number",
+          "id": "string",
+          "attempts": "number"
+        }
+      ],
+      "strategies": [
+        {
+          "description": "string",
+          "title": "string"
+        }
+      ],
+      "id": "string",
+      "createdAt": "timestamp",
+      "updatedAt": "timestamp"
+    },
+    "subcollections": {
+      "comments": {
+        "campos": {
+          "createdAt": "timestamp",
+          "lessonId": "string",
+          "text": "string",
+          "moduleId": "string",
+          "userName": "string",
+          "courseId": "string",
+          "userId": "string",
+          "updatedAt": "timestamp"
+        },
+        "subcollections": {}
+      }
+    }
+  },
+  "notifications": {
+    "campos": {
+      "isRead": "boolean",
+      "title": "string",
+      "body": "string",
+      "type": "string",
+      "userId": "string",
+      "courseId": "string",
+      "createdAt": "timestamp",
+      "readAt": "timestamp"
+    },
+    "subcollections": {}
+  },
+  "quizzes": {
+    "campos": {
+      "questions": [
+        {
+          "options": [
+            "string"
+          ],
+          "id": "string",
+          "text": "string",
+          "correctAnswerIndex": "number"
+        }
+      ],
+      "lessonId": "string",
+      "id": "string",
+      "moduleId": "string",
+      "courseId": "string",
+      "title": "string",
+      "createdAt": "timestamp"
+    },
+    "subcollections": {}
+  },
+  "userProgress": {
+    "campos": {
+      "lessonId": "string",
+      "hasCompletedStrategies": "boolean",
+      "moduleId": "string",
+      "userId": "string",
+      "courseId": "string",
+      "quizScore": "number",
+      "hasCompletedQuiz": "boolean",
+      "maxQuizScore": "number",
+      "hasViewedVideo": "boolean",
+      "status": "string",
+      "lastUpdated": "timestamp"
+    },
+    "subcollections": {}
+  },
+  "user_courses": {
+    "campos": {
+      "userId": "string",
+      "courseId": "string",
+      "status": "string",
+      "startedAt": "timestamp"
+    },
+    "subcollections": {}
+  },
+  "users": {
+    "campos": {
+      "uid": "string",
+      "role": "string",
+      "email": "string",
+      "name": "string",
+      "specialty": "string",
+      "workArea": "string",
+      "fcmToken": "string",
+      "tokenUpdatedAt": "timestamp"
+    },
+    "subcollections": {}
+  },
+  "videoProgress": {
+    "campos": {
+      "lessonId": "string",
+      "moduleId": "string",
+      "userId": "string",
+      "courseId": "string",
+      "isCompleted": "boolean",
+      "completionPercentage": "number",
+      "checkpointsPassed": [
+        "string"
+      ],
+      "maxReachedPositionMs": "number",
+      "viewedSeconds": "number",
+      "analytics": {
+        "checkpointAttempts": {},
+        "totalViewTimeSeconds": "number"
+      },
+      "lastSynced": "timestamp"
+    },
+    "subcollections": {}
+  },
+  "systemConfig": {
+    "campos": {
+      "seekToleranceSeconds": "number",
+      "trackingIntervalSeconds": "number",
+      "syncIntervalSeconds": "number",
+      "completionThreshold": "number",
+      "maxQuestionsForTeacher": "number",
+      "maxQuestionsBank": "number",
+      "maxCheckpointAttempts": "number",
+      "enableCheckpoints": "boolean",
+      "sessionWarningMinutes": "number",
+      "maxSessionDurationMinutes": "number",
+      "maxSyncRetries": "number",
+      "enableOfflineMode": "boolean",
+      "enableAnimations": "boolean",
+      "defaultTheme": "string",
+      "updatedAt": "timestamp"
+    },
+    "subcollections": {}
+  }
+}

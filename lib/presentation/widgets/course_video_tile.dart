@@ -50,26 +50,51 @@ class _CourseVideoTileState extends ConsumerState<CourseVideoTile> {
       return _cache[course.id]!;
     }
 
-    final admin = ref.read(adminContentStateProvider);
-    final List<ModuleEntity> modules = await admin.fetchModules(course.id);
-    if (modules.isEmpty) {
+    // Si está offline o falla la red, intentar usar los datos cacheados
+    final connectivity = ref.read(connectivityStateProvider);
+    if (!connectivity.isOnline) {
+      final cachedLesson =
+          await ref.read(offlineCacheServiceProvider).getLastLesson();
+      if (cachedLesson != null &&
+          cachedLesson.courseId == course.id &&
+          cachedLesson.media.isNotEmpty) {
+        _cache[course.id] = cachedLesson.media.first;
+        return cachedLesson.media.first;
+      }
       return _fallbackMedia(course);
     }
-    final firstModule = modules.first;
-    final List<LessonEntity> lessons = await admin.fetchLessons(
-      courseId: course.id,
-      moduleId: firstModule.id,
-    );
-    if (lessons.isEmpty) {
+
+    try {
+      final admin = ref.read(adminContentStateProvider);
+      final List<ModuleEntity> modules = await admin.fetchModules(course.id);
+      if (modules.isEmpty) {
+        return _fallbackMedia(course);
+      }
+      final firstModule = modules.first;
+      final List<LessonEntity> lessons = await admin.fetchLessons(
+        courseId: course.id,
+        moduleId: firstModule.id,
+      );
+      if (lessons.isEmpty) {
+        return _fallbackMedia(course);
+      }
+      final firstLesson = lessons.first;
+      if (firstLesson.media.isEmpty) {
+        return _fallbackMedia(course);
+      }
+      final firstMedia = firstLesson.media.first;
+      _cache[course.id] = firstMedia;
+      return firstMedia;
+    } catch (_) {
+      final cachedLesson =
+          await ref.read(offlineCacheServiceProvider).getLastLesson();
+      if (cachedLesson != null &&
+          cachedLesson.courseId == course.id &&
+          cachedLesson.media.isNotEmpty) {
+        return cachedLesson.media.first;
+      }
       return _fallbackMedia(course);
     }
-    final firstLesson = lessons.first;
-    if (firstLesson.media.isEmpty) {
-      return _fallbackMedia(course);
-    }
-    final firstMedia = firstLesson.media.first;
-    _cache[course.id] = firstMedia;
-    return firstMedia;
   }
 
   MediaResource _fallbackMedia(CourseEntity course) {
@@ -97,25 +122,52 @@ class _CourseVideoTileState extends ConsumerState<CourseVideoTile> {
 
         return Card(
           clipBehavior: Clip.antiAlias,
-          elevation: Theme.of(context).cardTheme.elevation ?? 2,
+          elevation: 0,
           margin: const EdgeInsets.only(bottom: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Text(
-                  widget.course.title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0x0A000000),
+                  blurRadius: 8,
+                  spreadRadius: 0,
+                  offset: const Offset(0, 2),
                 ),
-              ),
-              VideoPreviewCard(video: media, onTap: widget.onTap, isCard: false),
-            ],
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    widget.course.title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF2D3748),
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
+                  ),
+                  child: VideoPreviewCard(
+                    video: media,
+                    onTap: widget.onTap,
+                    isCard: false,
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

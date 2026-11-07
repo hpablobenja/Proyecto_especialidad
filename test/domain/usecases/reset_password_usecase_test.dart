@@ -16,16 +16,14 @@ class MockAuthRepository implements AuthRepository {
     String? workArea,
     String? specialty,
   ) async {
-    return UserEntity(
-      uid: 'test_uid',
-      email: email,
-      name: name,
-      role: role,
-    );
+    return UserEntity(uid: 'test_uid', email: email, name: name, role: role);
   }
 
   @override
-  Future<UserEntity> signInWithEmailAndPassword(String email, String password) async {
+  Future<UserEntity> signInWithEmailAndPassword(
+    String email,
+    String password,
+  ) async {
     return UserEntity(
       uid: 'test_uid',
       email: email,
@@ -78,11 +76,14 @@ void main() {
       expect(mockRepository.lastResetEmail, '   ');
     });
 
-    test('ResetPasswordUsecase throws exception when repository throws', () async {
-      mockRepository.errorToThrow = Exception('User not found');
+    test(
+      'ResetPasswordUsecase throws exception when repository throws',
+      () async {
+        mockRepository.errorToThrow = Exception('User not found');
 
-      expect(() => usecase('test@example.com'), throwsException);
-    });
+        expect(() => usecase('test@example.com'), throwsException);
+      },
+    );
 
     test('ResetPasswordUsecase wraps repository error', () async {
       mockRepository.errorToThrow = Exception('Network error');
@@ -96,12 +97,15 @@ void main() {
       }
     });
 
-    test('ResetPasswordUsecase completes successfully for valid email', () async {
-      await usecase('test@example.com');
+    test(
+      'ResetPasswordUsecase completes successfully for valid email',
+      () async {
+        await usecase('test@example.com');
 
-      // Should complete without throwing
-      expect(mockRepository.lastResetEmail, 'test@example.com');
-    });
+        // Should complete without throwing
+        expect(mockRepository.lastResetEmail, 'test@example.com');
+      },
+    );
 
     test('ResetPasswordUsecase handles special characters in email', () async {
       await usecase('test+ñ@example.com');

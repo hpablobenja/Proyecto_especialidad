@@ -23,7 +23,10 @@ class ValidationUtils {
   }
 
   /// Valida que el texto no esté vacío y contenga al menos una letra (no solo números o símbolos)
-  static String? validateRequiredTextWithLetters(String? value, {String fieldName = 'Este campo'}) {
+  static String? validateRequiredTextWithLetters(
+    String? value, {
+    String fieldName = 'Este campo',
+  }) {
     if (value == null || value.trim().isEmpty) {
       return '$fieldName es obligatorio.';
     }

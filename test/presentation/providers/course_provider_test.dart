@@ -80,7 +80,7 @@ void main() {
     setUp(() {
       fakeGetCoursesUsecase = FakeGetCoursesUsecase();
       fakeCreateCourseUsecase = FakeCreateCourseUsecase();
-      
+
       courseProvider = CourseProvider(
         getCoursesUsecase: fakeGetCoursesUsecase,
         createCourseUsecase: fakeCreateCourseUsecase,
@@ -111,16 +111,16 @@ void main() {
 
     test('loadCourses sets isLoading to true initially', () async {
       fakeGetCoursesUsecase.setResponse([]);
-      
+
       final future = courseProvider.loadCourses();
       expect(courseProvider.isLoading, true);
-      
+
       await future;
     });
 
     test('loadCourses sets isLoading to false after completion', () async {
       fakeGetCoursesUsecase.setResponse([]);
-      
+
       await courseProvider.loadCourses();
       expect(courseProvider.isLoading, false);
     });
@@ -140,11 +140,11 @@ void main() {
           targetAudience: 'General',
         ),
       ];
-      
+
       fakeGetCoursesUsecase.setResponse(testCourses);
-      
+
       await courseProvider.loadCourses();
-      
+
       expect(courseProvider.courses.length, 2);
       expect(courseProvider.courses[0].id, 'course_1');
       expect(courseProvider.courses[1].id, 'course_2');
@@ -152,59 +152,68 @@ void main() {
 
     test('loadCourses sets errorMessage on failure', () async {
       fakeGetCoursesUsecase.setError(Exception('Test error'));
-      
+
       await courseProvider.loadCourses();
-      
+
       expect(courseProvider.errorMessage, isNotNull);
-      expect(courseProvider.errorMessage, contains('No se pudieron cargar los cursos'));
+      expect(
+        courseProvider.errorMessage,
+        contains('No se pudieron cargar los cursos'),
+      );
     });
 
     test('loadCourses clears previous errorMessage', () async {
       fakeGetCoursesUsecase.setError(Exception('First error'));
-      
+
       await courseProvider.loadCourses();
       expect(courseProvider.errorMessage, isNotNull);
-      
+
       fakeGetCoursesUsecase.setResponse([]);
       await courseProvider.loadCourses();
-      
+
       expect(courseProvider.errorMessage, null);
     });
 
     test('createCourse sets isLoading to true initially', () async {
-      fakeCreateCourseUsecase.setResponse(const CourseEntity(
-        id: 'new_course',
-        title: 'New Course',
-        description: 'Description',
-        targetAudience: 'General',
-      ));
-      
+      fakeCreateCourseUsecase.setResponse(
+        const CourseEntity(
+          id: 'new_course',
+          title: 'New Course',
+          description: 'Description',
+          targetAudience: 'General',
+        ),
+      );
+
       final future = courseProvider.createCourse('Title', 'Description');
       expect(courseProvider.isLoading, true);
-      
+
       await future;
     });
 
     test('createCourse sets isLoading to false after completion', () async {
-      fakeCreateCourseUsecase.setResponse(const CourseEntity(
-        id: 'new_course',
-        title: 'New Course',
-        description: 'Description',
-        targetAudience: 'General',
-      ));
-      
+      fakeCreateCourseUsecase.setResponse(
+        const CourseEntity(
+          id: 'new_course',
+          title: 'New Course',
+          description: 'Description',
+          targetAudience: 'General',
+        ),
+      );
+
       await courseProvider.createCourse('Title', 'Description');
       expect(courseProvider.isLoading, false);
     });
 
     test('createCourse returns true on success', () async {
-      fakeCreateCourseUsecase.setResponse(const CourseEntity(
-        id: 'new_course',
-        title: 'New Course',
-        description: 'Description',
-        targetAudience: 'General',
-      ));
-      
+      fakeCreateCourseUsecase.setResponse(
+        const CourseEntity(
+          id: 'new_course',
+          title: 'New Course',
+          description: 'Description',
+          targetAudience: 'General',
+        ),
+      );
+
       final result = await courseProvider.createCourse('Title', 'Description');
       expect(result, true);
     });
@@ -216,69 +225,85 @@ void main() {
         description: 'Description',
         targetAudience: 'General',
       );
-      
+
       fakeCreateCourseUsecase.setResponse(newCourse);
-      
+
       await courseProvider.createCourse('Title', 'Description');
-      
+
       expect(courseProvider.courses.contains(newCourse), true);
     });
 
-    test('createCourse uses default targetAudience when not provided', () async {
-      fakeCreateCourseUsecase.setResponse(const CourseEntity(
-        id: 'new_course',
-        title: 'New Course',
-        description: 'Description',
-        targetAudience: 'General',
-      ));
-      
-      await courseProvider.createCourse('Title', 'Description');
-      
-      expect(fakeCreateCourseUsecase.lastParams?.targetAudience, 'General');
-    });
+    test(
+      'createCourse uses default targetAudience when not provided',
+      () async {
+        fakeCreateCourseUsecase.setResponse(
+          const CourseEntity(
+            id: 'new_course',
+            title: 'New Course',
+            description: 'Description',
+            targetAudience: 'General',
+          ),
+        );
+
+        await courseProvider.createCourse('Title', 'Description');
+
+        expect(fakeCreateCourseUsecase.lastParams?.targetAudience, 'General');
+      },
+    );
 
     test('createCourse uses custom targetAudience when provided', () async {
-      fakeCreateCourseUsecase.setResponse(const CourseEntity(
-        id: 'new_course',
-        title: 'New Course',
-        description: 'Description',
+      fakeCreateCourseUsecase.setResponse(
+        const CourseEntity(
+          id: 'new_course',
+          title: 'New Course',
+          description: 'Description',
+          targetAudience: 'Principiantes',
+        ),
+      );
+
+      await courseProvider.createCourse(
+        'Title',
+        'Description',
         targetAudience: 'Principiantes',
-      ));
-      
-      await courseProvider.createCourse('Title', 'Description', targetAudience: 'Principiantes');
-      
-      expect(fakeCreateCourseUsecase.lastParams?.targetAudience, 'Principiantes');
+      );
+
+      expect(
+        fakeCreateCourseUsecase.lastParams?.targetAudience,
+        'Principiantes',
+      );
     });
 
     test('createCourse returns false on failure', () async {
       fakeCreateCourseUsecase.setError(Exception('Test error'));
-      
+
       final result = await courseProvider.createCourse('Title', 'Description');
       expect(result, false);
     });
 
     test('createCourse sets errorMessage on failure', () async {
       fakeCreateCourseUsecase.setError(Exception('Test error'));
-      
+
       await courseProvider.createCourse('Title', 'Description');
-      
+
       expect(courseProvider.errorMessage, isNotNull);
       expect(courseProvider.errorMessage, contains('Error al crear el curso'));
     });
 
     test('createCourse clears previous errorMessage', () async {
       fakeCreateCourseUsecase.setError(Exception('First error'));
-      
+
       await courseProvider.createCourse('Title', 'Description');
       expect(courseProvider.errorMessage, isNotNull);
-      
-      fakeCreateCourseUsecase.setResponse(const CourseEntity(
-        id: 'new_course',
-        title: 'New Course',
-        description: 'Description',
-        targetAudience: 'General',
-      ));
-      
+
+      fakeCreateCourseUsecase.setResponse(
+        const CourseEntity(
+          id: 'new_course',
+          title: 'New Course',
+          description: 'Description',
+          targetAudience: 'General',
+        ),
+      );
+
       await courseProvider.createCourse('Title 2', 'Description 2');
       expect(courseProvider.errorMessage, null);
     });

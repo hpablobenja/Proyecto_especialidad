@@ -225,32 +225,7 @@ class ModernCourseCard extends StatelessWidget {
 
   Widget _buildPlaceholderThumbnail() {
     Widget imageWidget;
-    
-    if (course.thumbnailUrl != null && course.thumbnailUrl!.isNotEmpty) {
-      imageWidget = ClipRRect(
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppStyles.radiusL),
-        ),
-        child: Image.network(
-          course.thumbnailUrl!,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: 140, // Reduced height to make room for course name
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Container(
-              color: Colors.grey[200],
-              child: const Center(
-                child: CircularProgressIndicator(),
-              ),
-            );
-          },
-          errorBuilder: (context, error, stackTrace) => _buildDefaultThumbnail(),
-        ),
-      );
-    } else {
-      imageWidget = _buildDefaultThumbnail();
-    }
+    imageWidget = _buildDefaultThumbnail();
 
     // Wrap the image with a column to add the course name below
     return Column(
@@ -308,13 +283,14 @@ class ModernCourseCard extends StatelessWidget {
             SizedBox(height: 8),
             Text(
               'Ver video',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            )
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
-
-  
 }

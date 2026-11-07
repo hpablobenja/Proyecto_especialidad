@@ -6,7 +6,7 @@ class AppColors {
   // ===== LIGHT THEME COLORS =====
 
   // Primary Colors (Soft and accessible)
-  static const Color primaryBlue = Color(0xFF4A6FA5); // Soft blue
+  static const Color primaryBlue = Color(0xFF0D9488); // Soft blue
   static const Color primaryBlueLight = Color(0xFF89A7C7); // Lighter blue
   static const Color primaryBlueDark = Color(0xFF2C4D7A); // Darker blue
 
@@ -14,6 +14,7 @@ class AppColors {
   static const Color accentOrange = Color(0xFFF4A261); // Soft orange
   static const Color accentGreen = Color(0xFF2A9D8F); // Muted teal
   static const Color accentPurple = Color(0xFF9B5DE5); // Soft purple
+  static const Color accentblue = Color(0xFF0D9488); // Soft blue
 
   // Neutral Colors (Soft and accessible)
   static const Color backgroundLight = Color(
@@ -81,6 +82,20 @@ class AppColors {
   static const Color textColor = textPrimary;
   static const Color successColor = success;
   static const Color errorColor = error;
+
+  // ===== UI/UX DESIGN SYSTEM ADDITIONS =====
+
+  /// Fondo gris muy sutil — reemplaza blanco puro para dar profundidad
+  static const Color scaffoldBackground = Color(0xFFF0FDFA);
+
+  /// Fondo de tarjetas blancas sobre el fondo gris sutil
+  static const Color cardBackground = Colors.white;
+
+  /// Color inactivo de la barra de navegación inferior
+  static const Color navInactive = Color(0xFFA0AEC0);
+
+  /// Sombra suave y difuminada para tarjetas
+  static const Color cardShadow = Color(0x0A000000);
 
   // ===== UTILITY METHODS =====
 

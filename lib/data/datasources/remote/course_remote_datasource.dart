@@ -50,7 +50,9 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
   @override
   Future<bool> updateCourseStatus(String courseId, String status) async {
     try {
-      await firestore.collection('courses').doc(courseId).update({'status': status});
+      await firestore.collection('courses').doc(courseId).update({
+        'status': status,
+      });
       return true;
     } catch (e) {
       return false;

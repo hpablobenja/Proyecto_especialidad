@@ -4,10 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/entities/course_entity.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/di/riverpod_providers.dart';
 import 'course_content_view_screen.dart';
-import 'lesson_documentation_screen.dart';
+import 'lesson_options_screen.dart';
 
 class CourseDetailsScreen extends ConsumerWidget {
   final CourseEntity course;
@@ -16,6 +15,11 @@ class CourseDetailsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Guardar automáticamente los datos del último curso ingresado
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(offlineCacheServiceProvider).cacheLastCourse(course);
+    });
+
     return Scaffold(
       appBar: AppBar(
         title: Text(course.title, maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -27,12 +31,11 @@ class CourseDetailsScreen extends ConsumerWidget {
           children: <Widget>[
             Text(
               course.title,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ) ?? const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+              style:
+                  Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ) ??
+                  const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             const Text(
@@ -54,17 +57,19 @@ class CourseDetailsScreen extends ConsumerWidget {
 
                   // Cache course for offline access
                   await cacheService.cacheLastCourse(course);
-                  
+
                   // Check if offline
                   if (!connectivity.isOnline) {
                     // Try to get cached lesson for this course
                     final cachedLesson = await cacheService.getLastLesson();
-                    
-                    if (cachedLesson != null && cachedLesson.courseId == course.id) {
-                      // Navigate directly to the lesson documentation (not options)
+
+                    if (cachedLesson != null &&
+                        cachedLesson.courseId == course.id) {
+                      // Navigate to lesson options (allows quiz access offline)
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => LessonDocumentationScreen(lesson: cachedLesson),
+                          builder:
+                              (_) => LessonOptionsScreen(lesson: cachedLesson),
                         ),
                       );
                       return;
@@ -72,7 +77,9 @@ class CourseDetailsScreen extends ConsumerWidget {
                       // No cached lesson for this course
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('No hay contenido guardado para este curso. Accede online primero.'),
+                          content: Text(
+                            'No hay contenido guardado para este curso. Accede online primero.',
+                          ),
                           backgroundColor: Colors.orange,
                           duration: Duration(seconds: 3),
                         ),
@@ -80,7 +87,7 @@ class CourseDetailsScreen extends ConsumerWidget {
                       return;
                     }
                   }
-                  
+
                   // Online: show normal course content
                   Navigator.of(context).push(
                     MaterialPageRoute(

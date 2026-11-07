@@ -4,7 +4,7 @@ import 'package:redmaestra1/data/models/data_user_model.dart';
 
 class FakeDocumentSnapshot implements DocumentSnapshot<Map<String, dynamic>> {
   FakeDocumentSnapshot({required this.id, required Map<String, dynamic>? data})
-      : _data = data ?? const {};
+    : _data = data ?? const {};
 
   @override
   final String id;
@@ -40,10 +40,7 @@ void main() {
         totalSessionMinutes: 120,
         sessionStartTime: now,
         lastSessionEnd: now.subtract(const Duration(hours: 1)),
-        categoryProgress: {
-          'Ciencias Sociales': 0.5,
-          'Ciencias Naturales': 0.3,
-        },
+        categoryProgress: {'Ciencias Sociales': 0.5, 'Ciencias Naturales': 0.3},
         overallProgress: 0.4,
         unlockedAchievements: ['achievement1', 'achievement2'],
         updatedAt: now,
@@ -80,10 +77,7 @@ void main() {
         totalSessionMinutes: 120,
         sessionStartTime: now,
         lastSessionEnd: now.subtract(const Duration(hours: 1)),
-        categoryProgress: {
-          'Ciencias Sociales': 0.5,
-          'Ciencias Naturales': 0.3,
-        },
+        categoryProgress: {'Ciencias Sociales': 0.5, 'Ciencias Naturales': 0.3},
         overallProgress: 0.4,
         unlockedAchievements: ['achievement1'],
         updatedAt: now,

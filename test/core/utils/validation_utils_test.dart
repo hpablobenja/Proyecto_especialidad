@@ -115,17 +115,30 @@ void main() {
 
       test('returns error when value contains only numbers', () {
         final result = ValidationUtils.validateRequiredTextWithLetters('12345');
-        expect(result, 'Este campo debe contener letras, no solo números o símbolos.');
+        expect(
+          result,
+          'Este campo debe contener letras, no solo números o símbolos.',
+        );
       });
 
       test('returns error when value contains only symbols', () {
-        final result = ValidationUtils.validateRequiredTextWithLetters('!@#\$%');
-        expect(result, 'Este campo debe contener letras, no solo números o símbolos.');
+        final result = ValidationUtils.validateRequiredTextWithLetters(
+          '!@#\$%',
+        );
+        expect(
+          result,
+          'Este campo debe contener letras, no solo números o símbolos.',
+        );
       });
 
       test('returns error when value contains only numbers and symbols', () {
-        final result = ValidationUtils.validateRequiredTextWithLetters('123!@#');
-        expect(result, 'Este campo debe contener letras, no solo números o símbolos.');
+        final result = ValidationUtils.validateRequiredTextWithLetters(
+          '123!@#',
+        );
+        expect(
+          result,
+          'Este campo debe contener letras, no solo números o símbolos.',
+        );
       });
 
       test('returns null when value contains lowercase letters', () {
@@ -144,7 +157,9 @@ void main() {
       });
 
       test('returns null when value contains letters and numbers', () {
-        final result = ValidationUtils.validateRequiredTextWithLetters('test123');
+        final result = ValidationUtils.validateRequiredTextWithLetters(
+          'test123',
+        );
         expect(result, null);
       });
 
@@ -168,18 +183,32 @@ void main() {
         expect(result, null);
       });
 
-      test('returns null when value has leading/trailing whitespace but contains letters', () {
-        final result = ValidationUtils.validateRequiredTextWithLetters('  test  ');
-        expect(result, null);
-      });
+      test(
+        'returns null when value has leading/trailing whitespace but contains letters',
+        () {
+          final result = ValidationUtils.validateRequiredTextWithLetters(
+            '  test  ',
+          );
+          expect(result, null);
+        },
+      );
 
       test('uses custom field name in error message', () {
-        final result = ValidationUtils.validateRequiredTextWithLetters('123', fieldName: 'Nombre');
-        expect(result, 'Nombre debe contener letras, no solo números o símbolos.');
+        final result = ValidationUtils.validateRequiredTextWithLetters(
+          '123',
+          fieldName: 'Nombre',
+        );
+        expect(
+          result,
+          'Nombre debe contener letras, no solo números o símbolos.',
+        );
       });
 
       test('custom field name in empty error', () {
-        final result = ValidationUtils.validateRequiredTextWithLetters('', fieldName: 'Apellido');
+        final result = ValidationUtils.validateRequiredTextWithLetters(
+          '',
+          fieldName: 'Apellido',
+        );
         expect(result, 'Apellido es obligatorio.');
       });
     });

@@ -25,7 +25,7 @@ class SessionTimerService {
     final prefs = await SharedPreferences.getInstance();
     _currentSessionMinutes = prefs.getInt(_currentSessionKey) ?? 0;
     _totalSessionMinutes = prefs.getInt(_totalSessionKey) ?? 0;
-    
+
     final startTimeMillis = prefs.getInt(_sessionStartKey);
     if (startTimeMillis != null) {
       _sessionStartTime = DateTime.fromMillisecondsSinceEpoch(startTimeMillis);
@@ -36,24 +36,27 @@ class SessionTimerService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_currentSessionKey, _currentSessionMinutes);
     await prefs.setInt(_totalSessionKey, _totalSessionMinutes);
-    
+
     if (_sessionStartTime != null) {
-      await prefs.setInt(_sessionStartKey, _sessionStartTime!.millisecondsSinceEpoch);
+      await prefs.setInt(
+        _sessionStartKey,
+        _sessionStartTime!.millisecondsSinceEpoch,
+      );
     }
   }
 
   Future<void> startSession() async {
     if (_isRunning) return;
-    
+
     await _loadFromPrefs();
-    
+
     _sessionStartTime = DateTime.now();
     _currentSessionMinutes = 0;
     _isRunning = true;
-    
+
     await _saveToPrefs();
     await _updateFirestore();
-    
+
     _startTimer();
   }
 
@@ -62,7 +65,7 @@ class SessionTimerService {
     _timer = Timer.periodic(const Duration(minutes: 1), (timer) async {
       _currentSessionMinutes++;
       _totalSessionMinutes++;
-      
+
       await _saveToPrefs();
       await _updateFirestore();
     });
@@ -70,14 +73,14 @@ class SessionTimerService {
 
   Future<void> stopSession() async {
     if (!_isRunning) return;
-    
+
     _timer?.cancel();
     _timer = null;
     _isRunning = false;
-    
+
     await _saveToPrefs();
     await _updateFirestore();
-    
+
     // Reset current session but keep total
     _currentSessionMinutes = 0;
     _sessionStartTime = null;
@@ -88,17 +91,18 @@ class SessionTimerService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('user_id');
-      
+
       if (userId == null) return;
-      
+
       final firestore = FirebaseFirestore.instance;
-      
+
       await firestore.collection('dataUser').doc(userId).set({
         'currentSessionMinutes': _currentSessionMinutes,
         'totalSessionMinutes': _totalSessionMinutes,
-        'sessionStartTime': _sessionStartTime != null 
-            ? Timestamp.fromDate(_sessionStartTime!)
-            : null,
+        'sessionStartTime':
+            _sessionStartTime != null
+                ? Timestamp.fromDate(_sessionStartTime!)
+                : null,
         'lastSessionEnd': Timestamp.now(),
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));

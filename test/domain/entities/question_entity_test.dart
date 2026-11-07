@@ -182,7 +182,13 @@ void main() {
       const question = QuestionEntity(
         id: 'question_1',
         text: 'What is Flutter?',
-        options: ['A framework', 'A language', 'A database', 'A tool', 'A library'],
+        options: [
+          'A framework',
+          'A language',
+          'A database',
+          'A tool',
+          'A library',
+        ],
         correctAnswerIndex: 0,
       );
 

@@ -10,8 +10,10 @@ import '../profile/profile_screen.dart';
 import '../dashboard/teacher_dashboard_screen.dart';
 import '../../widgets/app_drawer.dart';
 import '../../widgets/course_video_tile.dart';
+import '../../widgets/connectivity_redirect.dart';
 import '../../widgets/offline_banner.dart';
 import '../../widgets/notification_dropdown.dart';
+import '../../../domain/entities/course_entity.dart';
 import '../courses/course_details_screen.dart';
 
 class MainShell extends ConsumerStatefulWidget {
@@ -26,11 +28,21 @@ class _MainShellState extends ConsumerState<MainShell> {
   @override
   void initState() {
     super.initState();
+    ConnectivityRedirect.resetToFormaciones = () {
+      if (!mounted) return;
+      _onItemTapped(0);
+    };
     // Pre-cargar contenido para la galería y cargar cursos iniciados del usuario
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(courseStateProvider).loadCourses();
       ref.read(favoritesStateProvider).load();
     });
+  }
+
+  @override
+  void dispose() {
+    ConnectivityRedirect.resetToFormaciones = null;
+    super.dispose();
   }
 
   void _onItemTapped(int index) {
@@ -72,6 +84,7 @@ class _MainShellState extends ConsumerState<MainShell> {
         drawer: isMaestro ? null : const AppDrawer(),
         body: Column(
           children: [
+            const ConnectivityTransitionBanner(),
             const OfflineBanner(),
             Expanded(
               child: Navigator(
@@ -95,28 +108,37 @@ class _MainShellState extends ConsumerState<MainShell> {
             ),
           ],
         ),
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: _onItemTapped,
-          type: BottomNavigationBarType.fixed,
-          showSelectedLabels: true,
-          showUnselectedLabels: true,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.school),
-              label: 'Formaciones',
-            ),
-            BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Buscar'),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard),
-              label: 'Dashboard',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.bar_chart),
-              label: 'Progreso',
-            ),
-            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
-          ],
+        bottomNavigationBar: Padding(
+          padding: const EdgeInsets.only(bottom: 8.0, top: 4.0),
+          child: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: _onItemTapped,
+            type: BottomNavigationBarType.fixed,
+            showSelectedLabels: true,
+            showUnselectedLabels: true,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.school),
+                label: 'Formaciones',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.search),
+                label: 'Buscar',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.dashboard),
+                label: 'Dashboard',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.bar_chart),
+                label: 'Progreso',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person),
+                label: 'Perfil',
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -186,20 +208,67 @@ class _GalleryScreenState extends ConsumerState<_GalleryScreen> {
       return const Center(child: CircularProgressIndicator());
     }
     if (courseProvider.courses.isEmpty) {
-      return Center(
-        child: Text(
-          'Aún no hay microformaciones. Vuelve más tarde.',
-          style: Theme.of(context).textTheme.bodyMedium,
-          textAlign: TextAlign.center,
-        ),
+      final connectivity = ref.watch(connectivityStateProvider);
+      return FutureBuilder<CourseEntity?>(
+        future: ref.read(offlineCacheServiceProvider).getLastCourse(),
+        builder: (context, snapshot) {
+          final cachedCourse = snapshot.data;
+          if (cachedCourse != null) {
+            return CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Text(
+                      'Última Microformación (Disponible Offline)',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  sliver: SliverToBoxAdapter(
+                    child: CourseVideoTile(
+                      key: ValueKey(cachedCourse.id),
+                      course: cachedCourse,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder:
+                                (_) =>
+                                    CourseDetailsScreen(course: cachedCourse),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
+
+          return Center(
+            child: Text(
+              !connectivity.isOnline
+                  ? 'Sin conexión. Ingresa con internet a un curso para guardarlo offline.'
+                  : 'Aún no hay microformaciones. Vuelve más tarde.',
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+          );
+        },
       );
     }
 
     // Filter courses by selected audience and status (only published for teachers)
-    final publishedCourses = courseProvider.courses
-        .where((c) => c.status == 'published')
-        .toList();
-    
+    final publishedCourses =
+        courseProvider.courses.where((c) => c.status == 'published').toList();
+
     final filteredCourses =
         _selectedAudience == 'Todos'
             ? publishedCourses
@@ -490,9 +559,10 @@ class _SearchBodyState extends ConsumerState<_SearchBody> {
                         label: Text(
                           label,
                           style: TextStyle(
-                            color: Theme.of(context).brightness == Brightness.light
-                                ? Colors.black87
-                                : null,
+                            color:
+                                Theme.of(context).brightness == Brightness.light
+                                    ? Colors.black87
+                                    : null,
                           ),
                         ),
                         selected: chips.contains(label.toLowerCase()),

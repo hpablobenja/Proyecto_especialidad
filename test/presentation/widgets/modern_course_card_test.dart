@@ -5,7 +5,9 @@ import 'package:redmaestra1/domain/entities/course_entity.dart';
 
 void main() {
   group('ModernCourseCard Widget Tests', () {
-    testWidgets('ModernCourseCard acepta parámetros requeridos', (WidgetTester tester) async {
+    testWidgets('ModernCourseCard acepta parámetros requeridos', (
+      WidgetTester tester,
+    ) async {
       final course = CourseEntity(
         id: 'course_1',
         title: 'Curso',
@@ -16,7 +18,9 @@ void main() {
       expect(() => ModernCourseCard(course: course), returnsNormally);
     });
 
-    testWidgets('ModernCourseCard acepta parámetros opcionales', (WidgetTester tester) async {
+    testWidgets('ModernCourseCard acepta parámetros opcionales', (
+      WidgetTester tester,
+    ) async {
       final course = CourseEntity(
         id: 'course_1',
         title: 'Curso',
@@ -24,17 +28,22 @@ void main() {
         targetAudience: 'Todos',
       );
 
-      expect(() => ModernCourseCard(
-        course: course,
-        onTap: () {},
-        showProgress: true,
-        progress: 0.5,
-        isEnrolled: true,
-        showBadge: true,
-      ), returnsNormally);
+      expect(
+        () => ModernCourseCard(
+          course: course,
+          onTap: () {},
+          showProgress: true,
+          progress: 0.5,
+          isEnrolled: true,
+          showBadge: true,
+        ),
+        returnsNormally,
+      );
     });
 
-    testWidgets('ModernCourseCard es un StatelessWidget', (WidgetTester tester) async {
+    testWidgets('ModernCourseCard es un StatelessWidget', (
+      WidgetTester tester,
+    ) async {
       final course = CourseEntity(
         id: 'course_1',
         title: 'Curso',

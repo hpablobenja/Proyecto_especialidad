@@ -11,11 +11,7 @@ class NoInternetMessage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.wifi_off,
-            size: 64,
-            color: Colors.grey.shade400,
-          ),
+          Icon(Icons.wifi_off, size: 64, color: Colors.grey.shade400),
           const SizedBox(height: 16),
           Text(
             'Sin acceso a internet',
@@ -28,10 +24,7 @@ class NoInternetMessage extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'Esta función requiere conexión a internet',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade500,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
           ),
         ],
       ),

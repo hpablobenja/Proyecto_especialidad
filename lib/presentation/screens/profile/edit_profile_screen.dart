@@ -92,9 +92,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.location_city),
                 ),
-                items: _workAreas.map((area) {
-                  return DropdownMenuItem(value: area, child: Text(area));
-                }).toList(),
+                items:
+                    _workAreas.map((area) {
+                      return DropdownMenuItem(value: area, child: Text(area));
+                    }).toList(),
                 onChanged: (value) {
                   setState(() {
                     _selectedWorkArea = value;
@@ -110,9 +111,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.school),
                 ),
-                items: _specialties.map((specialty) {
-                  return DropdownMenuItem(value: specialty, child: Text(specialty));
-                }).toList(),
+                items:
+                    _specialties.map((specialty) {
+                      return DropdownMenuItem(
+                        value: specialty,
+                        child: Text(specialty),
+                      );
+                    }).toList(),
                 onChanged: (value) {
                   setState(() {
                     _selectedSpecialty = value;

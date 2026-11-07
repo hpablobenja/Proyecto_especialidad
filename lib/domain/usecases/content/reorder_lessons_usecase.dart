@@ -20,6 +20,10 @@ class ReorderLessonsUsecase implements Usecase<void, ReorderLessonsParams> {
 
   @override
   Future<void> call(ReorderLessonsParams params) {
-    return repository.reorderLessons(params.courseId, params.moduleId, params.orderedLessonIds);
+    return repository.reorderLessons(
+      params.courseId,
+      params.moduleId,
+      params.orderedLessonIds,
+    );
   }
 }

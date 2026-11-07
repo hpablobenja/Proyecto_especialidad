@@ -72,77 +72,77 @@ class VideoPreviewCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-            if (videoId != null) ...[
-              AspectRatio(
-                aspectRatio: 16 / 9,
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(isCard ? 8 : 0),
-                    image: DecorationImage(
-                      image: NetworkImage(_getThumbnailUrl(videoId)),
-                      fit: BoxFit.cover,
-                      onError: (exception, stackTrace) {
-                        // Fallback to placeholder if thumbnail fails to load
-                      },
-                    ),
-                  ),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(isCard ? 8 : 0),
-                      color: Colors.black.withOpacity(0.3),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.play_circle_outline,
-                        color: Colors.white,
-                        size: 48,
-                      ),
-                    ),
+          if (videoId != null) ...[
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(isCard ? 8 : 0),
+                  image: DecorationImage(
+                    image: NetworkImage(_getThumbnailUrl(videoId)),
+                    fit: BoxFit.cover,
+                    onError: (exception, stackTrace) {
+                      // Fallback to placeholder if thumbnail fails to load
+                    },
                   ),
                 ),
-              ),
-            ] else ...[
-              AspectRatio(
-                aspectRatio: 16 / 9,
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(isCard ? 8 : 0),
-                    color: Colors.grey,
+                    color: Colors.black.withOpacity(0.3),
                   ),
                   child: const Center(
                     child: Icon(
-                      Icons.video_library,
+                      Icons.play_circle_outline,
                       color: Colors.white,
                       size: 48,
                     ),
                   ),
                 ),
               ),
-            ],
-            if (showActions)
-              Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    if (onEdit != null)
-                      IconButton(
-                        onPressed: onEdit,
-                        icon: const Icon(Icons.edit_outlined),
-                        tooltip: 'Editar video',
-                        iconSize: 20,
-                      ),
-                    if (onDelete != null)
-                      IconButton(
-                        onPressed: onDelete,
-                        icon: const Icon(Icons.delete_outline),
-                        tooltip: 'Eliminar video',
-                        iconSize: 20,
-                        color: AppColors.errorColor,
-                      ),
-                  ],
+            ),
+          ] else ...[
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(isCard ? 8 : 0),
+                  color: Colors.grey,
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.video_library,
+                    color: Colors.white,
+                    size: 48,
+                  ),
                 ),
               ),
+            ),
+          ],
+          if (showActions)
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (onEdit != null)
+                    IconButton(
+                      onPressed: onEdit,
+                      icon: const Icon(Icons.edit_outlined),
+                      tooltip: 'Editar video',
+                      iconSize: 20,
+                    ),
+                  if (onDelete != null)
+                    IconButton(
+                      onPressed: onDelete,
+                      icon: const Icon(Icons.delete_outline),
+                      tooltip: 'Eliminar video',
+                      iconSize: 20,
+                      color: AppColors.errorColor,
+                    ),
+                ],
+              ),
+            ),
         ],
       ),
     );

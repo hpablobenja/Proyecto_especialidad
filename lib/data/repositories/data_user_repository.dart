@@ -10,7 +10,7 @@ class DataUserRepository {
   Future<DataUserModel?> getUserData() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString('user_id');
-    
+
     if (userId == null) return null;
 
     final doc = await _firestore.collection('dataUser').doc(userId).get();
@@ -26,7 +26,7 @@ class DataUserRepository {
   Stream<DataUserModel?> getUserDataStream() async* {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString('user_id');
-    
+
     if (userId == null) {
       yield null;
       return;
@@ -59,7 +59,10 @@ class DataUserRepository {
       updatedAt: DateTime.now(),
     );
 
-    await _firestore.collection('dataUser').doc(userId).set(initialData.toMap());
+    await _firestore
+        .collection('dataUser')
+        .doc(userId)
+        .set(initialData.toMap());
     return initialData;
   }
 
@@ -67,23 +70,31 @@ class DataUserRepository {
   Future<void> startSession() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString('user_id');
-    
+
     if (userId == null) return;
 
     // Esperar a que FirebaseAuth inicialice el usuario antes de escribir en Firestore
     // para evitar el error de PERMISSION_DENIED en el arranque de la app.
     if (FirebaseAuth.instance.currentUser == null) {
-      await FirebaseAuth.instance.authStateChanges().firstWhere((user) => user != null, orElse: () => null);
-      if (FirebaseAuth.instance.currentUser == null) return; // Sigue deslogueado
+      await FirebaseAuth.instance.authStateChanges().firstWhere(
+        (user) => user != null,
+        orElse: () => null,
+      );
+      if (FirebaseAuth.instance.currentUser == null)
+        return; // Sigue deslogueado
     }
 
     try {
       final doc = await _firestore.collection('dataUser').doc(userId).get();
       if (doc.exists) {
         final userData = DataUserModel.fromFirestore(doc);
+        // Si ya hay una sesión activa, no hacer nada para evitar escrituras innecesarias
         if (userData.sessionStartTime != null) {
-          // Si había una sesión activa que no se cerró correctamente,
-          // recuperamos los minutos acumulados y los sumamos al total.
+          return;
+        }
+        // Si había una sesión que no se cerró correctamente,
+        // recuperamos los minutos acumulados y los sumamos al total.
+        if (userData.currentSessionMinutes > 0) {
           final recoveredMinutes = userData.currentSessionMinutes;
           final newTotal = userData.totalSessionMinutes + recoveredMinutes;
           await _firestore.collection('dataUser').doc(userId).update({
@@ -112,7 +123,7 @@ class DataUserRepository {
   Future<void> endSession() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString('user_id');
-    
+
     if (userId == null) return;
 
     final doc = await _firestore.collection('dataUser').doc(userId).get();
@@ -120,9 +131,10 @@ class DataUserRepository {
 
     final userData = DataUserModel.fromFirestore(doc);
     final sessionStartTime = userData.sessionStartTime;
-    
+
     if (sessionStartTime != null) {
-      final sessionDuration = DateTime.now().difference(sessionStartTime).inMinutes;
+      final sessionDuration =
+          DateTime.now().difference(sessionStartTime).inMinutes;
       final newTotalMinutes = userData.totalSessionMinutes + sessionDuration;
 
       await _firestore.collection('dataUser').doc(userId).update({
@@ -139,20 +151,21 @@ class DataUserRepository {
   Future<void> updateCurrentSession() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString('user_id');
-    
+
     if (userId == null) return;
 
     final doc = await _firestore.collection('dataUser').doc(userId).get();
-    
+
     DateTime? sessionStartTime;
     if (doc.exists) {
       final userData = DataUserModel.fromFirestore(doc);
       sessionStartTime = userData.sessionStartTime;
     }
-    
+
     if (sessionStartTime != null) {
-      final currentDuration = DateTime.now().difference(sessionStartTime).inMinutes;
-      
+      final currentDuration =
+          DateTime.now().difference(sessionStartTime).inMinutes;
+
       await _firestore.collection('dataUser').doc(userId).set({
         'currentSessionMinutes': currentDuration,
         'updatedAt': FieldValue.serverTimestamp(),
@@ -164,11 +177,11 @@ class DataUserRepository {
   Future<void> updateCategoryProgress(String category, double progress) async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString('user_id');
-    
+
     if (userId == null) return;
 
     final doc = await _firestore.collection('dataUser').doc(userId).get();
-    
+
     Map<String, double> updatedProgress;
     if (doc.exists) {
       final userData = DataUserModel.fromFirestore(doc);
@@ -183,7 +196,7 @@ class DataUserRepository {
         'Otro(Especificar)': 0.0,
       };
     }
-    
+
     updatedProgress[category] = progress;
 
     // Calcular progreso general basado en el promedio de categorías
@@ -201,11 +214,11 @@ class DataUserRepository {
   Future<void> recalculateOverallProgress() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString('user_id');
-    
+
     if (userId == null) return;
 
     final doc = await _firestore.collection('dataUser').doc(userId).get();
-    
+
     Map<String, double> categoryProgress;
     if (doc.exists) {
       final userData = DataUserModel.fromFirestore(doc);
@@ -233,11 +246,11 @@ class DataUserRepository {
   Future<void> unlockAchievement(String achievementId) async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString('user_id');
-    
+
     if (userId == null) return;
 
     final doc = await _firestore.collection('dataUser').doc(userId).get();
-    
+
     List<String> unlockedAchievements;
     if (doc.exists) {
       final userData = DataUserModel.fromFirestore(doc);
@@ -261,7 +274,7 @@ class DataUserRepository {
   Future<void> checkAndUnlockAchievements() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString('user_id');
-    
+
     if (userId == null) return;
 
     final doc = await _firestore.collection('dataUser').doc(userId).get();
@@ -271,7 +284,8 @@ class DataUserRepository {
     final achievementsToUnlock = <String>[];
 
     // Logro: Primer curso completado (10+ horas de estudio)
-    if (userData.totalSessionMinutes >= 600 && !userData.unlockedAchievements.contains('10_hours_study')) {
+    if (userData.totalSessionMinutes >= 600 &&
+        !userData.unlockedAchievements.contains('10_hours_study')) {
       achievementsToUnlock.add('10_hours_study');
     }
 

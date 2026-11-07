@@ -43,10 +43,16 @@ class MockContentRepository implements ContentRepository {
   Future<void> deleteModule(String courseId, String moduleId) async {}
 
   @override
-  Future<void> reorderModules(String courseId, List<String> orderedModuleIds) async {}
+  Future<void> reorderModules(
+    String courseId,
+    List<String> orderedModuleIds,
+  ) async {}
 
   @override
-  Future<List<LessonEntity>> listLessons(String courseId, String moduleId) async => [];
+  Future<List<LessonEntity>> listLessons(
+    String courseId,
+    String moduleId,
+  ) async => [];
 
   @override
   Future<LessonEntity> createLesson(LessonEntity lesson) async => lesson;
@@ -55,13 +61,26 @@ class MockContentRepository implements ContentRepository {
   Future<void> updateLesson(LessonEntity lesson) async {}
 
   @override
-  Future<void> deleteLesson(String courseId, String moduleId, String lessonId) async {}
+  Future<void> deleteLesson(
+    String courseId,
+    String moduleId,
+    String lessonId,
+  ) async {}
 
   @override
-  Future<void> reorderLessons(String courseId, String moduleId, List<String> orderedLessonIds) async {}
+  Future<void> reorderLessons(
+    String courseId,
+    String moduleId,
+    List<String> orderedLessonIds,
+  ) async {}
 
   @override
-  Future<MediaResource> uploadMedia({required String courseId, required String? moduleId, required String? lessonId, required MediaUploadRequest request}) async {
+  Future<MediaResource> uploadMedia({
+    required String courseId,
+    required String? moduleId,
+    required String? lessonId,
+    required MediaUploadRequest request,
+  }) async {
     return MediaResource(
       id: 'media_1',
       url: 'https://example.com/file',
@@ -72,16 +91,30 @@ class MockContentRepository implements ContentRepository {
   }
 
   @override
-  Future<void> deleteMedia({required String courseId, required String? moduleId, required String? lessonId, required String mediaId}) async {}
+  Future<void> deleteMedia({
+    required String courseId,
+    required String? moduleId,
+    required String? lessonId,
+    required String mediaId,
+  }) async {}
 
   @override
-  Future<List<CommentEntity>> listComments({required String courseId, required String moduleId, required String lessonId}) async => [];
+  Future<List<CommentEntity>> listComments({
+    required String courseId,
+    required String moduleId,
+    required String lessonId,
+  }) async => [];
 
   @override
   Future<CommentEntity> addComment(CommentEntity comment) async => comment;
 
   @override
-  Future<void> deleteComment({required String courseId, required String moduleId, required String lessonId, required String commentId}) async {}
+  Future<void> deleteComment({
+    required String courseId,
+    required String moduleId,
+    required String lessonId,
+    required String commentId,
+  }) async {}
 }
 
 void main() {
@@ -120,17 +153,20 @@ void main() {
       expect(result.id, 'course_1');
     });
 
-    test('UpdateCourseUsecase throws exception when repository throws', () async {
-      mockRepository.errorToThrow = Exception('Update failed');
-      final course = CourseEntity(
-        id: 'course_1',
-        title: 'Title',
-        description: 'Description',
-        targetAudience: 'General',
-      );
+    test(
+      'UpdateCourseUsecase throws exception when repository throws',
+      () async {
+        mockRepository.errorToThrow = Exception('Update failed');
+        final course = CourseEntity(
+          id: 'course_1',
+          title: 'Title',
+          description: 'Description',
+          targetAudience: 'General',
+        );
 
-      expect(() => usecase(course), throwsException);
-    });
+        expect(() => usecase(course), throwsException);
+      },
+    );
 
     test('UpdateCourseUsecase preserves all course fields', () async {
       final course = CourseEntity(
@@ -138,7 +174,6 @@ void main() {
         title: 'Test Course',
         description: 'Test Description',
         targetAudience: 'Ciencias Naturales',
-        thumbnailUrl: 'https://example.com/thumb.jpg',
         status: 'published',
       );
 
@@ -147,22 +182,11 @@ void main() {
       expect(mockRepository.lastUpdatedCourse?.id, 'course_1');
       expect(mockRepository.lastUpdatedCourse?.title, 'Test Course');
       expect(mockRepository.lastUpdatedCourse?.description, 'Test Description');
-      expect(mockRepository.lastUpdatedCourse?.targetAudience, 'Ciencias Naturales');
-      expect(mockRepository.lastUpdatedCourse?.thumbnailUrl, 'https://example.com/thumb.jpg');
-      expect(mockRepository.lastUpdatedCourse?.status, 'published');
-    });
-
-    test('UpdateCourseUsecase handles course with null thumbnailUrl', () async {
-      final course = CourseEntity(
-        id: 'course_1',
-        title: 'Test Course',
-        description: 'Description',
-        targetAudience: 'General',
+      expect(
+        mockRepository.lastUpdatedCourse?.targetAudience,
+        'Ciencias Naturales',
       );
-
-      await usecase(course);
-
-      expect(mockRepository.lastUpdatedCourse?.thumbnailUrl, null);
+      expect(mockRepository.lastUpdatedCourse?.status, 'published');
     });
 
     test('UpdateCourseUsecase handles special characters in title', () async {
@@ -175,7 +199,10 @@ void main() {
 
       await usecase(course);
 
-      expect(mockRepository.lastUpdatedCourse?.title, 'Curso de Matemáticas ñáéíóú');
+      expect(
+        mockRepository.lastUpdatedCourse?.title,
+        'Curso de Matemáticas ñáéíóú',
+      );
     });
   });
 }

@@ -3,9 +3,12 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/comment_entity.dart';
-import '../../domain/usecases/content/list_comments_usecase.dart' as uc_list_comments;
-import '../../domain/usecases/content/add_comment_usecase.dart' as uc_add_comment;
-import '../../domain/usecases/content/delete_comment_usecase.dart' as uc_delete_comment;
+import '../../domain/usecases/content/list_comments_usecase.dart'
+    as uc_list_comments;
+import '../../domain/usecases/content/add_comment_usecase.dart'
+    as uc_add_comment;
+import '../../domain/usecases/content/delete_comment_usecase.dart'
+    as uc_delete_comment;
 
 class CommentsProvider extends ChangeNotifier {
   final uc_list_comments.ListCommentsUsecase listCommentsUsecase;
@@ -26,8 +29,15 @@ class CommentsProvider extends ChangeNotifier {
   String? get error => _error;
   List<CommentEntity> get items => List.unmodifiable(_items);
 
-  void _setLoading(bool v) { _loading = v; notifyListeners(); }
-  void _setError(String? e) { _error = e; notifyListeners(); }
+  void _setLoading(bool v) {
+    _loading = v;
+    notifyListeners();
+  }
+
+  void _setError(String? e) {
+    _error = e;
+    notifyListeners();
+  }
 
   Future<void> load({
     required String courseId,
@@ -37,7 +47,11 @@ class CommentsProvider extends ChangeNotifier {
     _setLoading(true);
     _setError(null);
     try {
-      _items = await listCommentsUsecase.call(courseId: courseId, moduleId: moduleId, lessonId: lessonId);
+      _items = await listCommentsUsecase.call(
+        courseId: courseId,
+        moduleId: moduleId,
+        lessonId: lessonId,
+      );
     } catch (e) {
       _setError('Error al cargar comentarios: $e');
     } finally {

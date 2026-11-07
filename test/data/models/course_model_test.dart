@@ -9,7 +9,6 @@ void main() {
         id: 'course_1',
         title: 'Curso de Flutter',
         description: 'Aprende Flutter desde cero',
-        thumbnailUrl: 'https://example.com/image.jpg',
         targetAudience: 'Principiantes',
         status: 'published',
       );
@@ -17,7 +16,6 @@ void main() {
       expect(courseModel.id, 'course_1');
       expect(courseModel.title, 'Curso de Flutter');
       expect(courseModel.description, 'Aprende Flutter desde cero');
-      expect(courseModel.thumbnailUrl, 'https://example.com/image.jpg');
       expect(courseModel.targetAudience, 'Principiantes');
       expect(courseModel.status, 'published');
     });
@@ -38,7 +36,6 @@ void main() {
         'id': 'course_1',
         'title': 'Curso de Flutter',
         'description': 'Aprende Flutter desde cero',
-        'thumbnailUrl': 'https://example.com/image.jpg',
         'targetAudience': 'Principiantes',
         'status': 'published',
       };
@@ -48,24 +45,8 @@ void main() {
       expect(courseModel.id, 'course_1');
       expect(courseModel.title, 'Curso de Flutter');
       expect(courseModel.description, 'Aprende Flutter desde cero');
-      expect(courseModel.thumbnailUrl, 'https://example.com/image.jpg');
       expect(courseModel.targetAudience, 'Principiantes');
       expect(courseModel.status, 'published');
-    });
-
-    test('CourseModel fromMap handles null thumbnailUrl', () {
-      final map = {
-        'id': 'course_1',
-        'title': 'Curso de Flutter',
-        'description': 'Aprende Flutter desde cero',
-        'thumbnailUrl': null,
-        'targetAudience': 'Principiantes',
-        'status': 'published',
-      };
-
-      final courseModel = CourseModel.fromMap(map);
-
-      expect(courseModel.thumbnailUrl, null);
     });
 
     test('CourseModel fromMap uses default for null targetAudience', () {
@@ -100,7 +81,6 @@ void main() {
         id: 'course_1',
         title: 'Curso de Flutter',
         description: 'Aprende Flutter desde cero',
-        thumbnailUrl: 'https://example.com/image.jpg',
         targetAudience: 'Principiantes',
         status: 'published',
       );
@@ -110,22 +90,8 @@ void main() {
       expect(map['id'], 'course_1');
       expect(map['title'], 'Curso de Flutter');
       expect(map['description'], 'Aprende Flutter desde cero');
-      expect(map['thumbnailUrl'], 'https://example.com/image.jpg');
       expect(map['targetAudience'], 'Principiantes');
       expect(map['status'], 'published');
-    });
-
-    test('CourseModel toMap includes null thumbnailUrl', () {
-      const courseModel = CourseModel(
-        id: 'course_1',
-        title: 'Curso de Flutter',
-        description: 'Aprende Flutter desde cero',
-        targetAudience: 'Principiantes',
-      );
-
-      final map = courseModel.toMap();
-
-      expect(map['thumbnailUrl'], null);
     });
 
     test('CourseModel copyWith updates specified fields', () {
@@ -181,7 +147,6 @@ void main() {
         id: 'course_2',
         title: 'Nuevo Curso',
         description: 'Nueva descripción',
-        thumbnailUrl: 'https://example.com/new.jpg',
         targetAudience: 'Avanzados',
         status: 'published',
       );
@@ -189,7 +154,6 @@ void main() {
       expect(updated.id, 'course_2');
       expect(updated.title, 'Nuevo Curso');
       expect(updated.description, 'Nueva descripción');
-      expect(updated.thumbnailUrl, 'https://example.com/new.jpg');
       expect(updated.targetAudience, 'Avanzados');
       expect(updated.status, 'published');
     });
@@ -210,7 +174,6 @@ void main() {
         'id': 'course_1',
         'title': 'Curso de Flutter',
         'description': 'Aprende Flutter',
-        'thumbnailUrl': 'https://example.com/image.jpg',
         'targetAudience': 'Principiantes',
         'status': 'published',
       };
@@ -221,7 +184,6 @@ void main() {
       expect(resultMap['id'], originalMap['id']);
       expect(resultMap['title'], originalMap['title']);
       expect(resultMap['description'], originalMap['description']);
-      expect(resultMap['thumbnailUrl'], originalMap['thumbnailUrl']);
       expect(resultMap['targetAudience'], originalMap['targetAudience']);
       expect(resultMap['status'], originalMap['status']);
     });

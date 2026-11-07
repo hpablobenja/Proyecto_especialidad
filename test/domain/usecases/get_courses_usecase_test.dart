@@ -42,13 +42,16 @@ void main() {
       usecase = GetCoursesUsecase(mockRepository);
     });
 
-    test('GetCoursesUsecase returns empty list when repository returns empty', () async {
-      mockRepository.coursesToReturn = [];
+    test(
+      'GetCoursesUsecase returns empty list when repository returns empty',
+      () async {
+        mockRepository.coursesToReturn = [];
 
-      final result = await usecase(NoParams());
+        final result = await usecase(NoParams());
 
-      expect(result, isEmpty);
-    });
+        expect(result, isEmpty);
+      },
+    );
 
     test('GetCoursesUsecase returns courses from repository', () async {
       final testCourses = [

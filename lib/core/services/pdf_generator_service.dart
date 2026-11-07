@@ -43,13 +43,9 @@ class PdfGeneratorService {
             pw.SizedBox(height: 20),
             pw.Text(
               'Contenido',
-              style: pw.TextStyle(
-                fontSize: 18,
-                fontWeight: pw.FontWeight.bold,
-              ),
+              style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
             ),
             pw.SizedBox(height: 10),
-            pw.Text(_parseContent(lesson.contentDelta)),
             if (lesson.strategies.isNotEmpty) ...[
               pw.SizedBox(height: 20),
               pw.Text(
@@ -94,12 +90,12 @@ class PdfGeneratorService {
     final directory = await getApplicationDocumentsDirectory();
     final documentsPath = '${directory.path}/documentos';
     final documentsDir = Directory(documentsPath);
-    
+
     // Create directory if it doesn't exist
     if (!await documentsDir.exists()) {
       await documentsDir.create(recursive: true);
     }
-    
+
     final file = File('$documentsPath/leccion_${lesson.id}.pdf');
     await file.writeAsBytes(await pdf.save());
 
@@ -109,25 +105,7 @@ class PdfGeneratorService {
     } catch (e) {
       // Silently fail - file is saved even if it can't be opened
     }
-    
-    return file.path;
-  }
 
-  String _parseContent(List<dynamic>? contentDelta) {
-    if (contentDelta == null) return '';
-    String text = '';
-    try {
-      for (var op in contentDelta) {
-        if (op is Map && op.containsKey('insert')) {
-          final insert = op['insert'];
-          if (insert is String) {
-            text += insert;
-          }
-        }
-      }
-    } catch (e) {
-      text = 'Error al procesar contenido';
-    }
-    return text;
+    return file.path;
   }
 }

@@ -13,6 +13,9 @@ import '../../domain/usecases/auth/update_user_usecase.dart';
 import '../../domain/usecases/auth/reset_password_usecase.dart';
 import '../../domain/usecases/usecase.dart';
 import '../../core/services/session_tracking_service.dart';
+import '../../core/services/dashboard_sync_service.dart';
+import '../../core/services/quiz_sync_service.dart';
+import '../../data/datasources/local/video_tracking_hive_datasource.dart';
 
 class AuthProvider extends ChangeNotifier {
   final LoginUsecase loginUsecase;
@@ -36,6 +39,10 @@ class AuthProvider extends ChangeNotifier {
   UserEntity? _currentUser;
 
   final _secureStorage = const FlutterSecureStorage();
+  final VideoTrackingHiveDataSource _videoTrackingDataSource =
+      VideoTrackingHiveDataSource();
+  final DashboardSyncService _dashboardSyncService = DashboardSyncService();
+  final QuizSyncService _quizSyncService = QuizSyncService();
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -60,6 +67,17 @@ class AuthProvider extends ChangeNotifier {
       await prefs.setString('user_role', _currentUser!.role);
       await prefs.setString('user_id', _currentUser!.uid);
       debugPrint('Usuario autenticado con role: ${_currentUser!.role}');
+
+      // Sincronizar dashboard en segundo plano si es maestro
+      if (_currentUser!.role == 'maestro') {
+        _dashboardSyncService.syncFromFirestore(_currentUser!.uid).catchError((e) {
+          debugPrint('Error al sincronizar dashboard al iniciar sesión: $e');
+        });
+      }
+
+      // Establecer usuario en el servicio de sincronización de quizzes
+      _quizSyncService.setCurrentUser(_currentUser!.uid);
+
       _isLoading = false;
       notifyListeners();
       return true;
@@ -75,12 +93,19 @@ class AuthProvider extends ChangeNotifier {
         await prefs.setString('user_role', _currentUser!.role);
         await prefs.setString('user_id', _currentUser!.uid);
 
+        // Establecer usuario en el servicio de sincronización de quizzes
+        _quizSyncService.setCurrentUser(_currentUser!.uid);
+
         _isLoading = false;
         notifyListeners();
         return true;
       }
 
-      _errorMessage = e.toString();
+      String errorMsg = e.toString();
+      if (errorMsg.startsWith('Exception: ')) {
+        errorMsg = errorMsg.replaceFirst('Exception: ', '');
+      }
+      _errorMessage = errorMsg;
       _isLoading = false;
       notifyListeners();
       return false;
@@ -184,7 +209,11 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _errorMessage = e.toString();
+      String errorMsg = e.toString();
+      if (errorMsg.startsWith('Exception: ')) {
+        errorMsg = errorMsg.replaceFirst('Exception: ', '');
+      }
+      _errorMessage = errorMsg;
       _isLoading = false;
       notifyListeners();
       return false;
@@ -195,6 +224,9 @@ class AuthProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     _currentUser = await getCurrentUserUsecase.call(NoParams());
+    if (_currentUser != null) {
+      _quizSyncService.setCurrentUser(_currentUser!.uid);
+    }
     _isLoading = false;
     notifyListeners();
   }
@@ -223,6 +255,9 @@ class AuthProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('user_id');
       await prefs.remove('user_role');
+
+      // Limpiar usuario del servicio de sincronización de quizzes
+      _quizSyncService.clearUser();
     } catch (e) {
       _errorMessage = 'Error al cerrar sesión: ${e.toString()}';
     } finally {
@@ -248,7 +283,11 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _errorMessage = e.toString();
+      String errorMsg = e.toString();
+      if (errorMsg.startsWith('Exception: ')) {
+        errorMsg = errorMsg.replaceFirst('Exception: ', '');
+      }
+      _errorMessage = errorMsg;
       _isLoading = false;
       notifyListeners();
       return false;
@@ -283,7 +322,11 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _errorMessage = e.toString();
+      String errorMsg = e.toString();
+      if (errorMsg.startsWith('Exception: ')) {
+        errorMsg = errorMsg.replaceFirst('Exception: ', '');
+      }
+      _errorMessage = errorMsg;
       _isLoading = false;
       notifyListeners();
       return false;

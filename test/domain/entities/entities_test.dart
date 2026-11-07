@@ -71,14 +71,12 @@ void main() {
         title: 'Curso de Flutter',
         description: 'Aprende Flutter desde cero',
         targetAudience: 'Principiantes',
-        thumbnailUrl: 'https://example.com/image.jpg',
       );
 
       expect(course.id, 'course_1');
       expect(course.title, 'Curso de Flutter');
       expect(course.description, 'Aprende Flutter desde cero');
       expect(course.targetAudience, 'Principiantes');
-      expect(course.thumbnailUrl, 'https://example.com/image.jpg');
     });
 
     test('CourseEntity con valores nulos funciona', () {
@@ -90,7 +88,6 @@ void main() {
       );
 
       expect(course.id, 'course_2');
-      expect(course.thumbnailUrl, null);
     });
 
     test('CourseEntity con equatable funciona', () {
@@ -99,7 +96,6 @@ void main() {
         title: 'Curso de Flutter',
         description: 'Aprende Flutter',
         targetAudience: 'Principiantes',
-        thumbnailUrl: 'https://example.com/image.jpg',
       );
 
       final course2 = CourseEntity(
@@ -107,7 +103,6 @@ void main() {
         title: 'Curso de Flutter',
         description: 'Aprende Flutter',
         targetAudience: 'Principiantes',
-        thumbnailUrl: 'https://example.com/image.jpg',
       );
 
       final course3 = CourseEntity(
@@ -157,7 +152,6 @@ void main() {
       expect(lesson.title, 'Introducción a Flutter');
       expect(lesson.orderIndex, 1);
       expect(lesson.media, isEmpty);
-      expect(lesson.downloadableResources, isEmpty);
       expect(lesson.strategies, isEmpty);
     });
 
@@ -170,15 +164,9 @@ void main() {
         title: 'Lección avanzada',
         orderIndex: 2,
         objectives: 'Aprender conceptos avanzados',
-        dripUnlockAt: now,
-        contentDelta: [
-          {'insert': 'Contenido de ejemplo\n'},
-        ],
       );
 
       expect(lesson.objectives, 'Aprender conceptos avanzados');
-      expect(lesson.dripUnlockAt, now);
-      expect(lesson.contentDelta, isNotNull);
     });
 
     test('LessonEntity con equatable funciona', () {

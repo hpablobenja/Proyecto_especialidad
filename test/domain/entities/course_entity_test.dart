@@ -8,7 +8,6 @@ void main() {
         id: 'course_1',
         title: 'Introduction to Flutter',
         description: 'Learn the basics of Flutter',
-        thumbnailUrl: 'https://example.com/thumb.jpg',
         targetAudience: 'General',
         status: 'published',
       );
@@ -16,20 +15,8 @@ void main() {
       expect(course.id, 'course_1');
       expect(course.title, 'Introduction to Flutter');
       expect(course.description, 'Learn the basics of Flutter');
-      expect(course.thumbnailUrl, 'https://example.com/thumb.jpg');
       expect(course.targetAudience, 'General');
       expect(course.status, 'published');
-    });
-
-    test('CourseEntity creates correctly with null thumbnailUrl', () {
-      const course = CourseEntity(
-        id: 'course_1',
-        title: 'Introduction to Flutter',
-        description: 'Learn the basics',
-        targetAudience: 'General',
-      );
-
-      expect(course.thumbnailUrl, null);
     });
 
     test('CourseEntity defaults status to draft', () {
@@ -77,31 +64,17 @@ void main() {
         id: 'course_1',
         title: 'Introduction to Flutter',
         description: 'Learn the basics',
-        thumbnailUrl: 'https://example.com/thumb.jpg',
         targetAudience: 'General',
         status: 'published',
       );
 
       final props = course.props;
-      expect(props.length, 6);
+      expect(props.length, 5);
       expect(props, contains('course_1'));
       expect(props, contains('Introduction to Flutter'));
       expect(props, contains('Learn the basics'));
-      expect(props, contains('https://example.com/thumb.jpg'));
       expect(props, contains('General'));
       expect(props, contains('published'));
-    });
-
-    test('CourseEntity with null thumbnailUrl in props', () {
-      const course = CourseEntity(
-        id: 'course_1',
-        title: 'Introduction to Flutter',
-        description: 'Learn the basics',
-        targetAudience: 'General',
-      );
-
-      final props = course.props;
-      expect(props, contains(null));
     });
 
     test('CourseEntity handles special characters in title', () {
@@ -210,7 +183,6 @@ void main() {
         id: 'course_2',
         title: 'Advanced Flutter',
         description: 'Advanced concepts',
-        thumbnailUrl: 'https://example.com/new.jpg',
         targetAudience: 'Ciencias Naturales',
         status: 'published',
       );
@@ -218,23 +190,8 @@ void main() {
       expect(updated.id, 'course_2');
       expect(updated.title, 'Advanced Flutter');
       expect(updated.description, 'Advanced concepts');
-      expect(updated.thumbnailUrl, 'https://example.com/new.jpg');
       expect(updated.targetAudience, 'Ciencias Naturales');
       expect(updated.status, 'published');
-    });
-
-    test('CourseEntity copyWith can set thumbnailUrl to null', () {
-      const course = CourseEntity(
-        id: 'course_1',
-        title: 'Introduction to Flutter',
-        description: 'Learn the basics',
-        thumbnailUrl: 'https://example.com/thumb.jpg',
-        targetAudience: 'General',
-      );
-
-      final updated = course.copyWith(thumbnailUrl: null);
-
-      expect(updated.thumbnailUrl, null);
     });
 
     test('CourseEntity handles published status', () {

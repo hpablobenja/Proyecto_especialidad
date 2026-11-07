@@ -5,9 +5,12 @@ import 'package:redmaestra1/domain/entities/module_entity.dart';
 import 'package:redmaestra1/domain/entities/lesson_entity.dart';
 import 'package:redmaestra1/domain/entities/media_resource.dart';
 import 'package:redmaestra1/domain/repositories/content_repository.dart';
-import 'package:redmaestra1/domain/usecases/content/list_comments_usecase.dart' as uc_list_comments;
-import 'package:redmaestra1/domain/usecases/content/add_comment_usecase.dart' as uc_add_comment;
-import 'package:redmaestra1/domain/usecases/content/delete_comment_usecase.dart' as uc_delete_comment;
+import 'package:redmaestra1/domain/usecases/content/list_comments_usecase.dart'
+    as uc_list_comments;
+import 'package:redmaestra1/domain/usecases/content/add_comment_usecase.dart'
+    as uc_add_comment;
+import 'package:redmaestra1/domain/usecases/content/delete_comment_usecase.dart'
+    as uc_delete_comment;
 import 'package:redmaestra1/presentation/providers/comments_provider.dart';
 
 class FakeListCommentsUsecase extends uc_list_comments.ListCommentsUsecase {
@@ -25,7 +28,11 @@ class FakeListCommentsUsecase extends uc_list_comments.ListCommentsUsecase {
   }
 
   @override
-  Future<List<CommentEntity>> call({required String courseId, required String moduleId, required String lessonId}) async {
+  Future<List<CommentEntity>> call({
+    required String courseId,
+    required String moduleId,
+    required String lessonId,
+  }) async {
     if (errorToThrow != null) {
       throw errorToThrow!;
     }
@@ -99,10 +106,16 @@ class FakeContentRepository implements ContentRepository {
   Future<void> deleteModule(String courseId, String moduleId) async {}
 
   @override
-  Future<void> reorderModules(String courseId, List<String> orderedModuleIds) async {}
+  Future<void> reorderModules(
+    String courseId,
+    List<String> orderedModuleIds,
+  ) async {}
 
   @override
-  Future<List<LessonEntity>> listLessons(String courseId, String moduleId) async => [];
+  Future<List<LessonEntity>> listLessons(
+    String courseId,
+    String moduleId,
+  ) async => [];
 
   @override
   Future<LessonEntity> createLesson(LessonEntity lesson) async => lesson;
@@ -111,13 +124,26 @@ class FakeContentRepository implements ContentRepository {
   Future<void> updateLesson(LessonEntity lesson) async {}
 
   @override
-  Future<void> deleteLesson(String courseId, String moduleId, String lessonId) async {}
+  Future<void> deleteLesson(
+    String courseId,
+    String moduleId,
+    String lessonId,
+  ) async {}
 
   @override
-  Future<void> reorderLessons(String courseId, String moduleId, List<String> orderedLessonIds) async {}
+  Future<void> reorderLessons(
+    String courseId,
+    String moduleId,
+    List<String> orderedLessonIds,
+  ) async {}
 
   @override
-  Future<MediaResource> uploadMedia({required String courseId, required String? moduleId, required String? lessonId, required MediaUploadRequest request}) async {
+  Future<MediaResource> uploadMedia({
+    required String courseId,
+    required String? moduleId,
+    required String? lessonId,
+    required MediaUploadRequest request,
+  }) async {
     return MediaResource(
       id: 'media_1',
       url: 'https://example.com/file',
@@ -128,16 +154,30 @@ class FakeContentRepository implements ContentRepository {
   }
 
   @override
-  Future<void> deleteMedia({required String courseId, required String? moduleId, required String? lessonId, required String mediaId}) async {}
+  Future<void> deleteMedia({
+    required String courseId,
+    required String? moduleId,
+    required String? lessonId,
+    required String mediaId,
+  }) async {}
 
   @override
-  Future<List<CommentEntity>> listComments({required String courseId, required String moduleId, required String lessonId}) async => [];
+  Future<List<CommentEntity>> listComments({
+    required String courseId,
+    required String moduleId,
+    required String lessonId,
+  }) async => [];
 
   @override
   Future<CommentEntity> addComment(CommentEntity comment) async => comment;
 
   @override
-  Future<void> deleteComment({required String courseId, required String moduleId, required String lessonId, required String commentId}) async {}
+  Future<void> deleteComment({
+    required String courseId,
+    required String moduleId,
+    required String lessonId,
+    required String commentId,
+  }) async {}
 }
 
 void main() {
@@ -151,7 +191,7 @@ void main() {
       fakeListCommentsUsecase = FakeListCommentsUsecase();
       fakeAddCommentUsecase = FakeAddCommentUsecase();
       fakeDeleteCommentUsecase = FakeDeleteCommentUsecase();
-      
+
       provider = CommentsProvider(
         listCommentsUsecase: fakeListCommentsUsecase,
         addCommentUsecase: fakeAddCommentUsecase,
@@ -180,7 +220,11 @@ void main() {
       ];
       fakeListCommentsUsecase.setResponse(testComments);
 
-      await provider.load(courseId: 'course_1', moduleId: 'module_1', lessonId: 'lesson_1');
+      await provider.load(
+        courseId: 'course_1',
+        moduleId: 'module_1',
+        lessonId: 'lesson_1',
+      );
 
       expect(provider.items.length, 1);
       expect(provider.items[0].id, 'comment_1');
@@ -190,7 +234,11 @@ void main() {
     test('load sets error on failure', () async {
       fakeListCommentsUsecase.setError('Network error');
 
-      await provider.load(courseId: 'course_1', moduleId: 'module_1', lessonId: 'lesson_1');
+      await provider.load(
+        courseId: 'course_1',
+        moduleId: 'module_1',
+        lessonId: 'lesson_1',
+      );
 
       expect(provider.error, isNotNull);
       expect(provider.error, contains('Error al cargar comentarios'));
@@ -290,7 +338,11 @@ void main() {
       ];
       fakeListCommentsUsecase.setResponse(comments);
 
-      await provider.load(courseId: 'course_1', moduleId: 'module_1', lessonId: 'lesson_1');
+      await provider.load(
+        courseId: 'course_1',
+        moduleId: 'module_1',
+        lessonId: 'lesson_1',
+      );
       final result = await provider.remove(
         courseId: 'course_1',
         moduleId: 'module_1',

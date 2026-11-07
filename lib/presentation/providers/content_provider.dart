@@ -3,10 +3,14 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/course_entity.dart';
-import '../../domain/usecases/content/list_courses_usecase.dart' as content_list;
-import '../../domain/usecases/content/create_course_usecase.dart' as content_create_course;
-import '../../domain/usecases/content/update_course_usecase.dart' as content_update_course;
-import '../../domain/usecases/content/delete_course_usecase.dart' as content_delete_course;
+import '../../domain/usecases/content/list_courses_usecase.dart'
+    as content_list;
+import '../../domain/usecases/content/create_course_usecase.dart'
+    as content_create_course;
+import '../../domain/usecases/content/update_course_usecase.dart'
+    as content_update_course;
+import '../../domain/usecases/content/delete_course_usecase.dart'
+    as content_delete_course;
 import '../../domain/usecases/usecase.dart';
 
 class ContentProvider extends ChangeNotifier {
@@ -84,7 +88,9 @@ class ContentProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      await deleteCourseUsecase.call(content_delete_course.DeleteCourseParams(courseId));
+      await deleteCourseUsecase.call(
+        content_delete_course.DeleteCourseParams(courseId),
+      );
       _courses = _courses.where((c) => c.id != courseId).toList();
       return true;
     } catch (e) {

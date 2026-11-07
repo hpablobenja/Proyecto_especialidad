@@ -7,8 +7,11 @@ void main() {
       expect(AuthRemoteDataSource, isNotNull);
     });
 
-    test('AuthRemoteDataSourceImpl requiere FirebaseAuth y FirebaseFirestore', () {
-      expect(() => AuthRemoteDataSourceImpl, returnsNormally);
-    });
+    test(
+      'AuthRemoteDataSourceImpl requiere FirebaseAuth y FirebaseFirestore',
+      () {
+        expect(() => AuthRemoteDataSourceImpl, returnsNormally);
+      },
+    );
   });
 }

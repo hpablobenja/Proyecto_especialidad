@@ -14,7 +14,8 @@ class ContentRepositoryImpl implements ContentRepository {
 
   // Courses
   @override
-  Future<CourseEntity> createCourse(CourseEntity course) => remote.createCourse(course);
+  Future<CourseEntity> createCourse(CourseEntity course) =>
+      remote.createCourse(course);
 
   @override
   Future<void> deleteCourse(String courseId) => remote.deleteCourse(courseId);
@@ -23,17 +24,21 @@ class ContentRepositoryImpl implements ContentRepository {
   Future<List<CourseEntity>> listCourses() => remote.listCourses();
 
   @override
-  Future<CourseEntity> updateCourse(CourseEntity course) => remote.updateCourse(course);
+  Future<CourseEntity> updateCourse(CourseEntity course) =>
+      remote.updateCourse(course);
 
   // Modules
   @override
-  Future<List<ModuleEntity>> listModules(String courseId) => remote.listModules(courseId);
+  Future<List<ModuleEntity>> listModules(String courseId) =>
+      remote.listModules(courseId);
 
   @override
-  Future<ModuleEntity> createModule(ModuleEntity module) => remote.createModule(module);
+  Future<ModuleEntity> createModule(ModuleEntity module) =>
+      remote.createModule(module);
 
   @override
-  Future<void> deleteModule(String courseId, String moduleId) => remote.deleteModule(courseId, moduleId);
+  Future<void> deleteModule(String courseId, String moduleId) =>
+      remote.deleteModule(courseId, moduleId);
 
   @override
   Future<void> reorderModules(String courseId, List<String> orderedModuleIds) =>
@@ -48,15 +53,22 @@ class ContentRepositoryImpl implements ContentRepository {
       remote.listLessons(courseId, moduleId);
 
   @override
-  Future<LessonEntity> createLesson(LessonEntity lesson) => remote.createLesson(lesson);
+  Future<LessonEntity> createLesson(LessonEntity lesson) =>
+      remote.createLesson(lesson);
 
   @override
-  Future<void> deleteLesson(String courseId, String moduleId, String lessonId) =>
-      remote.deleteLesson(courseId, moduleId, lessonId);
+  Future<void> deleteLesson(
+    String courseId,
+    String moduleId,
+    String lessonId,
+  ) => remote.deleteLesson(courseId, moduleId, lessonId);
 
   @override
-  Future<void> reorderLessons(String courseId, String moduleId, List<String> orderedLessonIds) =>
-      remote.reorderLessons(courseId, moduleId, orderedLessonIds);
+  Future<void> reorderLessons(
+    String courseId,
+    String moduleId,
+    List<String> orderedLessonIds,
+  ) => remote.reorderLessons(courseId, moduleId, orderedLessonIds);
 
   @override
   Future<void> updateLesson(LessonEntity lesson) => remote.updateLesson(lesson);
@@ -68,7 +80,12 @@ class ContentRepositoryImpl implements ContentRepository {
     required String? moduleId,
     required String? lessonId,
     required String mediaId,
-  }) => remote.deleteMedia(courseId: courseId, moduleId: moduleId, lessonId: lessonId, mediaId: mediaId);
+  }) => remote.deleteMedia(
+    courseId: courseId,
+    moduleId: moduleId,
+    lessonId: lessonId,
+    mediaId: mediaId,
+  );
 
   @override
   Future<MediaResource> uploadMedia({
@@ -76,7 +93,12 @@ class ContentRepositoryImpl implements ContentRepository {
     required String? moduleId,
     required String? lessonId,
     required MediaUploadRequest request,
-  }) => remote.uploadMedia(courseId: courseId, moduleId: moduleId, lessonId: lessonId, request: request);
+  }) => remote.uploadMedia(
+    courseId: courseId,
+    moduleId: moduleId,
+    lessonId: lessonId,
+    request: request,
+  );
 
   // Comments
   @override
@@ -84,10 +106,15 @@ class ContentRepositoryImpl implements ContentRepository {
     required String courseId,
     required String moduleId,
     required String lessonId,
-  }) => remote.listComments(courseId: courseId, moduleId: moduleId, lessonId: lessonId);
+  }) => remote.listComments(
+    courseId: courseId,
+    moduleId: moduleId,
+    lessonId: lessonId,
+  );
 
   @override
-  Future<CommentEntity> addComment(CommentEntity comment) => remote.addComment(comment);
+  Future<CommentEntity> addComment(CommentEntity comment) =>
+      remote.addComment(comment);
 
   @override
   Future<void> deleteComment({
@@ -95,5 +122,10 @@ class ContentRepositoryImpl implements ContentRepository {
     required String moduleId,
     required String lessonId,
     required String commentId,
-  }) => remote.deleteComment(courseId: courseId, moduleId: moduleId, lessonId: lessonId, commentId: commentId);
+  }) => remote.deleteComment(
+    courseId: courseId,
+    moduleId: moduleId,
+    lessonId: lessonId,
+    commentId: commentId,
+  );
 }

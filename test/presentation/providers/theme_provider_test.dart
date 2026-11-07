@@ -5,7 +5,7 @@ import 'package:redmaestra1/presentation/providers/theme_provider.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  
+
   group('ThemeProvider Tests', () {
     late ThemeProvider themeProvider;
 
@@ -38,10 +38,10 @@ void main() {
     test('toggleTheme switches between light and dark', () async {
       await themeProvider.setLightMode();
       expect(themeProvider.themeMode, ThemeMode.light);
-      
+
       await themeProvider.toggleTheme();
       expect(themeProvider.themeMode, ThemeMode.dark);
-      
+
       await themeProvider.toggleTheme();
       expect(themeProvider.themeMode, ThemeMode.light);
     });
@@ -49,31 +49,31 @@ void main() {
     test('setLightMode sets themeMode to light', () async {
       await themeProvider.setDarkMode();
       await themeProvider.setLightMode();
-      
+
       expect(themeProvider.themeMode, ThemeMode.light);
     });
 
     test('setDarkMode sets themeMode to dark', () async {
       await themeProvider.setLightMode();
       await themeProvider.setDarkMode();
-      
+
       expect(themeProvider.themeMode, ThemeMode.dark);
     });
 
     test('setSystemMode sets themeMode to system', () async {
       await themeProvider.setSystemMode();
-      
+
       expect(themeProvider.themeMode, ThemeMode.system);
     });
 
     test('setThemeMode with same mode does not notify listeners', () async {
       await themeProvider.setLightMode();
       var notificationCount = 0;
-      
+
       themeProvider.addListener(() {
         notificationCount++;
       });
-      
+
       await themeProvider.setThemeMode(ThemeMode.light);
       expect(notificationCount, 0);
     });
@@ -81,11 +81,11 @@ void main() {
     test('setThemeMode with different mode notifies listeners', () async {
       await themeProvider.setLightMode();
       var notificationCount = 0;
-      
+
       themeProvider.addListener(() {
         notificationCount++;
       });
-      
+
       await themeProvider.setThemeMode(ThemeMode.dark);
       expect(notificationCount, 1);
     });
@@ -123,13 +123,13 @@ void main() {
     test('multiple theme changes work correctly', () async {
       await themeProvider.setLightMode();
       expect(themeProvider.themeMode, ThemeMode.light);
-      
+
       await themeProvider.setDarkMode();
       expect(themeProvider.themeMode, ThemeMode.dark);
-      
+
       await themeProvider.setSystemMode();
       expect(themeProvider.themeMode, ThemeMode.system);
-      
+
       await themeProvider.setLightMode();
       expect(themeProvider.themeMode, ThemeMode.light);
     });
@@ -137,7 +137,7 @@ void main() {
     test('themeMode getter returns current theme mode', () async {
       await themeProvider.setDarkMode();
       expect(themeProvider.themeMode, ThemeMode.dark);
-      
+
       await themeProvider.setLightMode();
       expect(themeProvider.themeMode, ThemeMode.light);
     });

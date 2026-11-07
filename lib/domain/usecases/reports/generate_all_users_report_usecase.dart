@@ -14,8 +14,10 @@ class GenerateAllUsersReportUsecase implements Usecase<String, dynamic> {
   final CourseRepository courseRepository;
   final FirebaseFirestore firestore;
 
-  GenerateAllUsersReportUsecase(this.courseRepository, {FirebaseFirestore? firestore})
-      : firestore = firestore ?? FirebaseFirestore.instance;
+  GenerateAllUsersReportUsecase(
+    this.courseRepository, {
+    FirebaseFirestore? firestore,
+  }) : firestore = firestore ?? FirebaseFirestore.instance;
 
   @override
   Future<String> call(dynamic params) async {
@@ -29,7 +31,7 @@ class GenerateAllUsersReportUsecase implements Usecase<String, dynamic> {
     // Obtener todos los usuarios
     final usersSnapshot = await firestore.collection('users').get();
     final users = <Map<String, dynamic>>[];
-    
+
     for (var userDoc in usersSnapshot.docs) {
       final userData = userDoc.data();
       users.add({
@@ -70,12 +72,13 @@ class GenerateAllUsersReportUsecase implements Usecase<String, dynamic> {
       lessonTitles[course.id] = {};
 
       // Obtener módulos (subcolección courses/{id}/modules)
-      final modulesSnapshot = await firestore
-          .collection('courses')
-          .doc(course.id)
-          .collection('modules')
-          .orderBy('orderIndex')
-          .get();
+      final modulesSnapshot =
+          await firestore
+              .collection('courses')
+              .doc(course.id)
+              .collection('modules')
+              .orderBy('orderIndex')
+              .get();
 
       for (var moduleDoc in modulesSnapshot.docs) {
         final moduleData = moduleDoc.data();
@@ -85,16 +88,18 @@ class GenerateAllUsersReportUsecase implements Usecase<String, dynamic> {
         lessonTitles[course.id]![moduleId] = {};
 
         // 1. Intentar cargar lecciones desde la colección raíz /lecciones
-        final rootLessonsSnapshot = await firestore
-            .collection('lecciones')
-            .where('courseId', isEqualTo: course.id)
-            .where('moduleId', isEqualTo: moduleId)
-            .get();
+        final rootLessonsSnapshot =
+            await firestore
+                .collection('lessons')
+                .where('courseId', isEqualTo: course.id)
+                .where('moduleId', isEqualTo: moduleId)
+                .get();
 
         for (var lessonDoc in rootLessonsSnapshot.docs) {
           final lessonData = lessonDoc.data();
           final lessonId = lessonDoc.id;
-          final lessonTitle = lessonData['title'] as String? ??
+          final lessonTitle =
+              lessonData['title'] as String? ??
               lessonData['name'] as String? ??
               lessonData['lessonTitle'] as String? ??
               'Sin título';
@@ -104,19 +109,21 @@ class GenerateAllUsersReportUsecase implements Usecase<String, dynamic> {
 
         // 2. Si no encontró lecciones en /lecciones, consultar en la subcolección anidada
         if (lessonTitles[course.id]![moduleId]!.isEmpty) {
-          final subLessonsSnapshot = await firestore
-              .collection('courses')
-              .doc(course.id)
-              .collection('modules')
-              .doc(moduleId)
-              .collection('lessons')
-              .orderBy('orderIndex')
-              .get();
+          final subLessonsSnapshot =
+              await firestore
+                  .collection('courses')
+                  .doc(course.id)
+                  .collection('modules')
+                  .doc(moduleId)
+                  .collection('lessons')
+                  .orderBy('orderIndex')
+                  .get();
 
           for (var lessonDoc in subLessonsSnapshot.docs) {
             final lessonData = lessonDoc.data();
             final lessonId = lessonDoc.id;
-            final lessonTitle = lessonData['title'] as String? ??
+            final lessonTitle =
+                lessonData['title'] as String? ??
                 lessonData['name'] as String? ??
                 lessonData['lessonTitle'] as String? ??
                 'Sin título';
@@ -135,10 +142,11 @@ class GenerateAllUsersReportUsecase implements Usecase<String, dynamic> {
       final userName = user['name'] as String;
 
       // Obtener el progreso del usuario
-      final progressSnapshot = await firestore
-          .collection('userProgress')
-          .where('userId', isEqualTo: userId)
-          .get();
+      final progressSnapshot =
+          await firestore
+              .collection('userProgress')
+              .where('userId', isEqualTo: userId)
+              .get();
 
       if (progressSnapshot.docs.isEmpty) continue;
 
@@ -151,16 +159,21 @@ class GenerateAllUsersReportUsecase implements Usecase<String, dynamic> {
       }
 
       // Organizar progreso por curso
-      final courseProgressMap = <String, Map<String, Map<String, LessonProgressEntity>>>{};
+      final courseProgressMap =
+          <String, Map<String, Map<String, LessonProgressEntity>>>{};
 
       for (var progress in progressMap.values) {
         if (!courseProgressMap.containsKey(progress.courseId)) {
           courseProgressMap[progress.courseId] = {};
         }
-        if (!courseProgressMap[progress.courseId]!.containsKey(progress.moduleId)) {
+        if (!courseProgressMap[progress.courseId]!.containsKey(
+          progress.moduleId,
+        )) {
           courseProgressMap[progress.courseId]![progress.moduleId] = {};
         }
-        courseProgressMap[progress.courseId]![progress.moduleId]![progress.lessonId] = progress;
+        courseProgressMap[progress.courseId]![progress.moduleId]![progress
+                .lessonId] =
+            progress;
 
         if (progress.status == LessonProgressStatus.completed) {
           totalLessonsCompleted++;
@@ -219,7 +232,9 @@ class GenerateAllUsersReportUsecase implements Usecase<String, dynamic> {
                   pw.SizedBox(height: 8),
                   pw.Text('Total de usuarios: $totalUsers'),
                   pw.Text('Usuarios con progreso: $usersWithProgress'),
-                  pw.Text('Total de lecciones completadas: $totalLessonsCompleted'),
+                  pw.Text(
+                    'Total de lecciones completadas: $totalLessonsCompleted',
+                  ),
                 ],
               ),
             ),
@@ -243,7 +258,7 @@ class GenerateAllUsersReportUsecase implements Usecase<String, dynamic> {
                     ),
                   ),
                   pw.SizedBox(height: 16),
-                  
+
                   // Barra de usuarios con progreso
                   pw.Text('Usuarios con progreso vs Sin progreso'),
                   pw.SizedBox(height: 8),
@@ -254,12 +269,17 @@ class GenerateAllUsersReportUsecase implements Usecase<String, dynamic> {
                           height: 30,
                           decoration: pw.BoxDecoration(
                             color: PdfColors.green,
-                            borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+                            borderRadius: const pw.BorderRadius.all(
+                              pw.Radius.circular(4),
+                            ),
                           ),
                           alignment: pw.Alignment.center,
                           child: pw.Text(
                             '$usersWithProgress',
-                            style: pw.TextStyle(color: PdfColors.white, fontSize: 12),
+                            style: pw.TextStyle(
+                              color: PdfColors.white,
+                              fontSize: 12,
+                            ),
                           ),
                         ),
                       ),
@@ -269,7 +289,9 @@ class GenerateAllUsersReportUsecase implements Usecase<String, dynamic> {
                           height: 30,
                           decoration: pw.BoxDecoration(
                             color: PdfColors.grey300,
-                            borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+                            borderRadius: const pw.BorderRadius.all(
+                              pw.Radius.circular(4),
+                            ),
                           ),
                           alignment: pw.Alignment.center,
                           child: pw.Text(
@@ -283,9 +305,19 @@ class GenerateAllUsersReportUsecase implements Usecase<String, dynamic> {
                   pw.SizedBox(height: 8),
                   pw.Row(
                     children: [
-                      pw.Expanded(child: pw.Text('Con progreso', style: pw.TextStyle(fontSize: 10))),
+                      pw.Expanded(
+                        child: pw.Text(
+                          'Con progreso',
+                          style: pw.TextStyle(fontSize: 10),
+                        ),
+                      ),
                       pw.SizedBox(width: 4),
-                      pw.Expanded(child: pw.Text('Sin progreso', style: pw.TextStyle(fontSize: 10))),
+                      pw.Expanded(
+                        child: pw.Text(
+                          'Sin progreso',
+                          style: pw.TextStyle(fontSize: 10),
+                        ),
+                      ),
                     ],
                   ),
                   pw.SizedBox(height: 20),
@@ -297,7 +329,9 @@ class GenerateAllUsersReportUsecase implements Usecase<String, dynamic> {
                     height: 30,
                     decoration: pw.BoxDecoration(
                       color: PdfColors.blue,
-                      borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+                      borderRadius: const pw.BorderRadius.all(
+                        pw.Radius.circular(4),
+                      ),
                     ),
                     alignment: pw.Alignment.center,
                     child: pw.Text(
@@ -313,11 +347,21 @@ class GenerateAllUsersReportUsecase implements Usecase<String, dynamic> {
             // Reporte por usuario
             ...userReports.map((report) {
               final userName = report['userName'] as String;
-              final courseProgressMap = report['courseProgressMap'] as Map<String, Map<String, Map<String, LessonProgressEntity>>>;
-              final courseTitles = report['courseTitles'] as Map<String, String>;
-              final moduleTitles = report['moduleTitles'] as Map<String, Map<String, String>>;
-              final lessonTitles = report['lessonTitles'] as Map<String, Map<String, Map<String, String>>>;
-              final flatLessonTitles = (report['flatLessonTitles'] as Map<String, String>?) ?? {};
+              final courseProgressMap =
+                  report['courseProgressMap']
+                      as Map<
+                        String,
+                        Map<String, Map<String, LessonProgressEntity>>
+                      >;
+              final courseTitles =
+                  report['courseTitles'] as Map<String, String>;
+              final moduleTitles =
+                  report['moduleTitles'] as Map<String, Map<String, String>>;
+              final lessonTitles =
+                  report['lessonTitles']
+                      as Map<String, Map<String, Map<String, String>>>;
+              final flatLessonTitles =
+                  (report['flatLessonTitles'] as Map<String, String>?) ?? {};
 
               return pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -338,7 +382,8 @@ class GenerateAllUsersReportUsecase implements Usecase<String, dynamic> {
                   // Desglose por curso
                   ...courseProgressMap.entries.map((courseEntry) {
                     final courseId = courseEntry.key;
-                    final courseTitle = courseTitles[courseId] ?? 'Curso $courseId';
+                    final courseTitle =
+                        courseTitles[courseId] ?? 'Curso $courseId';
                     final moduleProgress = courseEntry.value;
 
                     return pw.Column(
@@ -356,17 +401,25 @@ class GenerateAllUsersReportUsecase implements Usecase<String, dynamic> {
                         // Desglose por módulo
                         ...moduleProgress.entries.map((moduleEntry) {
                           final moduleId = moduleEntry.key;
-                          final moduleTitle = moduleTitles[courseId]?[moduleId] ?? 'Módulo $moduleId';
+                          final moduleTitle =
+                              moduleTitles[courseId]?[moduleId] ??
+                              'Módulo $moduleId';
                           final lessonProgress = moduleEntry.value;
 
                           return pw.Padding(
-                            padding: const pw.EdgeInsets.only(left: 15, bottom: 5),
+                            padding: const pw.EdgeInsets.only(
+                              left: 15,
+                              bottom: 5,
+                            ),
                             child: pw.Column(
                               crossAxisAlignment: pw.CrossAxisAlignment.start,
                               children: [
                                 pw.Text(
                                   'Módulo: $moduleTitle',
-                                  style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
+                                  style: pw.TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: pw.FontWeight.bold,
+                                  ),
                                 ),
                                 pw.SizedBox(height: 3),
 
@@ -374,7 +427,8 @@ class GenerateAllUsersReportUsecase implements Usecase<String, dynamic> {
                                 ...lessonProgress.entries.map((lessonEntry) {
                                   final lessonId = lessonEntry.key;
                                   final progress = lessonEntry.value;
-                                  final lessonTitle = lessonTitles[courseId]?[moduleId]?[lessonId] ??
+                                  final lessonTitle =
+                                      lessonTitles[courseId]?[moduleId]?[lessonId] ??
                                       flatLessonTitles[lessonId] ??
                                       'Lección $lessonId';
 
@@ -395,14 +449,20 @@ class GenerateAllUsersReportUsecase implements Usecase<String, dynamic> {
                                   }
 
                                   return pw.Padding(
-                                    padding: const pw.EdgeInsets.only(left: 20, bottom: 5),
+                                    padding: const pw.EdgeInsets.only(
+                                      left: 20,
+                                      bottom: 5,
+                                    ),
                                     child: pw.Text(
                                       '$bullet $lessonTitle - $statusText',
                                       style: pw.TextStyle(
                                         fontSize: 12,
-                                        fontWeight: progress.status == LessonProgressStatus.completed
-                                            ? pw.FontWeight.bold
-                                            : pw.FontWeight.normal,
+                                        fontWeight:
+                                            progress.status ==
+                                                    LessonProgressStatus
+                                                        .completed
+                                                ? pw.FontWeight.bold
+                                                : pw.FontWeight.normal,
                                       ),
                                     ),
                                   );
@@ -428,14 +488,15 @@ class GenerateAllUsersReportUsecase implements Usecase<String, dynamic> {
     // Guardar el PDF
     final bytes = await pdf.save();
     final directory = await getApplicationDocumentsDirectory();
-    final fileName = targetUserId != null
-        ? 'reporte_individual_${targetUserId}.pdf'
-        : 'reporte_general_usuarios.pdf';
+    final fileName =
+        targetUserId != null
+            ? 'reporte_individual_${targetUserId}.pdf'
+            : 'reporte_general_usuarios.pdf';
     final file = File('${directory.path}/documentos/$fileName');
-    
+
     // Crear directorio si no existe
     await file.parent.create(recursive: true);
-    
+
     await file.writeAsBytes(bytes);
 
     return file.path;

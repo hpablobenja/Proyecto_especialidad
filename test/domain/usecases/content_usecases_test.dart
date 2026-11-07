@@ -42,8 +42,9 @@ void main() {
         ),
       ];
 
-      when(mockContentRepository.listCourses())
-          .thenAnswer((_) async => expectedCourses);
+      when(
+        mockContentRepository.listCourses(),
+      ).thenAnswer((_) async => expectedCourses);
 
       final result = await listCoursesUsecase.call(NoParams());
 
@@ -56,8 +57,7 @@ void main() {
     test('ListCoursesUsecase retorna lista vacía', () async {
       final listCoursesUsecase = ListCoursesUsecase(mockContentRepository);
 
-      when(mockContentRepository.listCourses())
-          .thenAnswer((_) async => []);
+      when(mockContentRepository.listCourses()).thenAnswer((_) async => []);
 
       final result = await listCoursesUsecase.call(NoParams());
 
@@ -77,8 +77,9 @@ void main() {
         targetAudience: 'Todos',
       );
 
-      when(mockContentRepository.createCourse(newCourse))
-          .thenAnswer((_) async => newCourse);
+      when(
+        mockContentRepository.createCourse(newCourse),
+      ).thenAnswer((_) async => newCourse);
 
       final result = await createCourseUsecase.call(newCourse);
 
@@ -99,8 +100,9 @@ void main() {
         targetAudience: 'Avanzados',
       );
 
-      when(mockContentRepository.updateCourse(updatedCourse))
-          .thenAnswer((_) async => updatedCourse);
+      when(
+        mockContentRepository.updateCourse(updatedCourse),
+      ).thenAnswer((_) async => updatedCourse);
 
       final result = await updateCourseUsecase.call(updatedCourse);
 
@@ -114,8 +116,9 @@ void main() {
       final deleteCourseUsecase = DeleteCourseUsecase(mockContentRepository);
       const courseId = 'course_1';
 
-      when(mockContentRepository.deleteCourse(courseId))
-          .thenAnswer((_) async {});
+      when(
+        mockContentRepository.deleteCourse(courseId),
+      ).thenAnswer((_) async {});
 
       await deleteCourseUsecase.call(DeleteCourseParams(courseId));
 
@@ -126,8 +129,9 @@ void main() {
       final deleteCourseUsecase = DeleteCourseUsecase(mockContentRepository);
       const courseId = 'invalid_course';
 
-      when(mockContentRepository.deleteCourse(courseId))
-          .thenThrow(Exception('Curso no encontrado'));
+      when(
+        mockContentRepository.deleteCourse(courseId),
+      ).thenThrow(Exception('Curso no encontrado'));
 
       expect(
         () => deleteCourseUsecase.call(DeleteCourseParams(courseId)),
@@ -147,8 +151,9 @@ void main() {
         orderIndex: 1,
       );
 
-      when(mockContentRepository.createModule(newModule))
-          .thenAnswer((_) async => newModule);
+      when(
+        mockContentRepository.createModule(newModule),
+      ).thenAnswer((_) async => newModule);
 
       final result = await createModuleUsecase.call(newModule);
 
@@ -170,8 +175,9 @@ void main() {
         orderIndex: 1,
       );
 
-      when(mockContentRepository.createLesson(newLesson))
-          .thenAnswer((_) async => newLesson);
+      when(
+        mockContentRepository.createLesson(newLesson),
+      ).thenAnswer((_) async => newLesson);
 
       final result = await createLessonUsecase.call(newLesson);
 

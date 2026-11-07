@@ -5,18 +5,30 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/module_entity.dart';
 import '../../domain/entities/lesson_entity.dart';
 import '../../domain/entities/media_resource.dart';
-import '../../domain/usecases/content/list_modules_usecase.dart' as uc_list_modules;
-import '../../domain/usecases/content/list_lessons_usecase.dart' as uc_list_lessons;
-import '../../domain/usecases/content/create_module_usecase.dart' as uc_create_module;
-import '../../domain/usecases/content/update_module_usecase.dart' as uc_update_module;
-import '../../domain/usecases/content/delete_module_usecase.dart' as uc_delete_module;
-import '../../domain/usecases/content/reorder_modules_usecase.dart' as uc_reorder_modules;
-import '../../domain/usecases/content/create_lesson_usecase.dart' as uc_create_lesson;
-import '../../domain/usecases/content/update_lesson_usecase.dart' as uc_update_lesson;
-import '../../domain/usecases/content/delete_lesson_usecase.dart' as uc_delete_lesson;
-import '../../domain/usecases/content/reorder_lessons_usecase.dart' as uc_reorder_lessons;
-import '../../domain/usecases/content/upload_media_usecase.dart' as uc_upload_media;
-import '../../domain/usecases/content/delete_media_usecase.dart' as uc_delete_media;
+import '../../domain/usecases/content/list_modules_usecase.dart'
+    as uc_list_modules;
+import '../../domain/usecases/content/list_lessons_usecase.dart'
+    as uc_list_lessons;
+import '../../domain/usecases/content/create_module_usecase.dart'
+    as uc_create_module;
+import '../../domain/usecases/content/update_module_usecase.dart'
+    as uc_update_module;
+import '../../domain/usecases/content/delete_module_usecase.dart'
+    as uc_delete_module;
+import '../../domain/usecases/content/reorder_modules_usecase.dart'
+    as uc_reorder_modules;
+import '../../domain/usecases/content/create_lesson_usecase.dart'
+    as uc_create_lesson;
+import '../../domain/usecases/content/update_lesson_usecase.dart'
+    as uc_update_lesson;
+import '../../domain/usecases/content/delete_lesson_usecase.dart'
+    as uc_delete_lesson;
+import '../../domain/usecases/content/reorder_lessons_usecase.dart'
+    as uc_reorder_lessons;
+import '../../domain/usecases/content/upload_media_usecase.dart'
+    as uc_upload_media;
+import '../../domain/usecases/content/delete_media_usecase.dart'
+    as uc_delete_media;
 
 class AdminContentProvider extends ChangeNotifier {
   final uc_list_modules.ListModulesUsecase listModulesUsecase;
@@ -75,11 +87,17 @@ class AdminContentProvider extends ChangeNotifier {
     }
   }
 
-  Future<List<LessonEntity>> fetchLessons({required String courseId, required String moduleId}) async {
+  Future<List<LessonEntity>> fetchLessons({
+    required String courseId,
+    required String moduleId,
+  }) async {
     _setBusy(true);
     _setError(null);
     try {
-      final lessons = await listLessonsUsecase.call(courseId: courseId, moduleId: moduleId);
+      final lessons = await listLessonsUsecase.call(
+        courseId: courseId,
+        moduleId: moduleId,
+      );
       return lessons;
     } catch (e) {
       _setError('Error al listar lecciones: $e');
@@ -124,11 +142,19 @@ class AdminContentProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> deleteModule({required String courseId, required String moduleId}) async {
+  Future<bool> deleteModule({
+    required String courseId,
+    required String moduleId,
+  }) async {
     _setBusy(true);
     _setError(null);
     try {
-      await deleteModuleUsecase.call(uc_delete_module.DeleteModuleParams(courseId: courseId, moduleId: moduleId));
+      await deleteModuleUsecase.call(
+        uc_delete_module.DeleteModuleParams(
+          courseId: courseId,
+          moduleId: moduleId,
+        ),
+      );
       return true;
     } catch (e) {
       _setError('Error al eliminar módulo: $e');
@@ -138,12 +164,18 @@ class AdminContentProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> reorderModules(String courseId, List<String> orderedModuleIds) async {
+  Future<bool> reorderModules(
+    String courseId,
+    List<String> orderedModuleIds,
+  ) async {
     _setBusy(true);
     _setError(null);
     try {
       await reorderModulesUsecase.call(
-        uc_reorder_modules.ReorderModulesParams(courseId: courseId, orderedModuleIds: orderedModuleIds),
+        uc_reorder_modules.ReorderModulesParams(
+          courseId: courseId,
+          orderedModuleIds: orderedModuleIds,
+        ),
       );
       return true;
     } catch (e) {
@@ -184,12 +216,20 @@ class AdminContentProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> deleteLesson({required String courseId, required String moduleId, required String lessonId}) async {
+  Future<bool> deleteLesson({
+    required String courseId,
+    required String moduleId,
+    required String lessonId,
+  }) async {
     _setBusy(true);
     _setError(null);
     try {
       await deleteLessonUsecase.call(
-        uc_delete_lesson.DeleteLessonParams(courseId: courseId, moduleId: moduleId, lessonId: lessonId),
+        uc_delete_lesson.DeleteLessonParams(
+          courseId: courseId,
+          moduleId: moduleId,
+          lessonId: lessonId,
+        ),
       );
       return true;
     } catch (e) {
@@ -200,7 +240,11 @@ class AdminContentProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> reorderLessons(String courseId, String moduleId, List<String> orderedLessonIds) async {
+  Future<bool> reorderLessons(
+    String courseId,
+    String moduleId,
+    List<String> orderedLessonIds,
+  ) async {
     _setBusy(true);
     _setError(null);
     try {

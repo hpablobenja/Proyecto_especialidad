@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/validation_utils.dart';
 import '../../../core/di/riverpod_providers.dart';
+import '../../../main.dart';
 import '../home/home_screen.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
@@ -29,32 +30,105 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _login() async {
-    if (_formKey.currentState!.validate()) {
-      final authProvider = ref.read(authStateProvider);
-      final result = await authProvider.signInWithEmailAndPassword(
-        _emailController.text,
-        _passwordController.text,
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    // Si los campos están vacíos o no cumplen con la validación básica,
+    // mostrar el mensaje claro de datos incorrectos además de los errores del formulario.
+    if (!_formKey.currentState!.validate()) {
+      rootScaffoldMessengerKey.currentState?.hideCurrentSnackBar();
+      rootScaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(Icons.error_outline, color: Colors.white),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Por favor, ingresa los datos correctamente.',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.errorColor,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+      return;
+    }
+
+    final authProvider = ref.read(authStateProvider);
+    final result = await authProvider.signInWithEmailAndPassword(
+      email,
+      password,
+    );
+
+    if (result) {
+      // Mensaje de autenticación exitosa a nivel global
+      rootScaffoldMessengerKey.currentState?.hideCurrentSnackBar();
+      rootScaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(Icons.check_circle_outline, color: Colors.white),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  '¡Bienvenido! Autenticación correcta.',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.successColor,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
       );
 
-      // Evita usar el contexto si el widget fue desmontado durante el await
-      if (!mounted) return;
-
-      if (result) {
-        // Navega al HomeScreen al iniciar sesión exitosamente
+      // Si aún está montado, asegurarse de navegar si el widget MyApp no lo hizo
+      if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => HomeScreen()),
         );
-      } else {
-        // Muestra un SnackBar con el mensaje de error
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(authProvider.errorMessage ?? 'Error desconocido'),
-              backgroundColor: AppColors.errorColor,
-            ),
-          );
-        }
       }
+    } else {
+      // Muestra un SnackBar con el mensaje de error o datos incorrectos
+      final errorText = authProvider.errorMessage?.isNotEmpty == true
+          ? authProvider.errorMessage!
+          : 'Los datos introducidos son incorrectos. Verifica tu correo y contraseña.';
+
+      rootScaffoldMessengerKey.currentState?.hideCurrentSnackBar();
+      rootScaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  errorText,
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.errorColor,
+          duration: const Duration(seconds: 4),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
     }
   }
 

@@ -120,12 +120,7 @@ void main() {
         filename: 'video.mp4',
         mimeType: 'video/mp4',
         sizeBytes: 1024000,
-        metadata: {
-          'width': 1920,
-          'height': 1080,
-          'fps': 30,
-          'codec': 'h264',
-        },
+        metadata: {'width': 1920, 'height': 1080, 'fps': 30, 'codec': 'h264'},
       );
 
       expect(media.metadata?['width'], 1920);
