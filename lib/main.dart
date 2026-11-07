@@ -85,14 +85,16 @@ class MyApp extends ConsumerWidget {
       // Configuración cargada silenciosamente
     });
 
+    // ChangeNotifier entrega la misma instancia en previous y next,
+    // así que el token se compara contra el último valor ya atendido.
+    var lastRedirectToken = ref.read(connectivityStateProvider).redirectToken;
     ref.listen(connectivityStateProvider, (previous, next) {
-      if (previous == null || previous.redirectToken == next.redirectToken) {
-        return;
-      }
+      if (next.redirectToken == lastRedirectToken) return;
+      lastRedirectToken = next.redirectToken;
 
-      final auth = ref.read(authStateProvider);
-      final role = (auth.currentUser?.role ?? '').toLowerCase();
-      if (!auth.isLoggedIn || role.isEmpty || role == 'admin') return;
+      final session = ref.read(authStateProvider);
+      final role = (session.currentUser?.role ?? '').toLowerCase();
+      if (!session.isLoggedIn || role.isEmpty || role == 'admin') return;
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ConnectivityRedirect.goToFormaciones(ref);

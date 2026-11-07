@@ -204,7 +204,7 @@ class _GalleryScreenState extends ConsumerState<_GalleryScreen> {
     final favs = ref.watch(favoritesStateProvider);
     final startedCourseIds = favs.startedCourseIds.toSet();
 
-    if (courseProvider.isLoading) {
+    if (courseProvider.isLoading && courseProvider.courses.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
     if (courseProvider.courses.isEmpty) {

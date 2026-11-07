@@ -19,6 +19,10 @@ migrate_working_dir/
 .idea/
 DESIGN_UPGRADE_README.md
 VIDEO_CRUD_README.md
+VIDEO_TRACKING_IMPLEMENTATION.md
+DOCUMENTACION_IMPORTACION_EXCEL.md
+sss.py
+Exposición Proyecto.pptx
 # The .vscode folder contains launch configuration and tasks you configure in
 # VS Code which you may wish to be included in version control, so this line
 # is commented out by default.
