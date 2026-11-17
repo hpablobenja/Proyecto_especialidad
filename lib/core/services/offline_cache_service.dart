@@ -17,6 +17,7 @@ class OfflineCacheService {
   static const String _lastModulesKey = 'last_accessed_modules';
   static const String _lastLessonsKey = 'last_accessed_lessons';
   static const String _quizQuestionsKey = 'cached_quiz_questions';
+  static const String _quizIdKey = 'cached_quiz_id';
 
   // Cache last accessed course
   Future<void> cacheLastCourse(CourseEntity course) async {
@@ -146,6 +147,26 @@ class OfflineCacheService {
       );
     } catch (e) {
       // Silently fail
+    }
+  }
+
+  // Cache quiz ID for a lesson
+  Future<void> cacheQuizId(String lessonId, String quizId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('${_quizIdKey}_$lessonId', quizId);
+    } catch (e) {
+      // Silently fail
+    }
+  }
+
+  // Get cached quiz ID for a lesson
+  Future<String?> getCachedQuizId(String lessonId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('${_quizIdKey}_$lessonId');
+    } catch (e) {
+      return null;
     }
   }
 

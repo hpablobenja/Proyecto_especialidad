@@ -124,6 +124,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
       auth.currentUser!.uid,
     );
     final firestore = ref.read(firestoreProvider);
+    final progress = ref.read(progressStateProvider);
+    int syncedCount = 0;
 
     for (final quiz in pendingQuizzes) {
       try {
@@ -155,11 +157,16 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           'lastUpdated': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
 
-        await _quizOfflineService.markAsSynced(quiz.userId, quiz.quizId);
-        debugPrint('Quiz sincronizado: ${quiz.quizId}');
+        await _quizOfflineService.deleteQuizProgress(quiz.userId, quiz.quizId);
+        syncedCount++;
+        debugPrint('Quiz sincronizado y eliminado del almacenamiento local: ${quiz.quizId}');
       } catch (e) {
         debugPrint('Error al sincronizar quiz ${quiz.quizId}: $e');
       }
+    }
+
+    if (syncedCount > 0 && mounted) {
+      progress.loadUserProgress(auth.currentUser!.uid, forceReload: true);
     }
   }
 
@@ -208,10 +215,11 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         final cachedQuestions = await cacheService.getCachedQuizQuestions(
           widget.lesson.id,
         );
+        final cachedQuizId = await cacheService.getCachedQuizId(widget.lesson.id);
         if (cachedQuestions.isNotEmpty) {
           setState(() {
             _quiz = QuizEntity(
-              id: 'cached_${widget.lesson.id}',
+              id: cachedQuizId ?? 'cached_${widget.lesson.id}',
               lessonId: widget.lesson.id,
               courseId: widget.lesson.courseId,
               moduleId: widget.lesson.moduleId,
@@ -258,6 +266,11 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
       await ref
           .read(offlineCacheServiceProvider)
           .cacheQuizQuestions(widget.lesson.id, allQuestions);
+
+      // Guardar el quizId real para uso offline
+      await ref
+          .read(offlineCacheServiceProvider)
+          .cacheQuizId(widget.lesson.id, quizDoc.docs.first.id);
 
       final isTeacher = auth.currentUser?.role == 'maestro';
       final maxQuestionsForTeacher = _systemConfig?.maxQuestionsForTeacher ?? 5;
@@ -309,9 +322,10 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           widget.lesson.id,
         );
         if (cachedQuestions.isNotEmpty) {
+          final cachedQuizId = await cacheService.getCachedQuizId(widget.lesson.id);
           setState(() {
             _quiz = QuizEntity(
-              id: 'cached_${widget.lesson.id}',
+              id: cachedQuizId ?? 'cached_${widget.lesson.id}',
               lessonId: widget.lesson.id,
               courseId: widget.lesson.courseId,
               moduleId: widget.lesson.moduleId,
@@ -369,6 +383,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     // Marcar lección como completada y guardar respuestas
     final auth = ref.read(authStateProvider);
     final progress = ref.read(progressStateProvider);
+    final firestore = ref.read(firestoreProvider);
 
     // Preparar detalles de respuestas
     final List<QuizAnswerDetail> answerDetails = [];
@@ -390,6 +405,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     if (auth.currentUser != null) {
       if (_isOnline) {
         // Online: guardar directamente en Firestore
+        debugPrint('Guardando quiz completado en userProgress...');
         await progress.markQuizCompleted(
           userId: auth.currentUser!.uid,
           courseId: widget.lesson.courseId,
@@ -398,11 +414,14 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           score: _score,
           maxScore: _quiz!.questions.length,
         );
+        debugPrint('Quiz completado guardado en userProgress exitosamente');
 
         // Guardar respuestas detalladas en quizRespuestas
+        debugPrint('Preparando para guardar respuestas en quizRespuestas...');
+        debugPrint('Quiz ID: ${_quiz!.id}, User ID: ${auth.currentUser!.uid}, Lesson ID: ${widget.lesson.id}');
+        debugPrint('Answer details count: ${answerDetails.length}');
         try {
-          final firestore = ref.read(firestoreProvider);
-          await firestore.collection('quizRespuestas').add({
+          final quizRespuestaRef = await firestore.collection('quizRespuestas').add({
             'userId': auth.currentUser!.uid,
             'quizId': _quiz!.id,
             'lessonId': widget.lesson.id,
@@ -413,8 +432,11 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
             'answers': answerDetails.map((a) => a.toMap()).toList(),
             'submittedAt': FieldValue.serverTimestamp(),
           });
+          debugPrint('Respuestas del quiz guardadas exitosamente. Document ID: ${quizRespuestaRef.id}, Quiz ID: ${_quiz!.id}');
         } catch (e) {
           debugPrint('Error al guardar respuestas del quiz: $e');
+          debugPrint('Quiz ID: ${_quiz!.id}, Lesson ID: ${widget.lesson.id}');
+          debugPrint('Stack trace: ${StackTrace.current}');
         }
       } else {
         // Offline: guardar localmente con Hive
@@ -617,25 +639,60 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                         ),
                       ],
                       const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            _showingPreviousScore = false;
-                            _selectedAnswers.clear();
-                          });
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryColor,
+                      if (hasPendingSync)
+                        Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 32,
-                            vertical: 16,
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.red.shade300),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.block,
+                                size: 20,
+                                color: Colors.red.shade900,
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  'El cuestionario está bloqueado hasta que se sincronice con el servidor.',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.red.shade900,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              _showingPreviousScore = false;
+                              _selectedAnswers.clear();
+                            });
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryColor,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 32,
+                              vertical: 16,
+                            ),
+                          ),
+                          child: const Text(
+                            'Volver a intentar el cuestionario',
+                            style: TextStyle(fontSize: 16),
                           ),
                         ),
-                        child: const Text(
-                          'Volver a intentar el cuestionario',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                      ),
                     ],
                   ),
                 ),

@@ -83,6 +83,7 @@ import '../../presentation/providers/dashboard_provider.dart';
 import '../../presentation/providers/connectivity_provider.dart';
 import '../../core/services/pdf_generator_service.dart';
 import '../../core/services/offline_cache_service.dart';
+import '../../core/services/quiz_sync_service.dart';
 import '../../core/services/excel_import_service.dart';
 import '../../core/services/quiz_offline_service.dart';
 import '../../core/services/session_tracking_service.dart';
@@ -394,10 +395,17 @@ final courseStateProvider = ChangeNotifierProvider<CourseProvider>((ref) {
 
 final progressStateProvider = ChangeNotifierProvider<ProgressProvider>((ref) {
   ref.keepAlive();
-  return ProgressProvider(
+  final provider = ProgressProvider(
     getCourseProgressUsecase: ref.read(getCourseProgressUsecaseProvider),
     firestore: ref.read(firestoreProvider),
   );
+
+  // Cuando QuizSyncService termine de sincronizar quizzes offline, recargar progreso automáticamente
+  QuizSyncService().onQuizzesSynced = (userId) {
+    provider.loadUserProgress(userId, forceReload: true);
+  };
+
+  return provider;
 });
 
 final contentStateProvider = ChangeNotifierProvider<ContentProvider>((ref) {

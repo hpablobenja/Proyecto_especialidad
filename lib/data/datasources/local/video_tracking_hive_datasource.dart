@@ -1,17 +1,22 @@
 // lib/data/datasources/local/video_tracking_hive_datasource.dart
 
 import 'package:hive_flutter/hive_flutter.dart';
+import '../../../core/services/hive_encryption_service.dart';
 import '../../models/video_progress_hive.dart';
 import '../../../domain/entities/video_tracking_entity.dart';
 
 /// DataSource local para persistencia de tracking de video usando Hive
 /// Este es el Nivel 2 de la arquitectura híbrida
 class VideoTrackingHiveDataSource {
-  static const String _boxName = 'videoProgress';
+  static const String _boxName = HiveEncryptionService.progressBox;
+
+  Future<Box<VideoProgressHive>> _openBox() {
+    return HiveEncryptionService.instance.openBox<VideoProgressHive>(_boxName);
+  }
 
   /// Guarda o actualiza el progreso de video
   Future<void> saveVideoProgress(VideoTrackingEntity tracking) async {
-    final box = await Hive.openBox<VideoProgressHive>(_boxName);
+    final box = await _openBox();
     final hive = VideoProgressHive.fromEntity(tracking);
     await box.put(hive.key, hive);
   }
@@ -21,26 +26,26 @@ class VideoTrackingHiveDataSource {
     String userId,
     String lessonId,
   ) async {
-    final box = await Hive.openBox<VideoProgressHive>(_boxName);
+    final box = await _openBox();
     final key = '${userId}_$lessonId';
     return box.get(key);
   }
 
   /// Obtiene todo el progreso de video de un usuario
   Future<List<VideoProgressHive>> getUserVideoProgress(String userId) async {
-    final box = await Hive.openBox<VideoProgressHive>(_boxName);
+    final box = await _openBox();
     return box.values.where((item) => item.userId == userId).toList();
   }
 
   /// Obtiene progreso que necesita sincronización
   Future<List<VideoProgressHive>> getPendingSync() async {
-    final box = await Hive.openBox<VideoProgressHive>(_boxName);
+    final box = await _openBox();
     return box.values.where((item) => item.needsSync).toList();
   }
 
   /// Marca como sincronizado
   Future<void> markAsSynced(String userId, String lessonId) async {
-    final box = await Hive.openBox<VideoProgressHive>(_boxName);
+    final box = await _openBox();
     final key = '${userId}_$lessonId';
     final existing = box.get(key);
 
@@ -52,14 +57,14 @@ class VideoTrackingHiveDataSource {
 
   /// Elimina el progreso de una lección
   Future<void> deleteVideoProgress(String userId, String lessonId) async {
-    final box = await Hive.openBox<VideoProgressHive>(_boxName);
+    final box = await _openBox();
     final key = '${userId}_$lessonId';
     await box.delete(key);
   }
 
   /// Elimina todo el progreso de un usuario
   Future<void> deleteUserProgress(String userId) async {
-    final box = await Hive.openBox<VideoProgressHive>(_boxName);
+    final box = await _openBox();
     final keysToDelete =
         box.keys
             .where((key) => key.toString().startsWith('${userId}_'))
@@ -75,7 +80,7 @@ class VideoTrackingHiveDataSource {
     String userId,
     String courseId,
   ) async {
-    final box = await Hive.openBox<VideoProgressHive>(_boxName);
+    final box = await _openBox();
     final progressList =
         box.values
             .where((item) => item.userId == userId && item.courseId == courseId)
@@ -106,7 +111,7 @@ class VideoTrackingHiveDataSource {
 
   /// Limpia todos los datos (útil para testing)
   Future<void> clearAll() async {
-    final box = await Hive.openBox<VideoProgressHive>(_boxName);
+    final box = await _openBox();
     await box.clear();
   }
 }

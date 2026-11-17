@@ -22,6 +22,9 @@ class QuizSyncService {
   bool _isOnline = true;
   String? _currentUserId;
 
+  /// Callback para notificar cuando se sincronizan quizzes
+  Function(String userId)? onQuizzesSynced;
+
   /// Inicializa el servicio
   Future<void> init() async {
     if (_isInitialized) return;
@@ -86,11 +89,12 @@ class QuizSyncService {
     }
 
     debugPrint('QuizSyncService: Found ${pendingQuizzes.length} pending quizzes to sync');
+    int syncedCount = 0;
 
     for (final quiz in pendingQuizzes) {
       try {
         // Guardar respuestas en quizRespuestas
-        await _firestore.collection('quizRespuestas').add({
+        final quizRespuestaRef = await _firestore.collection('quizRespuestas').add({
           'userId': quiz.userId,
           'quizId': quiz.quizId,
           'lessonId': quiz.lessonId,
@@ -101,6 +105,7 @@ class QuizSyncService {
           'answers': quiz.answerDetails.map((a) => a.toMap()).toList(),
           'submittedAt': FieldValue.serverTimestamp(),
         });
+        debugPrint('QuizSyncService: Respuestas guardadas en quizRespuestas. Document ID: ${quizRespuestaRef.id}, Quiz ID: ${quiz.quizId}');
 
         // Actualizar progreso en userProgress
         final progressId =
@@ -116,12 +121,17 @@ class QuizSyncService {
           'lastUpdated': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
 
-        // Marcar como sincronizado
-        await _quizOfflineService.markAsSynced(quiz.userId, quiz.quizId);
-        debugPrint('QuizSyncService: Quiz synced successfully: ${quiz.quizId}');
+        // Eliminar el quiz local después de sincronizar exitosamente
+        await _quizOfflineService.deleteQuizProgress(quiz.userId, quiz.quizId);
+        syncedCount++;
+        debugPrint('QuizSyncService: Quiz synced and removed from local storage: ${quiz.quizId}');
       } catch (e) {
         debugPrint('QuizSyncService: Error syncing quiz ${quiz.quizId}: $e');
       }
+    }
+
+    if (syncedCount > 0 && _currentUserId != null) {
+      onQuizzesSynced?.call(_currentUserId!);
     }
 
     debugPrint('QuizSyncService: Sync completed');

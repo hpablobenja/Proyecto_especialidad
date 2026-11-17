@@ -108,6 +108,9 @@ class ProgressProvider extends ChangeNotifier {
       _lastLoadedUserId = null;
       // Actualizar progreso en Firestore
       await _updateProgressInFirestore(userId, courseId);
+
+      // Recargar progreso local y notificar para actualizar la UI (p. ej. pantalla de progreso)
+      await loadUserProgress(userId, forceReload: true);
     } catch (e) {
       debugPrint('Error al marcar lecciÃÂÃÂ³n en progreso: $e');
     }
@@ -174,6 +177,9 @@ class ProgressProvider extends ChangeNotifier {
       );
 
       await _updateProgressInFirestore(userId, courseId);
+
+      // Recargar progreso local y notificar para actualizar la UI (p. ej. pantalla de progreso)
+      await loadUserProgress(userId, forceReload: true);
     } catch (e) {
       debugPrint('Error al marcar video visto: ');
     }
@@ -238,6 +244,9 @@ class ProgressProvider extends ChangeNotifier {
       );
 
       await _updateProgressInFirestore(userId, courseId);
+
+      // Recargar progreso local y notificar para actualizar la UI (p. ej. pantalla de progreso)
+      await loadUserProgress(userId, forceReload: true);
     } catch (e) {
       debugPrint('Error al marcar estrategias completadas: ');
     }
@@ -256,9 +265,12 @@ class ProgressProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final userRole = prefs.getString('user_role');
 
-      if (userRole != 'maestro') {
-        return;
-      }
+      debugPrint('markQuizCompleted - User ID: $userId, Role: $userRole, Lesson: $lessonId');
+
+      // Permitir que todos los usuarios (estudiantes y maestros) guarden su progreso de quiz
+      // if (userRole != 'maestro') {
+      //   return;
+      // }
 
       final progressId = '$userId-$courseId-$moduleId-$lessonId';
       final progressRef = firestore.collection('userProgress').doc(progressId);
@@ -308,6 +320,9 @@ class ProgressProvider extends ChangeNotifier {
       );
 
       await _updateProgressInFirestore(userId, courseId);
+
+      // Recargar progreso local y notificar para actualizar la UI (p. ej. pantalla de progreso)
+      await loadUserProgress(userId, forceReload: true);
     } catch (e) {
       debugPrint('Error al marcar quiz completado: $e');
     }

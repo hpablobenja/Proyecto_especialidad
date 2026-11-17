@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/datasources/local/data_user_hive_datasource.dart';
 import '../../data/models/data_user_hive.dart';
-import '../../data/models/data_user_model.dart';
 import '../../data/repositories/data_user_repository.dart';
 
 /// Servicio para sincronizar datos del dashboard entre Hive local y Firestore
@@ -14,15 +13,16 @@ class DashboardSyncService {
   factory DashboardSyncService() => _instance;
   DashboardSyncService._internal();
 
-  final DataUserHiveDataSource _localDataSource =
-      DataUserHiveDataSource();
+  final DataUserHiveDataSource _localDataSource = DataUserHiveDataSource();
   final DataUserRepository _dataUserRepository = DataUserRepository();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   /// Sincroniza datos desde Firestore hacia Hive local
   Future<bool> syncFromFirestore(String userId) async {
     try {
-      debugPrint('Sincronizando dashboard desde Firestore para usuario $userId');
+      debugPrint(
+        'Sincronizando dashboard desde Firestore para usuario $userId',
+      );
 
       // Obtener datos de Firestore
       final userData = await _dataUserRepository.getUserData();
@@ -55,7 +55,9 @@ class DashboardSyncService {
   /// Sincroniza datos desde Hive local hacia Firestore
   Future<bool> syncToFirestore(String userId) async {
     try {
-      debugPrint('Sincronizando dashboard hacia Firestore para usuario $userId');
+      debugPrint(
+        'Sincronizando dashboard hacia Firestore para usuario $userId',
+      );
 
       // Obtener datos locales
       final localData = await _localDataSource.getDashboardData(userId);
@@ -97,10 +99,11 @@ class DashboardSyncService {
   /// evitar el problema N+1 que bloqueaba el dashboard al volver a online.
   Future<Map<String, int>> _calculateCourseStats(String userId) async {
     try {
-      final userProgressSnapshot = await _firestore
-          .collection('userProgress')
-          .where('userId', isEqualTo: userId)
-          .get();
+      final userProgressSnapshot =
+          await _firestore
+              .collection('userProgress')
+              .where('userId', isEqualTo: userId)
+              .get();
 
       // Agrupar por courseId
       final Map<String, List<QueryDocumentSnapshot>> courseProgress = {};
@@ -120,10 +123,11 @@ class DashboardSyncService {
       final courseIds = courseProgress.keys.toList();
       final lessonsSnapshots = await Future.wait(
         courseIds.map(
-          (courseId) => _firestore
-              .collection('lessons')
-              .where('courseId', isEqualTo: courseId)
-              .get(),
+          (courseId) =>
+              _firestore
+                  .collection('lessons')
+                  .where('courseId', isEqualTo: courseId)
+                  .get(),
         ),
       );
 

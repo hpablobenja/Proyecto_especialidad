@@ -2,20 +2,19 @@
 
 import 'package:hive/hive.dart';
 import '../../data/models/quiz_progress_hive.dart';
+import 'hive_encryption_service.dart';
 
 /// Servicio para manejar almacenamiento local de quiz con Hive
 /// Permite responder cuestionarios offline y sincronizar después
 class QuizOfflineService {
-  static const String _boxName = 'quiz_progress';
+  static const String _boxName = HiveEncryptionService.quizResultsBox;
   late final Box<QuizProgressHive> _box;
 
   /// Inicializa el servicio
   Future<void> init() async {
-    if (!Hive.isBoxOpen(_boxName)) {
-      _box = await Hive.openBox<QuizProgressHive>(_boxName);
-    } else {
-      _box = Hive.box<QuizProgressHive>(_boxName);
-    }
+    _box = await HiveEncryptionService.instance.openBox<QuizProgressHive>(
+      _boxName,
+    );
   }
 
   /// Guarda el progreso del quiz localmente

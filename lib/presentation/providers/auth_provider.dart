@@ -30,7 +30,12 @@ class AuthProvider extends ChangeNotifier {
     required this.getCurrentUserUsecase,
     required this.updateUserUsecase,
     required this.resetPasswordUsecase,
-  }) {
+    VideoTrackingHiveDataSource? videoTrackingDataSource,
+    DashboardSyncService? dashboardSyncService,
+    QuizSyncService? quizSyncService,
+  })  : _videoTrackingDataSource = videoTrackingDataSource,
+        _dashboardSyncService = dashboardSyncService,
+        _quizSyncService = quizSyncService {
     checkCurrentUser();
   }
 
@@ -39,10 +44,9 @@ class AuthProvider extends ChangeNotifier {
   UserEntity? _currentUser;
 
   final _secureStorage = const FlutterSecureStorage();
-  final VideoTrackingHiveDataSource _videoTrackingDataSource =
-      VideoTrackingHiveDataSource();
-  final DashboardSyncService _dashboardSyncService = DashboardSyncService();
-  final QuizSyncService _quizSyncService = QuizSyncService();
+  final VideoTrackingHiveDataSource? _videoTrackingDataSource;
+  final DashboardSyncService? _dashboardSyncService;
+  final QuizSyncService? _quizSyncService;
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -69,14 +73,14 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('Usuario autenticado con role: ${_currentUser!.role}');
 
       // Sincronizar dashboard en segundo plano si es maestro
-      if (_currentUser!.role == 'maestro') {
+      if (_currentUser!.role == 'maestro' && _dashboardSyncService != null) {
         _dashboardSyncService.syncFromFirestore(_currentUser!.uid).catchError((e) {
           debugPrint('Error al sincronizar dashboard al iniciar sesión: $e');
         });
       }
 
       // Establecer usuario en el servicio de sincronización de quizzes
-      _quizSyncService.setCurrentUser(_currentUser!.uid);
+      _quizSyncService?.setCurrentUser(_currentUser!.uid);
 
       _isLoading = false;
       notifyListeners();
@@ -94,7 +98,7 @@ class AuthProvider extends ChangeNotifier {
         await prefs.setString('user_id', _currentUser!.uid);
 
         // Establecer usuario en el servicio de sincronización de quizzes
-        _quizSyncService.setCurrentUser(_currentUser!.uid);
+        _quizSyncService?.setCurrentUser(_currentUser!.uid);
 
         _isLoading = false;
         notifyListeners();
@@ -225,7 +229,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
     _currentUser = await getCurrentUserUsecase.call(NoParams());
     if (_currentUser != null) {
-      _quizSyncService.setCurrentUser(_currentUser!.uid);
+      _quizSyncService?.setCurrentUser(_currentUser!.uid);
     }
     _isLoading = false;
     notifyListeners();
@@ -257,7 +261,7 @@ class AuthProvider extends ChangeNotifier {
       await prefs.remove('user_role');
 
       // Limpiar usuario del servicio de sincronización de quizzes
-      _quizSyncService.clearUser();
+      _quizSyncService?.clearUser();
     } catch (e) {
       _errorMessage = 'Error al cerrar sesión: ${e.toString()}';
     } finally {

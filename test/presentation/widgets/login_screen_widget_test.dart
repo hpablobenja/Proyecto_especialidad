@@ -47,6 +47,9 @@ void main() {
         getCurrentUserUsecase: mockGetCurrentUserUsecase,
         updateUserUsecase: mockUpdateUserUsecase,
         resetPasswordUsecase: mockResetPasswordUsecase,
+        videoTrackingDataSource: null,
+        dashboardSyncService: null,
+        quizSyncService: null,
       );
     });
 

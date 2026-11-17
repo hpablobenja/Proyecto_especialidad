@@ -7,6 +7,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/di/riverpod_providers.dart';
+import 'core/services/hive_encryption_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/session_tracking_service.dart';
 import 'core/services/quiz_offline_service.dart';
@@ -42,6 +43,9 @@ void main() async {
   Hive.registerAdapter(QuizAnswerDetailAdapter());
   Hive.registerAdapter(DownloadedVideoHiveAdapter());
   Hive.registerAdapter(DataUserHiveAdapter());
+
+  // Clave AES-256 para datos de usuario, progreso y cuestionarios.
+  await HiveEncryptionService.instance.cipher();
 
   // Inicializa el servicio de notificaciones sin bloquear el inicio de la app
   NotificationService().initialize().catchError((e) {
@@ -87,10 +91,11 @@ class MyApp extends ConsumerWidget {
 
     // ChangeNotifier entrega la misma instancia en previous y next,
     // así que el token se compara contra el último valor ya atendido.
-    var lastRedirectToken = ref.read(connectivityStateProvider).redirectToken;
+    ConnectivityRedirect.lastHandledToken ??=
+        ref.read(connectivityStateProvider).redirectToken;
     ref.listen(connectivityStateProvider, (previous, next) {
-      if (next.redirectToken == lastRedirectToken) return;
-      lastRedirectToken = next.redirectToken;
+      if (next.redirectToken == ConnectivityRedirect.lastHandledToken) return;
+      ConnectivityRedirect.lastHandledToken = next.redirectToken;
 
       final session = ref.read(authStateProvider);
       final role = (session.currentUser?.role ?? '').toLowerCase();

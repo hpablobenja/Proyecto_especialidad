@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/riverpod_providers.dart';
-import '../screens/home/home_screen.dart';
 
 /// Navigator raíz de [MaterialApp]. Permite volver a Formaciones
 /// desde cualquier ruta apilada encima del shell.
@@ -13,6 +12,7 @@ final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 /// Puente hacia el shell: cierra rutas anidadas y abre la pestaña Formaciones.
 class ConnectivityRedirect {
   static void Function()? resetToFormaciones;
+  static int? lastHandledToken;
 
   static void goToFormaciones(WidgetRef ref) {
     final nav = rootNavigatorKey.currentState;
@@ -24,10 +24,7 @@ class ConnectivityRedirect {
     if (reset != null) {
       reset();
     } else {
-      nav.pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => HomeScreen()),
-        (route) => false,
-      );
+      nav.pushNamedAndRemoveUntil('/home', (route) => false);
     }
 
     final connectivity = ref.read(connectivityStateProvider);

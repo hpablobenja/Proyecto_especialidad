@@ -321,7 +321,7 @@ void main() {
 
       final props = progress.props;
 
-      expect(props.length, 10);
+      expect(props.length, 18);
       expect(props.contains('user_1'), true);
       expect(props.contains('course_1'), true);
       expect(props.contains('module_1'), true);

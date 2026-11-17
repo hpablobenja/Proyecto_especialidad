@@ -86,110 +86,122 @@ class _MyProgressScreenState extends ConsumerState<MyProgressScreen> {
       body:
           progressProvider.isLoading
               ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    if (progressProvider.completedCourses.isEmpty &&
-                        progressProvider.inProgressCourses.isEmpty)
-                      _buildEmptyState()
-                    else ...[
-                      _buildCourseProgressSection(
-                        progressProvider.completedCourses,
-                        'Microformaciones Completadas',
-                        Icons.emoji_events,
+              : RefreshIndicator(
+                onRefresh: () async {
+                  final authProvider = ref.read(authStateProvider);
+                  if (authProvider.currentUser != null) {
+                    await ref
+                        .read(progressStateProvider)
+                        .loadUserProgress(
+                          authProvider.currentUser!.uid,
+                          forceReload: true,
+                        );
+                  }
+                },
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      if (progressProvider.completedCourses.isEmpty &&
+                          progressProvider.inProgressCourses.isEmpty)
+                        _buildEmptyState()
+                      else ...[
+                        _buildCourseProgressSection(
+                          progressProvider.completedCourses,
+                          'Microformaciones Completadas',
+                          Icons.emoji_events,
+                        ),
+                        _buildCourseProgressSection(
+                          progressProvider.inProgressCourses,
+                          'Microformaciones en Curso',
+                          Icons.trending_up,
+                        ),
+                      ],
+                      const SizedBox(height: 32),
+
+                      // Botón de Analítica Educativa
+                      Center(
+                        child: Column(
+                          children: [
+                            ElevatedButton.icon(
+                              onPressed: () async {
+                                // Forzar sincronización antes de mostrar analítica
+                                await ref
+                                    .read(videoTrackingProvider.notifier)
+                                    .forceSync();
+
+                                if (!context.mounted) return;
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder:
+                                        (_) => const AnalyticsDashboardScreen(),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.analytics),
+                              label: const Text(
+                                'Ver Analítica Educativa',
+                                style: AppStyles.buttonText,
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.accentColor,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 15,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Estadísticas detalladas de tu aprendizaje',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: Colors.grey[700]),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
                       ),
-                      _buildCourseProgressSection(
-                        progressProvider.inProgressCourses,
-                        'Microformaciones en Curso',
-                        Icons.trending_up,
+                      const SizedBox(height: 24),
+
+                      // Botón de Generar Reporte
+                      Center(
+                        child: Column(
+                          children: [
+                            ElevatedButton.icon(
+                              onPressed: _generateReport,
+                              icon: const Icon(Icons.picture_as_pdf),
+                              label: const Text(
+                                'Generar Reporte PDF',
+                                style: AppStyles.buttonText,
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primaryColor,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 15,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Descargará el documento solicitado',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: Colors.grey[700]),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
                       ),
                     ],
-
-                    const SizedBox(height: 32),
-
-                    // Botón de Analítica Educativa
-                    Center(
-                      child: Column(
-                        children: [
-                          ElevatedButton.icon(
-                            onPressed: () async {
-                              // Forzar sincronización antes de mostrar analítica
-                              await ref
-                                  .read(videoTrackingProvider.notifier)
-                                  .forceSync();
-
-                              if (!context.mounted) return;
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder:
-                                      (_) => const AnalyticsDashboardScreen(),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.analytics),
-                            label: const Text(
-                              'Ver Analítica Educativa',
-                              style: AppStyles.buttonText,
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.accentColor,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 15,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Estadísticas detalladas de tu aprendizaje',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: Colors.grey[700]),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Botón de Generar Reporte
-                    Center(
-                      child: Column(
-                        children: [
-                          ElevatedButton.icon(
-                            onPressed: _generateReport,
-                            icon: const Icon(Icons.picture_as_pdf),
-                            label: const Text(
-                              'Generar Reporte PDF',
-                              style: AppStyles.buttonText,
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primaryColor,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 15,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Descargará el documento solicitado',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: Colors.grey[700]),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
     );
