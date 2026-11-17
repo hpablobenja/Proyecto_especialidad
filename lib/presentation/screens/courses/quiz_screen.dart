@@ -129,15 +129,76 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
 
     for (final quiz in pendingQuizzes) {
       try {
+        // Obtener la clave obligatoriamente desde el servidor (Source.server)
+        final answersDoc = await firestore
+            .collection('quizAnswers')
+            .doc(quiz.quizId)
+            .get(const GetOptions(source: Source.server));
+
+        Map<String, dynamic> correctAnswersMap = {};
+        if (answersDoc.exists && answersDoc.data() != null) {
+          final data = answersDoc.data()!;
+          if (data['answers'] is Map) {
+            correctAnswersMap = Map<String, dynamic>.from(data['answers'] as Map);
+          }
+        }
+
+        // Obtener preguntas del quiz para evaluación efímera
+        final quizDoc = await firestore
+            .collection('quizzes')
+            .doc(quiz.quizId)
+            .get(const GetOptions(source: Source.server));
+
+        final questionsData =
+            (quizDoc.data()?['questions'] as List? ?? []);
+
+        int calculatedScore = 0;
+        final List<Map<String, dynamic>> evaluatedAnswers = [];
+
+        for (int i = 0; i < questionsData.length; i++) {
+          final qMap = questionsData[i] as Map<String, dynamic>;
+          final qId = qMap['id'] as String? ?? '';
+          final qText = qMap['text'] as String? ?? '';
+          final options = List<String>.from(qMap['options'] as List? ?? []);
+          final selected = quiz.selectedAnswers[i];
+          final correctIndex = correctAnswersMap[qId] as int?;
+
+          final isCorrect = correctIndex != null && selected == correctIndex;
+          if (isCorrect) {
+            calculatedScore++;
+          }
+
+          evaluatedAnswers.add({
+            'questionText': qText,
+            'selectedAnswerIndex': selected,
+            'selectedAnswerText':
+                (selected != null && selected >= 0 && selected < options.length)
+                    ? options[selected]
+                    : null,
+            'correctAnswerIndex': correctIndex ?? -1,
+            'correctAnswerText': (correctIndex != null &&
+                    correctIndex >= 0 &&
+                    correctIndex < options.length)
+                ? options[correctIndex]
+                : '',
+            'isCorrect': isCorrect,
+          });
+        }
+
+        final finalScore =
+            questionsData.isNotEmpty ? calculatedScore : (quiz.score ?? 0);
+        final finalMaxScore =
+            questionsData.isNotEmpty ? questionsData.length : quiz.maxScore;
+
         await firestore.collection('quizRespuestas').add({
           'userId': quiz.userId,
           'quizId': quiz.quizId,
           'lessonId': quiz.lessonId,
           'moduleId': quiz.moduleId,
           'courseId': quiz.courseId,
-          'score': quiz.score,
-          'maxScore': quiz.maxScore,
-          'answers': quiz.answerDetails.map((a) => a.toMap()).toList(),
+          'score': finalScore,
+          'maxScore': finalMaxScore,
+          'answers': evaluatedAnswers,
           'submittedAt': FieldValue.serverTimestamp(),
         });
 
@@ -149,17 +210,16 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           'courseId': quiz.courseId,
           'moduleId': quiz.moduleId,
           'lessonId': quiz.lessonId,
-          //'status': 'completed',
-          //'hasViewedVideo': true,
           'hasCompletedQuiz': true,
-          'quizScore': quiz.score,
-          'maxQuizScore': quiz.maxScore,
+          'quizScore': finalScore,
+          'maxQuizScore': finalMaxScore,
           'lastUpdated': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
 
+        // Limpiar los datos temporales del almacenamiento local (Hive)
         await _quizOfflineService.deleteQuizProgress(quiz.userId, quiz.quizId);
         syncedCount++;
-        debugPrint('Quiz sincronizado y eliminado del almacenamiento local: ${quiz.quizId}');
+        debugPrint('Quiz sincronizado, evaluado online y eliminado de almacenamiento local: ${quiz.quizId}');
       } catch (e) {
         debugPrint('Error al sincronizar quiz ${quiz.quizId}: $e');
       }
@@ -365,82 +425,136 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
       _isSubmitting = true;
     });
 
-    // Calcular puntaje
-    int correct = 0;
-    for (int i = 0; i < _quiz!.questions.length; i++) {
-      if (_selectedAnswers[i] == _quiz!.questions[i].correctAnswerIndex) {
-        correct++;
-      }
-    }
-
-    setState(() {
-      _score = correct;
-      _showResults = true;
-      _isSubmitting = false;
-      _submittedOffline = !_isOnline;
-    });
-
-    // Marcar lección como completada y guardar respuestas
     final auth = ref.read(authStateProvider);
     final progress = ref.read(progressStateProvider);
     final firestore = ref.read(firestoreProvider);
 
-    // Preparar detalles de respuestas
-    final List<QuizAnswerDetail> answerDetails = [];
-    for (int i = 0; i < _quiz!.questions.length; i++) {
-      final q = _quiz!.questions[i];
-      final selected = _selectedAnswers[i];
-      answerDetails.add(
-        QuizAnswerDetail(
-          questionText: q.text,
-          selectedAnswerIndex: selected,
-          selectedAnswerText: selected != null ? q.options[selected] : null,
-          correctAnswerIndex: q.correctAnswerIndex,
-          correctAnswerText: q.options[q.correctAnswerIndex],
-          isCorrect: selected == q.correctAnswerIndex,
-        ),
-      );
-    }
+    if (_isOnline) {
+      try {
+        // 4. Evaluación Online en Flutter:
+        // Obtener obligatoriamente la clave desde Firestore usando Source.server
+        final answersDoc = await firestore
+            .collection('quizAnswers')
+            .doc(_quiz!.id)
+            .get(const GetOptions(source: Source.server));
 
-    if (auth.currentUser != null) {
-      if (_isOnline) {
-        // Online: guardar directamente en Firestore
-        debugPrint('Guardando quiz completado en userProgress...');
-        await progress.markQuizCompleted(
-          userId: auth.currentUser!.uid,
-          courseId: widget.lesson.courseId,
-          moduleId: widget.lesson.moduleId,
-          lessonId: widget.lesson.id,
-          score: _score,
-          maxScore: _quiz!.questions.length,
-        );
-        debugPrint('Quiz completado guardado en userProgress exitosamente');
+        Map<String, dynamic> correctAnswersMap = {};
+        if (answersDoc.exists && answersDoc.data() != null) {
+          final data = answersDoc.data()!;
+          if (data['answers'] is Map) {
+            correctAnswersMap =
+                Map<String, dynamic>.from(data['answers'] as Map);
+          }
+        }
 
-        // Guardar respuestas detalladas en quizRespuestas
-        debugPrint('Preparando para guardar respuestas en quizRespuestas...');
-        debugPrint('Quiz ID: ${_quiz!.id}, User ID: ${auth.currentUser!.uid}, Lesson ID: ${widget.lesson.id}');
-        debugPrint('Answer details count: ${answerDetails.length}');
-        try {
-          final quizRespuestaRef = await firestore.collection('quizRespuestas').add({
+        // Evaluar efímeramente en memoria del dispositivo
+        int calculatedScore = 0;
+        final List<Map<String, dynamic>> answerDetails = [];
+        final List<QuestionEntity> evaluatedQuestions = [];
+
+        for (int i = 0; i < _quiz!.questions.length; i++) {
+          final q = _quiz!.questions[i];
+          final selected = _selectedAnswers[i];
+          final correctIndex = correctAnswersMap[q.id] as int?;
+
+          final isCorrect =
+              correctIndex != null && selected == correctIndex;
+          if (isCorrect) {
+            calculatedScore++;
+          }
+
+          answerDetails.add({
+            'questionText': q.text,
+            'selectedAnswerIndex': selected,
+            'selectedAnswerText':
+                selected != null ? q.options[selected] : null,
+            'correctAnswerIndex': correctIndex ?? -1,
+            'correctAnswerText': (correctIndex != null &&
+                    correctIndex >= 0 &&
+                    correctIndex < q.options.length)
+                ? q.options[correctIndex]
+                : '',
+            'isCorrect': isCorrect,
+          });
+
+          // Actualizar pregunta efímeramente en memoria para mostrar resultados
+          evaluatedQuestions.add(
+            q.copyWith(correctAnswerIndex: correctIndex),
+          );
+        }
+
+        if (auth.currentUser != null) {
+          // Guardar directamente en Firestore
+          await progress.markQuizCompleted(
+            userId: auth.currentUser!.uid,
+            courseId: widget.lesson.courseId,
+            moduleId: widget.lesson.moduleId,
+            lessonId: widget.lesson.id,
+            score: calculatedScore,
+            maxScore: _quiz!.questions.length,
+          );
+
+          await firestore.collection('quizRespuestas').add({
             'userId': auth.currentUser!.uid,
             'quizId': _quiz!.id,
             'lessonId': widget.lesson.id,
             'moduleId': widget.lesson.moduleId,
             'courseId': widget.lesson.courseId,
-            'score': _score,
+            'score': calculatedScore,
             'maxScore': _quiz!.questions.length,
-            'answers': answerDetails.map((a) => a.toMap()).toList(),
+            'answers': answerDetails,
             'submittedAt': FieldValue.serverTimestamp(),
           });
-          debugPrint('Respuestas del quiz guardadas exitosamente. Document ID: ${quizRespuestaRef.id}, Quiz ID: ${_quiz!.id}');
-        } catch (e) {
-          debugPrint('Error al guardar respuestas del quiz: $e');
-          debugPrint('Quiz ID: ${_quiz!.id}, Lesson ID: ${widget.lesson.id}');
-          debugPrint('Stack trace: ${StackTrace.current}');
+
+          // Limpiar datos temporales locales de Hive si existían
+          await _quizOfflineService.deleteQuizProgress(
+            auth.currentUser!.uid,
+            _quiz!.id,
+          );
         }
-      } else {
-        // Offline: guardar localmente con Hive
-        try {
+
+        if (!mounted) return;
+        setState(() {
+          _score = calculatedScore;
+          _quiz = QuizEntity(
+            id: _quiz!.id,
+            lessonId: _quiz!.lessonId,
+            courseId: _quiz!.courseId,
+            moduleId: _quiz!.moduleId,
+            questions: evaluatedQuestions,
+          );
+          _showResults = true;
+          _isSubmitting = false;
+          _submittedOffline = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Cuestionario completado. Puntaje: $calculatedScore/${_quiz!.questions.length}',
+            ),
+            backgroundColor: AppColors.successColor,
+          ),
+        );
+      } catch (e) {
+        debugPrint('Error en evaluación online: $e');
+        if (!mounted) return;
+        setState(() {
+          _isSubmitting = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al evaluar cuestionario en línea: $e'),
+            backgroundColor: AppColors.errorColor,
+          ),
+        );
+      }
+    } else {
+      // 5. Manejo Offline:
+      // Sin conexión: guardar localmente en Hive únicamente las selecciones del usuario
+      // y posponer la calificación hasta que se restablezca la red.
+      try {
+        if (auth.currentUser != null) {
           final quizProgress = QuizProgressHive(
             userId: auth.currentUser!.uid,
             quizId: _quiz!.id,
@@ -448,35 +562,47 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
             courseId: widget.lesson.courseId,
             moduleId: widget.lesson.moduleId,
             selectedAnswers: _selectedAnswers.cast<int, int>(),
-            score: _score,
+            score: null, // Pospuesto: no hay calificación offline
             maxScore: _quiz!.questions.length,
             isCompleted: true,
             submittedAt: DateTime.now(),
             needsSync: true,
-            answerDetails: answerDetails,
+            answerDetails: const [], // Sin respuestas correctas en Hive
           );
 
           await _quizOfflineService.saveQuizProgress(quizProgress);
-          debugPrint(
-            'Quiz guardado localmente para sincronización: ${_quiz!.id}',
-          );
-        } catch (e) {
-          debugPrint('Error al guardar quiz localmente: $e');
         }
+
+        if (!mounted) return;
+        setState(() {
+          _score = 0;
+          _showResults = true;
+          _isSubmitting = false;
+          _submittedOffline = true;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Respuestas guardadas sin conexión. La calificación se realizará cuando se restablezca la red.',
+            ),
+            backgroundColor: AppColors.successColor,
+          ),
+        );
+      } catch (e) {
+        debugPrint('Error al guardar quiz offline: $e');
+        if (!mounted) return;
+        setState(() {
+          _isSubmitting = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al guardar localmente: $e'),
+            backgroundColor: AppColors.errorColor,
+          ),
+        );
       }
     }
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _isOnline
-              ? 'Cuestionario completado. Puntaje: $_score/${_quiz!.questions.length}'
-              : 'Cuestionario completado (offline). Se sincronizará cuando tenga conexión. Puntaje: $_score/${_quiz!.questions.length}',
-        ),
-        backgroundColor: AppColors.successColor,
-      ),
-    );
   }
 
   @override
@@ -833,16 +959,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    'Puntaje: $_score/${_quiz!.questions.length}',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color:
-                          _score == _quiz!.questions.length
-                              ? AppColors.successColor
-                              : Colors.orange,
-                    ),
-                  ),
                   if (!_isOnline && _submittedOffline) ...[
                     const SizedBox(height: 16),
                     Container(
@@ -869,7 +985,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Cuestionario realizado en modo offline',
+                                  'Cuestionario guardado sin conexión',
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
@@ -878,7 +994,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  'Falta sincronizar con el servidor. Se enviará automáticamente cuando recuperes la conexión a internet.',
+                                  'Tus selecciones fueron guardadas localmente. La evaluación se pospone hasta restablecer la red.',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.amber.shade900,
@@ -890,30 +1006,84 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                         ],
                       ),
                     ),
+                  ] else ...[
+                    Text(
+                      'Puntaje: $_score/${_quiz!.questions.length}',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color:
+                            _score == _quiz!.questions.length
+                                ? AppColors.successColor
+                                : Colors.orange,
+                      ),
+                    ),
                   ],
                 ],
               ),
             ),
           ),
           const SizedBox(height: 24),
-          Text(
-            'Revisión de Respuestas',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          ...List.generate(_quiz!.questions.length, (index) {
-            final question = _quiz!.questions[index];
-            final selected = _selectedAnswers[index];
-            final isCorrect = selected == question.correctAnswerIndex;
-            return _ResultQuestionCard(
-              questionNumber: index + 1,
-              question: question,
-              selectedAnswer: selected,
-              isCorrect: isCorrect,
-            );
-          }),
+          if (!_submittedOffline) ...[
+            Text(
+              'Revisión de Respuestas',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            ...List.generate(_quiz!.questions.length, (index) {
+              final question = _quiz!.questions[index];
+              final selected = _selectedAnswers[index];
+              final isCorrect = question.correctAnswerIndex != null &&
+                  selected == question.correctAnswerIndex;
+              return _ResultQuestionCard(
+                questionNumber: index + 1,
+                question: question,
+                selectedAnswer: selected,
+                isCorrect: isCorrect,
+              );
+            }),
+          ] else ...[
+            Text(
+              'Tus Respuestas Seleccionadas',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Las respuestas se calificarán en el servidor al conectarte a internet.',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            ...List.generate(_quiz!.questions.length, (index) {
+              final question = _quiz!.questions[index];
+              final selected = _selectedAnswers[index];
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Pregunta ${index + 1}: ${question.text}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Tu selección: ${selected != null && selected >= 0 && selected < question.options.length ? question.options[selected] : "Sin respuesta"}',
+                        style: TextStyle(
+                          color: Theme.of(context).primaryColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ],
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,

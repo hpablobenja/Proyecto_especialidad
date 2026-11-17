@@ -93,6 +93,67 @@ class QuizSyncService {
 
     for (final quiz in pendingQuizzes) {
       try {
+        // Obtener la clave obligatoriamente desde el servidor (Source.server)
+        final answersDoc = await _firestore
+            .collection('quizAnswers')
+            .doc(quiz.quizId)
+            .get(const GetOptions(source: Source.server));
+
+        Map<String, dynamic> correctAnswersMap = {};
+        if (answersDoc.exists && answersDoc.data() != null) {
+          final data = answersDoc.data()!;
+          if (data['answers'] is Map) {
+            correctAnswersMap = Map<String, dynamic>.from(data['answers'] as Map);
+          }
+        }
+
+        // Obtener preguntas del quiz para relacionar y calificar efímeramente
+        final quizDoc = await _firestore
+            .collection('quizzes')
+            .doc(quiz.quizId)
+            .get(const GetOptions(source: Source.server));
+
+        final questionsData =
+            (quizDoc.data()?['questions'] as List? ?? []);
+
+        int calculatedScore = 0;
+        final List<Map<String, dynamic>> evaluatedAnswers = [];
+
+        for (int i = 0; i < questionsData.length; i++) {
+          final qMap = questionsData[i] as Map<String, dynamic>;
+          final qId = qMap['id'] as String? ?? '';
+          final qText = qMap['text'] as String? ?? '';
+          final options = List<String>.from(qMap['options'] as List? ?? []);
+          final selected = quiz.selectedAnswers[i];
+          final correctIndex = correctAnswersMap[qId] as int?;
+
+          final isCorrect = correctIndex != null && selected == correctIndex;
+          if (isCorrect) {
+            calculatedScore++;
+          }
+
+          evaluatedAnswers.add({
+            'questionText': qText,
+            'selectedAnswerIndex': selected,
+            'selectedAnswerText':
+                (selected != null && selected >= 0 && selected < options.length)
+                    ? options[selected]
+                    : null,
+            'correctAnswerIndex': correctIndex ?? -1,
+            'correctAnswerText': (correctIndex != null &&
+                    correctIndex >= 0 &&
+                    correctIndex < options.length)
+                ? options[correctIndex]
+                : '',
+            'isCorrect': isCorrect,
+          });
+        }
+
+        final finalScore =
+            questionsData.isNotEmpty ? calculatedScore : (quiz.score ?? 0);
+        final finalMaxScore =
+            questionsData.isNotEmpty ? questionsData.length : quiz.maxScore;
+
         // Guardar respuestas en quizRespuestas
         final quizRespuestaRef = await _firestore.collection('quizRespuestas').add({
           'userId': quiz.userId,
@@ -100,9 +161,9 @@ class QuizSyncService {
           'lessonId': quiz.lessonId,
           'moduleId': quiz.moduleId,
           'courseId': quiz.courseId,
-          'score': quiz.score,
-          'maxScore': quiz.maxScore,
-          'answers': quiz.answerDetails.map((a) => a.toMap()).toList(),
+          'score': finalScore,
+          'maxScore': finalMaxScore,
+          'answers': evaluatedAnswers,
           'submittedAt': FieldValue.serverTimestamp(),
         });
         debugPrint('QuizSyncService: Respuestas guardadas en quizRespuestas. Document ID: ${quizRespuestaRef.id}, Quiz ID: ${quiz.quizId}');
@@ -116,15 +177,15 @@ class QuizSyncService {
           'moduleId': quiz.moduleId,
           'lessonId': quiz.lessonId,
           'hasCompletedQuiz': true,
-          'quizScore': quiz.score,
-          'maxQuizScore': quiz.maxScore,
+          'quizScore': finalScore,
+          'maxQuizScore': finalMaxScore,
           'lastUpdated': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
 
-        // Eliminar el quiz local después de sincronizar exitosamente
+        // Limpiar los datos temporales del almacenamiento local (Hive)
         await _quizOfflineService.deleteQuizProgress(quiz.userId, quiz.quizId);
         syncedCount++;
-        debugPrint('QuizSyncService: Quiz synced and removed from local storage: ${quiz.quizId}');
+        debugPrint('QuizSyncService: Quiz sincronizado, evaluado online y eliminado de Hive: ${quiz.quizId}');
       } catch (e) {
         debugPrint('QuizSyncService: Error syncing quiz ${quiz.quizId}: $e');
       }

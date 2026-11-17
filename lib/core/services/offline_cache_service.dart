@@ -133,14 +133,17 @@ class OfflineCacheService {
     }
   }
 
-  // Cache quiz questions for a lesson
+  // Cache quiz questions for a lesson (NUNCA almacena correctAnswerIndex)
   Future<void> cacheQuizQuestions(
     String lessonId,
     List<QuestionEntity> questions,
   ) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final questionsJson = questions.map((q) => q.toMap()).toList();
+      // Asegurarse de que toMap no incluya respuestas correctas
+      final questionsJson = questions
+          .map((q) => q.toMap(includeCorrectAnswer: false))
+          .toList();
       await prefs.setString(
         '${_quizQuestionsKey}_$lessonId',
         jsonEncode(questionsJson),

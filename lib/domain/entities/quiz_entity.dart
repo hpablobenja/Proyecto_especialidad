@@ -22,13 +22,29 @@ class QuizEntity extends Equatable {
   @override
   List<Object?> get props => [id, lessonId, courseId, moduleId, questions];
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toMap({bool includeCorrectAnswers = false}) {
     return {
       'id': id,
       'lessonId': lessonId,
       'courseId': courseId,
       'moduleId': moduleId,
-      'questions': questions.map((q) => q.toMap()).toList(),
+      'questions': questions
+          .map((q) => q.toMap(includeCorrectAnswer: includeCorrectAnswers))
+          .toList(),
+    };
+  }
+
+  /// Genera el mapa para la colección separada 'quizAnswers'
+  Map<String, dynamic> toAnswersMap() {
+    return {
+      'quizId': id,
+      'lessonId': lessonId,
+      'courseId': courseId,
+      'moduleId': moduleId,
+      'answers': {
+        for (final q in questions)
+          if (q.correctAnswerIndex != null) q.id: q.correctAnswerIndex,
+      },
     };
   }
 

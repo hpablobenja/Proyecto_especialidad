@@ -1630,6 +1630,7 @@ class _CourseManagementScreenState
               (questionsByQuiz.length == 1 ? questionsByQuiz.values.first : <QuestionImportModel>[]);
 
           final questionsEntities = <Map<String, dynamic>>[];
+          final quizAnswersMap = <String, int>{};
 
           for (final qModel in quizQuestionsModels) {
             final qKey = qModel.id.trim().toLowerCase();
@@ -1648,18 +1649,24 @@ class _CourseManagementScreenState
               options.addAll(['Opción A', 'Opción B', 'Opción C']);
             }
 
+            final questionId = qModel.id.isNotEmpty
+                ? qModel.id
+                : DateTime.now().millisecondsSinceEpoch.toString();
+
             questionsEntities.add({
-              'id': qModel.id.isNotEmpty ? qModel.id : DateTime.now().millisecondsSinceEpoch.toString(),
+              'id': questionId,
               'text': qModel.text.trim(),
               'options': options,
-              'correctAnswerIndex': correctIndex,
             });
+
+            quizAnswersMap[questionId] = correctIndex;
           }
 
-          // Guardar en la colección raíz 'quizzes'
-          // Estructura requerida por QuizEntity y por firestore.rules
+          // Guardar en la colección raíz 'quizzes' SIN correctAnswerIndex
           final quizDocRef = firestore.collection('quizzes').doc();
-          await quizDocRef.set({
+          final batch = firestore.batch();
+
+          batch.set(quizDocRef, {
             'id': quizDocRef.id,
             'lessonId': realLessonId,
             'courseId': quizCourseId,
@@ -1668,6 +1675,19 @@ class _CourseManagementScreenState
             'questions': questionsEntities,
             'createdAt': FieldValue.serverTimestamp(),
           });
+
+          // Guardar en la colección raíz 'quizAnswers'
+          final quizAnswerDocRef = firestore.collection('quizAnswers').doc(quizDocRef.id);
+          batch.set(quizAnswerDocRef, {
+            'quizId': quizDocRef.id,
+            'lessonId': realLessonId,
+            'courseId': quizCourseId,
+            'moduleId': quizModuleId,
+            'answers': quizAnswersMap,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+
+          await batch.commit();
           importedQuizzesCount++;
         }
       }

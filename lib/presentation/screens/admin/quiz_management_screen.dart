@@ -47,17 +47,39 @@ class _QuizManagementScreenState extends ConsumerState<QuizManagementScreen> {
               .get();
 
       if (quizDoc.docs.isNotEmpty) {
+        final quizId = quizDoc.docs.first.id;
         final quizData = quizDoc.docs.first.data();
         final questionsData = quizData['questions'] as List? ?? [];
 
+        // Cargar respuestas correctas desde 'quizAnswers'
+        Map<String, dynamic> answersMap = {};
+        try {
+          final answersDoc =
+              await firestore.collection('quizAnswers').doc(quizId).get();
+          if (answersDoc.exists && answersDoc.data() != null) {
+            final data = answersDoc.data()!;
+            if (data['answers'] is Map) {
+              answersMap = Map<String, dynamic>.from(data['answers'] as Map);
+            }
+          }
+        } catch (e) {
+          debugPrint('Error al cargar quizAnswers: $e');
+        }
+
         final questions =
-            questionsData
-                .map((q) => QuestionEntity.fromMap(q as Map<String, dynamic>))
-                .toList();
+            questionsData.map((q) {
+              final map = Map<String, dynamic>.from(q as Map<String, dynamic>);
+              final qId = map['id'] as String? ?? '';
+              // Si la respuesta correcta está en quizAnswers, usarla
+              if (answersMap.containsKey(qId)) {
+                map['correctAnswerIndex'] = answersMap[qId];
+              }
+              return QuestionEntity.fromMap(map);
+            }).toList();
 
         setState(() {
           _quiz = QuizEntity(
-            id: quizDoc.docs.first.id,
+            id: quizId,
             lessonId: widget.lesson.id,
             courseId: widget.lesson.courseId,
             moduleId: widget.lesson.moduleId,
@@ -79,9 +101,17 @@ class _QuizManagementScreenState extends ConsumerState<QuizManagementScreen> {
   Future<void> _saveQuiz(QuizEntity quiz) async {
     try {
       final firestore = ref.read(firestoreProvider);
-      final quizRef = firestore.collection('quizzes').doc(quiz.id);
+      final batch = firestore.batch();
 
-      await quizRef.set(quiz.toMap());
+      // Guardar el quiz SIN respuestas correctas en 'quizzes'
+      final quizRef = firestore.collection('quizzes').doc(quiz.id);
+      batch.set(quizRef, quiz.toMap(includeCorrectAnswers: false));
+
+      // Guardar las respuestas correctas en la colección separada 'quizAnswers'
+      final answersRef = firestore.collection('quizAnswers').doc(quiz.id);
+      batch.set(answersRef, quiz.toAnswersMap());
+
+      await batch.commit();
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -131,7 +161,10 @@ class _QuizManagementScreenState extends ConsumerState<QuizManagementScreen> {
 
     try {
       final firestore = ref.read(firestoreProvider);
-      await firestore.collection('quizzes').doc(_quiz!.id).delete();
+      final batch = firestore.batch();
+      batch.delete(firestore.collection('quizzes').doc(_quiz!.id));
+      batch.delete(firestore.collection('quizAnswers').doc(_quiz!.id));
+      await batch.commit();
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

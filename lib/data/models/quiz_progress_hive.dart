@@ -4,8 +4,9 @@ import 'package:hive/hive.dart';
 
 part 'quiz_progress_hive.g.dart';
 
-/// Modelo Hive para persistencia local de progreso de quiz
-/// Permite responder cuestionarios en modo offline y sincronizar después
+/// Modelo Hive para persistencia local de progreso de quiz offline
+/// Guarda ÚNICAMENTE las preguntas/opciones y las respuestas temporales del usuario.
+/// NUNCA almacena respuestas correctas (quizAnswers).
 @HiveType(typeId: 4)
 class QuizProgressHive {
   @HiveField(0)
@@ -56,14 +57,14 @@ class QuizProgressHive {
     required this.isCompleted,
     required this.submittedAt,
     required this.needsSync,
-    required this.answerDetails,
+    this.answerDetails = const [],
   });
 
   /// Genera una clave única para este progreso de quiz
   String get key => '${userId}_$quizId';
 }
 
-/// Detalle de cada respuesta del quiz
+/// Detalle temporal de cada respuesta del usuario (sin respuestas correctas persistidas)
 @HiveType(typeId: 5)
 class QuizAnswerDetail {
   @HiveField(0)
@@ -76,7 +77,7 @@ class QuizAnswerDetail {
   String? selectedAnswerText;
 
   @HiveField(3)
-  int correctAnswerIndex;
+  int correctAnswerIndex; // Mantener default para compatibilidad con adaptador existente
 
   @HiveField(4)
   String correctAnswerText;
@@ -88,9 +89,9 @@ class QuizAnswerDetail {
     required this.questionText,
     this.selectedAnswerIndex,
     this.selectedAnswerText,
-    required this.correctAnswerIndex,
-    required this.correctAnswerText,
-    required this.isCorrect,
+    this.correctAnswerIndex = -1,
+    this.correctAnswerText = '',
+    this.isCorrect = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -109,9 +110,9 @@ class QuizAnswerDetail {
       questionText: map['questionText'] as String,
       selectedAnswerIndex: map['selectedAnswerIndex'] as int?,
       selectedAnswerText: map['selectedAnswerText'] as String?,
-      correctAnswerIndex: map['correctAnswerIndex'] as int,
-      correctAnswerText: map['correctAnswerText'] as String,
-      isCorrect: map['isCorrect'] as bool,
+      correctAnswerIndex: (map['correctAnswerIndex'] as int?) ?? -1,
+      correctAnswerText: (map['correctAnswerText'] as String?) ?? '',
+      isCorrect: (map['isCorrect'] as bool?) ?? false,
     );
   }
 }
