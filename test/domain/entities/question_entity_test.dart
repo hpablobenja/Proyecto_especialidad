@@ -68,7 +68,7 @@ void main() {
         correctAnswerIndex: 0,
       );
 
-      final map = question.toMap();
+      final map = question.toMap(includeCorrectAnswer: true);
 
       expect(map['id'], 'question_1');
       expect(map['text'], 'What is Flutter?');
@@ -100,7 +100,7 @@ void main() {
         correctAnswerIndex: 0,
       );
 
-      final map = original.toMap();
+      final map = original.toMap(includeCorrectAnswer: true);
       final recreated = QuestionEntity.fromMap(map);
 
       expect(recreated.id, original.id);
