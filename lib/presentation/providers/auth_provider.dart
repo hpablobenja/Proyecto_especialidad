@@ -15,6 +15,9 @@ import '../../domain/usecases/usecase.dart';
 import '../../core/services/session_tracking_service.dart';
 import '../../core/services/dashboard_sync_service.dart';
 import '../../core/services/quiz_sync_service.dart';
+import '../../core/services/video_download_service.dart';
+import '../../core/services/local_data_clear_service.dart';
+import '../../core/services/crashlytics_service.dart';
 import '../../data/datasources/local/video_tracking_hive_datasource.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -33,9 +36,15 @@ class AuthProvider extends ChangeNotifier {
     VideoTrackingHiveDataSource? videoTrackingDataSource,
     DashboardSyncService? dashboardSyncService,
     QuizSyncService? quizSyncService,
+    VideoDownloadService? videoDownloadService,
+    LocalDataClearService? localDataClearService,
+    CrashlyticsService? crashlyticsService,
   })  : _videoTrackingDataSource = videoTrackingDataSource,
         _dashboardSyncService = dashboardSyncService,
-        _quizSyncService = quizSyncService {
+        _quizSyncService = quizSyncService,
+        _videoDownloadService = videoDownloadService,
+        _localDataClearService = localDataClearService,
+        _crashlyticsService = crashlyticsService ?? CrashlyticsService.instance {
     checkCurrentUser();
   }
 
@@ -47,6 +56,11 @@ class AuthProvider extends ChangeNotifier {
   final VideoTrackingHiveDataSource? _videoTrackingDataSource;
   final DashboardSyncService? _dashboardSyncService;
   final QuizSyncService? _quizSyncService;
+  final VideoDownloadService? _videoDownloadService;
+  final LocalDataClearService? _localDataClearService;
+  final CrashlyticsService _crashlyticsService;
+
+  String? _previousUserId;
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -62,6 +76,11 @@ class AuthProvider extends ChangeNotifier {
       _currentUser = await loginUsecase.call(
         LoginParams(email: email, password: password),
       );
+
+      // Limpiar datos del usuario anterior si existe y es diferente
+      if (_previousUserId != null && _previousUserId != _currentUser!.uid) {
+        await _localDataClearService?.clearUserData(_previousUserId!);
+      }
 
       // Cache credentials for offline login (last 2 users)
       await _cacheUserCredentials(email, password, _currentUser!);
@@ -82,6 +101,23 @@ class AuthProvider extends ChangeNotifier {
       // Establecer usuario en el servicio de sincronización de quizzes
       _quizSyncService?.setCurrentUser(_currentUser!.uid);
 
+      // Establecer usuario en el servicio de descarga de videos
+      _videoDownloadService?.setCurrentUser(_currentUser!.uid);
+
+      _previousUserId = _currentUser!.uid;
+
+      // Registrar contexto de usuario en Crashlytics
+      await _crashlyticsService.setUserContext(
+        userId: _currentUser!.uid,
+        role: _currentUser!.role,
+      );
+      await _crashlyticsService.logAuthEvent(
+        'LOGIN_SUCCESS',
+        email: email,
+        uid: _currentUser!.uid,
+        role: _currentUser!.role,
+      );
+
       _isLoading = false;
       notifyListeners();
       return true;
@@ -89,6 +125,11 @@ class AuthProvider extends ChangeNotifier {
       // Try offline login if online login fails
       final offlineUser = await _tryOfflineLogin(email, password);
       if (offlineUser != null) {
+        // Limpiar datos del usuario anterior si existe y es diferente
+        if (_previousUserId != null && _previousUserId != offlineUser.uid) {
+          await _localDataClearService?.clearUserData(_previousUserId!);
+        }
+
         _currentUser = offlineUser;
         _errorMessage = null;
 
@@ -100,6 +141,23 @@ class AuthProvider extends ChangeNotifier {
         // Establecer usuario en el servicio de sincronización de quizzes
         _quizSyncService?.setCurrentUser(_currentUser!.uid);
 
+        // Establecer usuario en el servicio de descarga de videos
+        _videoDownloadService?.setCurrentUser(_currentUser!.uid);
+
+        _previousUserId = _currentUser!.uid;
+
+        // Registrar contexto en Crashlytics (modo offline)
+        await _crashlyticsService.setUserContext(
+          userId: _currentUser!.uid,
+          role: _currentUser!.role,
+        );
+        await _crashlyticsService.logAuthEvent(
+          'OFFLINE_LOGIN_SUCCESS',
+          email: email,
+          uid: _currentUser!.uid,
+          role: _currentUser!.role,
+        );
+
         _isLoading = false;
         notifyListeners();
         return true;
@@ -110,6 +168,18 @@ class AuthProvider extends ChangeNotifier {
         errorMsg = errorMsg.replaceFirst('Exception: ', '');
       }
       _errorMessage = errorMsg;
+
+      await _crashlyticsService.logAuthEvent(
+        'LOGIN_FAILED',
+        email: email,
+        extra: errorMsg,
+      );
+      await _crashlyticsService.recordError(
+        e,
+        StackTrace.current,
+        reason: 'Error al iniciar sesión con email: $email',
+      );
+
       _isLoading = false;
       notifyListeners();
       return false;
@@ -218,6 +288,18 @@ class AuthProvider extends ChangeNotifier {
         errorMsg = errorMsg.replaceFirst('Exception: ', '');
       }
       _errorMessage = errorMsg;
+
+      await _crashlyticsService.logAuthEvent(
+        'REGISTER_FAILED',
+        email: email,
+        extra: errorMsg,
+      );
+      await _crashlyticsService.recordError(
+        e,
+        StackTrace.current,
+        reason: 'Error en registro de usuario con email: $email',
+      );
+
       _isLoading = false;
       notifyListeners();
       return false;
@@ -229,7 +311,24 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
     _currentUser = await getCurrentUserUsecase.call(NoParams());
     if (_currentUser != null) {
+      // Limpiar datos del usuario anterior si existe y es diferente
+      if (_previousUserId != null && _previousUserId != _currentUser!.uid) {
+        await _localDataClearService?.clearUserData(_previousUserId!);
+      }
+
       _quizSyncService?.setCurrentUser(_currentUser!.uid);
+      _videoDownloadService?.setCurrentUser(_currentUser!.uid);
+      _previousUserId = _currentUser!.uid;
+
+      await _crashlyticsService.setUserContext(
+        userId: _currentUser!.uid,
+        role: _currentUser!.role,
+      );
+      await _crashlyticsService.logAuthEvent(
+        'SESSION_RESTORED',
+        uid: _currentUser!.uid,
+        role: _currentUser!.role,
+      );
     }
     _isLoading = false;
     notifyListeners();
@@ -262,8 +361,19 @@ class AuthProvider extends ChangeNotifier {
 
       // Limpiar usuario del servicio de sincronización de quizzes
       _quizSyncService?.clearUser();
+
+      // Limpiar usuario del servicio de descarga de videos
+      _videoDownloadService?.clearUser();
+
+      await _crashlyticsService.logAuthEvent('SIGNOUT', uid: _currentUser?.uid);
+      await _crashlyticsService.setUserId(null);
     } catch (e) {
       _errorMessage = 'Error al cerrar sesión: ${e.toString()}';
+      await _crashlyticsService.recordError(
+        e,
+        StackTrace.current,
+        reason: 'Error durante signOut',
+      );
     } finally {
       _currentUser = null;
       _isLoading = false;
@@ -292,6 +402,18 @@ class AuthProvider extends ChangeNotifier {
         errorMsg = errorMsg.replaceFirst('Exception: ', '');
       }
       _errorMessage = errorMsg;
+
+      await _crashlyticsService.logAuthEvent(
+        'RESET_PASSWORD_FAILED',
+        email: email,
+        extra: errorMsg,
+      );
+      await _crashlyticsService.recordError(
+        e,
+        StackTrace.current,
+        reason: 'Error al solicitar restablecimiento de contraseña para $email',
+      );
+
       _isLoading = false;
       notifyListeners();
       return false;
@@ -331,6 +453,13 @@ class AuthProvider extends ChangeNotifier {
         errorMsg = errorMsg.replaceFirst('Exception: ', '');
       }
       _errorMessage = errorMsg;
+
+      await _crashlyticsService.recordError(
+        e,
+        StackTrace.current,
+        reason: 'Error al actualizar perfil del usuario ${_currentUser?.uid}',
+      );
+
       _isLoading = false;
       notifyListeners();
       return false;

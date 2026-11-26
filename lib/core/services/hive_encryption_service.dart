@@ -7,15 +7,23 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+import 'crashlytics_service.dart';
+
 /// Abre cajas Hive cifradas con AES-256 ([HiveAesCipher]).
 ///
 /// La clave de 32 bytes se genera una vez y se guarda en el almacenamiento
 /// seguro del dispositivo. Si la caja ya existía sin cifrar, se copia y se
 /// vuelve a guardar cifrada.
 class HiveEncryptionService {
-  HiveEncryptionService._();
+  HiveEncryptionService._({CrashlyticsService? crashlyticsService})
+      : _crashlyticsService = crashlyticsService ?? CrashlyticsService.instance;
 
   static final HiveEncryptionService instance = HiveEncryptionService._();
+
+  /// Constructor para testing que permite inyectar CrashlyticsService mock
+  factory HiveEncryptionService.forTesting({CrashlyticsService? crashlyticsService}) {
+    return HiveEncryptionService._(crashlyticsService: crashlyticsService);
+  }
 
   static const String encryptionKeyName = 'hive_aes256_key';
   static const String _migratedPrefix = 'hive_aes256_migrated_';
@@ -33,6 +41,7 @@ class HiveEncryptionService {
   static const String quizResultsBox = 'quiz_progress';
 
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final CrashlyticsService _crashlyticsService;
 
   HiveAesCipher? _cipher;
   Future<HiveAesCipher>? _pendingCipher;
@@ -72,9 +81,19 @@ class HiveEncryptionService {
 
       final cipher = HiveAesCipher(key);
       _cipher = cipher;
+      _crashlyticsService.logStorageEvent(
+        'INIT_CIPHER',
+        boxOrKey: encryptionKeyName,
+        details: 'Clave AES-256 cargada exitosamente',
+      );
       return cipher;
-    } catch (error) {
+    } catch (error, stack) {
       _pendingCipher = null;
+      _crashlyticsService.recordError(
+        error,
+        stack,
+        reason: 'Error cargando clave AES-256 de almacenamiento local Hive',
+      );
       rethrow;
     }
   }
@@ -103,6 +122,11 @@ class HiveEncryptionService {
     if (!migrated) {
       await _storage.write(key: migratedKey, value: '1');
     }
+    _crashlyticsService.logStorageEvent(
+      'OPEN_BOX_SUCCESS',
+      boxOrKey: name,
+      details: 'Caja abierta con cifrado AES-256',
+    );
     return box;
   }
 

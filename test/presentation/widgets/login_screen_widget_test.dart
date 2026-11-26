@@ -8,6 +8,7 @@ import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:redmaestra1/core/di/riverpod_providers.dart';
+import 'package:redmaestra1/core/services/crashlytics_service.dart';
 import 'package:redmaestra1/presentation/providers/auth_provider.dart';
 import 'package:redmaestra1/presentation/screens/auth/login_screen.dart';
 import 'package:redmaestra1/domain/entities/user_entity.dart';
@@ -27,6 +28,7 @@ void main() {
     late MockGetCurrentUserUsecase mockGetCurrentUserUsecase;
     late MockUpdateUserUsecase mockUpdateUserUsecase;
     late MockResetPasswordUsecase mockResetPasswordUsecase;
+    late MockCrashlyticsService mockCrashlyticsService;
     late AuthProvider authProvider;
 
     setUp(() {
@@ -38,6 +40,7 @@ void main() {
       mockGetCurrentUserUsecase = MockGetCurrentUserUsecase();
       mockUpdateUserUsecase = MockUpdateUserUsecase();
       mockResetPasswordUsecase = MockResetPasswordUsecase();
+      mockCrashlyticsService = MockCrashlyticsService();
 
       when(mockGetCurrentUserUsecase.call(any)).thenAnswer((_) async => null);
 
@@ -50,6 +53,7 @@ void main() {
         videoTrackingDataSource: null,
         dashboardSyncService: null,
         quizSyncService: null,
+        crashlyticsService: mockCrashlyticsService,
       );
     });
 

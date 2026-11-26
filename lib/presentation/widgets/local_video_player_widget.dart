@@ -3,6 +3,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import '../../core/services/performance_service.dart';
 
 class LocalVideoPlayerWidget extends StatefulWidget {
   final String filePath;
@@ -39,7 +40,16 @@ class _LocalVideoPlayerWidgetState extends State<LocalVideoPlayerWidget> {
   Future<void> _initPlayer() async {
     _controller = VideoPlayerController.file(File(widget.filePath));
     try {
-      await _controller.initialize();
+      await PerformanceService.instance.trackLoadLocalVideo(
+        videoPath: widget.filePath,
+        operation: (trace) async {
+          await _controller.initialize();
+          trace.setMetric(
+            'video_duration_seconds',
+            _controller.value.duration.inSeconds,
+          );
+        },
+      );
       if (!mounted) return;
 
       if (widget.initialPosition > Duration.zero) {

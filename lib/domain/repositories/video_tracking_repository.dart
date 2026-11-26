@@ -37,20 +37,26 @@ abstract class VideoTrackingRepository {
 /// Repositorio para checkpoints
 abstract class CheckpointRepository {
   /// Guarda o actualiza un checkpoint
-  Future<void> saveCheckpoint(CheckpointEntity checkpoint);
+  Future<void> saveCheckpoint(CheckpointEntity checkpoint, String userId);
 
   /// Obtiene un checkpoint por ID
-  Future<CheckpointEntity?> getCheckpoint(String checkpointId);
+  Future<CheckpointEntity?> getCheckpoint(String checkpointId, String userId);
 
   /// Obtiene todos los checkpoints de una lección
-  Future<List<CheckpointEntity>> getLessonCheckpoints(String lessonId);
+  Future<List<CheckpointEntity>> getLessonCheckpoints(String lessonId, String userId);
 
   /// Marca checkpoint como aprobado
-  Future<void> markCheckpointPassed(String checkpointId);
+  Future<void> markCheckpointPassed(String checkpointId, String userId);
 
   /// Incrementa intentos de checkpoint
-  Future<void> incrementCheckpointAttempts(String checkpointId);
+  Future<void> incrementCheckpointAttempts(String checkpointId, String userId);
 
   /// Obtiene checkpoints aprobados de una lección
-  Future<List<CheckpointEntity>> getPassedCheckpoints(String lessonId);
+  Future<List<CheckpointEntity>> getPassedCheckpoints(String lessonId, String userId);
+
+  /// Obtiene checkpoints fallados de una lección
+  Future<List<CheckpointEntity>> getFailedCheckpoints(String lessonId, String userId);
+
+  /// Elimina todos los checkpoints de un usuario
+  Future<void> clearUserCheckpoints(String userId);
 }

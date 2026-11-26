@@ -8,6 +8,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import '../../data/models/downloaded_video_hive.dart';
+import 'crashlytics_service.dart';
 
 class VideoDownloadService {
   static const String boxName = 'downloadedVideos';
@@ -23,13 +24,34 @@ class VideoDownloadService {
   VideoDownloadService._internal();
 
   bool _isInitialized = false;
+  String? _currentUserId;
+
+  /// Establece el usuario actual para separar datos por usuario
+  void setCurrentUser(String userId) {
+    _currentUserId = userId;
+    debugPrint('VideoDownloadService: User set to $userId');
+  }
+
+  /// Limpia el usuario actual (logout)
+  void clearUser() {
+    _currentUserId = null;
+    debugPrint('VideoDownloadService: User cleared');
+  }
 
   Future<void> init() async {
     if (_isInitialized) return;
 
     try {
+      // Primero intentar abrir con crashRecovery para manejar datos corruptos
       if (!Hive.isBoxOpen(boxName)) {
-        await Hive.openBox<DownloadedVideoHive>(boxName);
+        try {
+          await Hive.openBox<DownloadedVideoHive>(boxName, crashRecovery: true);
+        } catch (e) {
+          debugPrint('VideoDownloadService: Error opening box with crashRecovery: $e');
+          // Si falla, limpiar la caja y reintentar
+          await Hive.deleteBoxFromDisk(boxName);
+          await Hive.openBox<DownloadedVideoHive>(boxName);
+        }
       }
 
       _fileDownloader.registerCallbacks(
@@ -54,8 +76,15 @@ class VideoDownloadService {
       await Hive.openBox<DownloadedVideoHive>(boxName);
     }
     final box = Hive.box<DownloadedVideoHive>(boxName);
-    final videoId = update.task.taskId;
-    final item = box.get(videoId);
+    final taskId = update.task.taskId;
+    DownloadedVideoHive? item = box.get(taskId);
+    if (item == null) {
+      final matches =
+          box.values.where((candidate) => candidate.videoId == taskId).toList();
+      if (matches.isNotEmpty) {
+        item = matches.first;
+      }
+    }
 
     if (item != null) {
       switch (update.status) {
@@ -99,8 +128,13 @@ class VideoDownloadService {
         return bestMuxed.url.toString();
       }
       return null;
-    } catch (e) {
+    } catch (e, stack) {
       debugPrint('Error resolviendo stream de YouTube: $e');
+      CrashlyticsService.instance.recordError(
+        e,
+        stack,
+        reason: 'Error resolviendo stream de YouTube para $urlOrId',
+      );
       return null;
     } finally {
       yt.close();
@@ -113,6 +147,11 @@ class VideoDownloadService {
     required String downloadUrl,
     int totalDurationSeconds = 0,
   }) async {
+    if (_currentUserId == null) {
+      debugPrint('VideoDownloadService: No user set, cannot download');
+      return;
+    }
+
     await init();
     final box = Hive.box<DownloadedVideoHive>(boxName);
     final dir = await getApplicationDocumentsDirectory();
@@ -124,7 +163,9 @@ class VideoDownloadService {
       await videosDir.create(recursive: true);
     }
 
+    final key = '${_currentUserId}_$videoId';
     final entity = DownloadedVideoHive(
+      userId: _currentUserId!,
       videoId: videoId,
       courseId: courseId,
       localPath: fullPath,
@@ -133,7 +174,7 @@ class VideoDownloadService {
       fileSize: 0,
       totalSeconds: totalDurationSeconds,
     );
-    await box.put(videoId, entity);
+    await box.put(key, entity);
 
     // Obtener la URL directa de streaming (si es YouTube) o usar la URL directa
     String directDownloadUrl = downloadUrl;
@@ -154,7 +195,7 @@ class VideoDownloadService {
     }
 
     final task = DownloadTask(
-      taskId: videoId,
+      taskId: key, // Usar key con userId como taskId
       url: directDownloadUrl,
       filename: filename,
       directory: 'videos',
@@ -165,6 +206,11 @@ class VideoDownloadService {
     );
 
     await _fileDownloader.enqueue(task);
+    CrashlyticsService.instance.logDownloadEvent(
+      'DOWNLOAD_ENQUEUED',
+      resourceId: videoId,
+      details: 'courseId: $courseId, user: $_currentUserId',
+    );
   }
 
   Future<void> pauseDownload(String videoId) async {
@@ -190,11 +236,14 @@ class VideoDownloadService {
   }
 
   Future<void> deleteLocalVideo(String videoId) async {
+    if (_currentUserId == null) return;
+    
     if (!Hive.isBoxOpen(boxName)) {
       await Hive.openBox<DownloadedVideoHive>(boxName);
     }
     final box = Hive.box<DownloadedVideoHive>(boxName);
-    final item = box.get(videoId);
+    final key = '${_currentUserId}_$videoId';
+    final item = box.get(key);
     if (item != null) {
       final file = File(item.localPath);
       if (await file.exists()) {
@@ -204,14 +253,17 @@ class VideoDownloadService {
           debugPrint('Error deleting file: $e');
         }
       }
-      await box.delete(videoId);
+      await box.delete(key);
     }
   }
 
   DownloadedVideoHive? getDownloadedVideo(String videoId) {
+    if (_currentUserId == null) return null;
+    
     if (!Hive.isBoxOpen(boxName)) return null;
     final box = Hive.box<DownloadedVideoHive>(boxName);
-    final item = box.get(videoId);
+    final key = '${_currentUserId}_$videoId';
+    final item = box.get(key);
     if (item != null && item.isCompleted && File(item.localPath).existsSync()) {
       return item;
     }
@@ -224,11 +276,14 @@ class VideoDownloadService {
     required int totalSeconds,
     bool pendingSync = true,
   }) async {
+    if (_currentUserId == null) return;
+    
     if (!Hive.isBoxOpen(boxName)) {
       await Hive.openBox<DownloadedVideoHive>(boxName);
     }
     final box = Hive.box<DownloadedVideoHive>(boxName);
-    final item = box.get(videoId);
+    final key = '${_currentUserId}_$videoId';
+    final item = box.get(key);
     if (item != null) {
       item.watchedSeconds = watchedSeconds;
       if (totalSeconds > 0) {
@@ -237,6 +292,68 @@ class VideoDownloadService {
       item.pendingSync = pendingSync;
       await item.save();
     }
+  }
+
+  Future<void> clearAllDownloadedVideos() async {
+    if (_currentUserId == null) return;
+    
+    if (!Hive.isBoxOpen(boxName)) {
+      await Hive.openBox<DownloadedVideoHive>(boxName);
+    }
+    final box = Hive.box<DownloadedVideoHive>(boxName);
+    
+    // Solo eliminar videos del usuario actual
+    final keysToDelete = box.keys.where((key) {
+      final item = box.get(key);
+      return item?.userId == _currentUserId;
+    }).toList();
+
+    for (final key in keysToDelete) {
+      final item = box.get(key);
+      if (item != null) {
+        final file = File(item.localPath);
+        if (await file.exists()) {
+          try {
+            await file.delete();
+          } catch (e) {
+            debugPrint('Error deleting file: $e');
+          }
+        }
+        await box.delete(key);
+      }
+    }
+
+    debugPrint('✓ ${keysToDelete.length} videos descargados borrados para usuario $_currentUserId');
+  }
+
+  /// Elimina todos los datos de un usuario específico
+  Future<void> clearUserData(String userId) async {
+    if (!Hive.isBoxOpen(boxName)) {
+      await Hive.openBox<DownloadedVideoHive>(boxName);
+    }
+    final box = Hive.box<DownloadedVideoHive>(boxName);
+    
+    final keysToDelete = box.keys.where((key) {
+      final item = box.get(key);
+      return item?.userId == userId;
+    }).toList();
+
+    for (final key in keysToDelete) {
+      final item = box.get(key);
+      if (item != null) {
+        final file = File(item.localPath);
+        if (await file.exists()) {
+          try {
+            await file.delete();
+          } catch (e) {
+            debugPrint('Error deleting file: $e');
+          }
+        }
+        await box.delete(key);
+      }
+    }
+
+    debugPrint('✓ ${keysToDelete.length} videos descargados borrados para usuario $userId');
   }
 
   void dispose() {

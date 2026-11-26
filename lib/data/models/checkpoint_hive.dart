@@ -8,36 +8,40 @@ part 'checkpoint_hive.g.dart';
 @HiveType(typeId: 2)
 class CheckpointHive {
   @HiveField(0)
-  String checkpointId;
+  String userId;
 
   @HiveField(1)
-  String lessonId;
+  String checkpointId;
 
   @HiveField(2)
-  int triggerPositionSeconds;
+  String lessonId;
 
   @HiveField(3)
-  String question;
+  int triggerPositionSeconds;
 
   @HiveField(4)
-  List<String> options;
+  String question;
 
   @HiveField(5)
-  int correctOptionIndex;
+  List<String> options;
 
   @HiveField(6)
-  bool isPassed;
+  int correctOptionIndex;
 
   @HiveField(7)
-  DateTime? passedAt;
+  bool isPassed;
 
   @HiveField(8)
-  int attempts;
+  DateTime? passedAt;
 
   @HiveField(9)
+  int attempts;
+
+  @HiveField(10)
   DateTime? firstAttemptAt;
 
   CheckpointHive({
+    required this.userId,
     required this.checkpointId,
     required this.lessonId,
     required this.triggerPositionSeconds,
@@ -51,8 +55,9 @@ class CheckpointHive {
   });
 
   /// Convierte desde Map (CheckpointEntity.toMap())
-  factory CheckpointHive.fromMap(Map<String, dynamic> map) {
+  factory CheckpointHive.fromMap(Map<String, dynamic> map, String userId) {
     return CheckpointHive(
+      userId: userId,
       checkpointId: map['id'] as String,
       lessonId: map['lessonId'] as String,
       triggerPositionSeconds: map['triggerPositionSeconds'] as int,
@@ -93,5 +98,5 @@ class CheckpointHive {
   }
 
   /// Genera una clave única para este checkpoint
-  String get key => checkpointId;
+  String get key => '${userId}_$checkpointId';
 }

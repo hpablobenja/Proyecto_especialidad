@@ -2,6 +2,8 @@ plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
     id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
+    id("com.google.firebase.firebase-perf")
     // END: FlutterFire Configuration
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -41,6 +43,16 @@ android {
             signingConfig = signingConfigs.getByName("debug")
             isMinifyEnabled = false
             isShrinkResources = false
+            // Habilitar Crashlytics explícitamente en release (aunque use debug keys)
+            firebaseCrashlytics {
+                mappingFileUploadEnabled = true
+            }
+        }
+        debug {
+            // Habilitar Crashlytics en debug para pruebas
+            firebaseCrashlytics {
+                mappingFileUploadEnabled = false
+            }
         }
     }
 }

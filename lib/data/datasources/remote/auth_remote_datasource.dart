@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../models/user_model.dart';
+import '../../../core/services/performance_service.dart';
 
 abstract class AuthRemoteDataSource {
   Future<UserModel> registerWithEmailAndPassword(
@@ -81,50 +82,58 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     String email,
     String password,
   ) async {
-    try {
-      final userCredential = await firebaseAuth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      final user = userCredential.user;
-      if (user == null) {
-        throw Exception('No se pudo obtener la información del usuario.');
-      }
-      final uid = user.uid;
+    return PerformanceService.instance.trackUserLogin(
+      loginMethod: 'email_password',
+      operation: (trace) async {
+        try {
+          final userCredential = await firebaseAuth.signInWithEmailAndPassword(
+            email: email,
+            password: password,
+          );
+          final user = userCredential.user;
+          if (user == null) {
+            throw Exception('No se pudo obtener la información del usuario.');
+          }
+          final uid = user.uid;
 
-      final userRef = firestore.collection('users').doc(uid);
-      final doc = await userRef.get();
-      if (!doc.exists) {
-        // Si no existe el doc de Firestore, lo creamos con datos mínimos
-        final userModel = UserModel(
-          uid: uid,
-          email: user.email ?? email,
-          name: user.displayName ?? 'Usuario',
-          role: 'user',
-        );
-        await userRef.set(userModel.toMap());
-        return userModel;
-      }
-      return UserModel.fromMap(doc.data()!);
-    } on FirebaseAuthException catch (e) {
-      // Mapeo de códigos de Firebase a mensajes amigables
-      switch (e.code) {
-        case 'user-not-found':
-          throw Exception('Usuario no encontrado');
-        case 'wrong-password':
-          throw Exception('Contraseña incorrecta');
-        case 'invalid-credential':
-          throw Exception('Credenciales incorrectas. Verifica tu correo y contraseña');
-        case 'invalid-email':
-          throw Exception('Correo electrónico inválido');
-        case 'user-disabled':
-          throw Exception('La cuenta de usuario está deshabilitada');
-        case 'too-many-requests':
-          throw Exception('Demasiados intentos fallidos. Inténtalo más tarde');
-        default:
-          throw Exception('Error de autenticación: ${e.message ?? e.code}');
-      }
-    }
+          final userRef = firestore.collection('users').doc(uid);
+          final doc = await userRef.get();
+          if (!doc.exists) {
+            // Si no existe el doc de Firestore, lo creamos con datos mínimos
+            final userModel = UserModel(
+              uid: uid,
+              email: user.email ?? email,
+              name: user.displayName ?? 'Usuario',
+              role: 'user',
+            );
+            await userRef.set(userModel.toMap());
+            PerformanceService.instance.setUserContext(role: userModel.role);
+            return userModel;
+          }
+          final loadedUser = UserModel.fromMap(doc.data()!);
+          PerformanceService.instance.setUserContext(role: loadedUser.role);
+          return loadedUser;
+        } on FirebaseAuthException catch (e) {
+          // Mapeo de códigos de Firebase a mensajes amigables
+          switch (e.code) {
+            case 'user-not-found':
+              throw Exception('Usuario no encontrado');
+            case 'wrong-password':
+              throw Exception('Contraseña incorrecta');
+            case 'invalid-credential':
+              throw Exception('Credenciales incorrectas. Verifica tu correo y contraseña');
+            case 'invalid-email':
+              throw Exception('Correo electrónico inválido');
+            case 'user-disabled':
+              throw Exception('La cuenta de usuario está deshabilitada');
+            case 'too-many-requests':
+              throw Exception('Demasiados intentos fallidos. Inténtalo más tarde');
+            default:
+              throw Exception('Error de autenticación: ${e.message ?? e.code}');
+          }
+        }
+      },
+    );
   }
 
   @override

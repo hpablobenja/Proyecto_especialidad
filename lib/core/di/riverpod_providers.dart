@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import '../services/performance_service.dart';
 
 // Data Sources
 import '../../data/datasources/remote/auth_remote_datasource.dart';
@@ -88,7 +89,15 @@ import '../../core/services/excel_import_service.dart';
 import '../../core/services/quiz_offline_service.dart';
 import '../../core/services/session_tracking_service.dart';
 import '../../core/services/system_config_service.dart';
+import '../../core/services/video_download_service.dart';
+import '../../core/services/local_data_clear_service.dart';
+import '../../core/services/crashlytics_service.dart';
 import '../../domain/entities/system_config_entity.dart';
+
+// ----------------------- Crashlytics Provider -----------------------
+final crashlyticsServiceProvider = Provider<CrashlyticsService>((ref) {
+  return CrashlyticsService.instance;
+});
 
 // ----------------------- External Libraries Providers -----------------------
 final firebaseAuthProvider = Provider<FirebaseAuth>(
@@ -126,6 +135,18 @@ final quizOfflineServiceProvider = Provider<QuizOfflineService>((ref) {
   final service = QuizOfflineService();
   ref.onDispose(() => service.close());
   return service;
+});
+
+final quizSyncServiceProvider = Provider<QuizSyncService>((ref) {
+  return QuizSyncService();
+});
+
+final videoDownloadServiceProvider = Provider<VideoDownloadService>((ref) {
+  return VideoDownloadService();
+});
+
+final localDataClearServiceProvider = Provider<LocalDataClearService>((ref) {
+  return LocalDataClearService();
 });
 
 final systemConfigServiceProvider = Provider<SystemConfigService>((ref) {
@@ -373,6 +394,10 @@ final authStateProvider = ChangeNotifierProvider<AuthProvider>((ref) {
     getCurrentUserUsecase: ref.read(getCurrentUserUsecaseProvider),
     updateUserUsecase: ref.read(updateUserUsecaseProvider),
     resetPasswordUsecase: ref.read(resetPasswordUsecaseProvider),
+    quizSyncService: ref.read(quizSyncServiceProvider),
+    videoDownloadService: ref.read(videoDownloadServiceProvider),
+    localDataClearService: ref.read(localDataClearServiceProvider),
+    crashlyticsService: ref.read(crashlyticsServiceProvider),
   );
 });
 
@@ -464,4 +489,9 @@ final sessionTrackingConfigProvider = FutureProvider<void>((ref) async {
   } catch (e) {
     debugPrint('Error initializing SessionTrackingService config: $e');
   }
+});
+
+/// Provider para [PerformanceService]
+final performanceServiceProvider = Provider<PerformanceService>((ref) {
+  return PerformanceService.instance;
 });

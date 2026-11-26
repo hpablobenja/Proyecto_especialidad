@@ -23,19 +23,20 @@ class QuizProgressHiveAdapter extends TypeAdapter<QuizProgressHive> {
       courseId: fields[3] as String,
       moduleId: fields[4] as String,
       selectedAnswers: (fields[5] as Map).cast<int, int>(),
-      score: fields[6] as int?,
-      maxScore: fields[7] as int,
-      isCompleted: fields[8] as bool,
-      submittedAt: fields[9] as DateTime,
-      needsSync: fields[10] as bool,
-      answerDetails: (fields[11] as List).cast<QuizAnswerDetail>(),
+      questionIds: (fields[6] as List?)?.cast<String>(),
+      score: fields[7] as int?,
+      maxScore: fields[8] as int,
+      isCompleted: fields[9] as bool,
+      submittedAt: fields[10] as DateTime,
+      needsSync: fields[11] as bool,
+      answerDetails: (fields[12] as List).cast<QuizAnswerDetail>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, QuizProgressHive obj) {
     writer
-      ..writeByte(12)
+      ..writeByte(13)
       ..writeByte(0)
       ..write(obj.userId)
       ..writeByte(1)
@@ -49,16 +50,18 @@ class QuizProgressHiveAdapter extends TypeAdapter<QuizProgressHive> {
       ..writeByte(5)
       ..write(obj.selectedAnswers)
       ..writeByte(6)
-      ..write(obj.score)
+      ..write(obj.questionIds)
       ..writeByte(7)
-      ..write(obj.maxScore)
+      ..write(obj.score)
       ..writeByte(8)
-      ..write(obj.isCompleted)
+      ..write(obj.maxScore)
       ..writeByte(9)
-      ..write(obj.submittedAt)
+      ..write(obj.isCompleted)
       ..writeByte(10)
-      ..write(obj.needsSync)
+      ..write(obj.submittedAt)
       ..writeByte(11)
+      ..write(obj.needsSync)
+      ..writeByte(12)
       ..write(obj.answerDetails);
   }
 

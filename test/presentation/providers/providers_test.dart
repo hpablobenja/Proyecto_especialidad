@@ -6,6 +6,7 @@ import 'package:mockito/annotations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:redmaestra1/core/services/session_tracking_service.dart';
+import 'package:redmaestra1/core/services/crashlytics_service.dart';
 import 'package:redmaestra1/domain/repositories/auth_repository.dart';
 import 'package:redmaestra1/presentation/providers/auth_provider.dart';
 import 'package:redmaestra1/presentation/providers/theme_provider.dart';
@@ -24,6 +25,7 @@ import 'package:redmaestra1/domain/entities/user_entity.dart';
   UpdateUserUsecase,
   ResetPasswordUsecase,
   AuthRepository,
+  CrashlyticsService,
 ])
 import 'providers_test.mocks.dart';
 
@@ -54,6 +56,7 @@ void main() {
       mockUpdateUserUsecase = MockUpdateUserUsecase();
       mockResetPasswordUsecase = MockResetPasswordUsecase();
       mockAuthRepository = MockAuthRepository();
+      final mockCrashlyticsService = MockCrashlyticsService();
 
       when(mockLoginUsecase.repository).thenReturn(mockAuthRepository);
       when(mockAuthRepository.signOut()).thenAnswer((_) async {});
@@ -68,6 +71,7 @@ void main() {
         videoTrackingDataSource: null,
         dashboardSyncService: null,
         quizSyncService: null,
+        crashlyticsService: mockCrashlyticsService,
       );
     });
 

@@ -57,7 +57,7 @@ service cloud.firestore {
       allow write: if request.auth != null && isAdmin();
     }
 
-    match /quizAnswers/{quizId} {
+    match /quizAnswersKeys/{quizId} {
       allow read, list, get: if request.auth != null && isAdminOrMaestro();
       allow write: if request.auth != null && isAdmin();
     }
@@ -89,7 +89,7 @@ service cloud.firestore {
                   && (request.auth.uid == resource.data.userId || isAdminOrMaestro());
     }
     match /systemConfig/{configId} {
-  allow read, get: if request.auth != null && isAdmin();
+  allow read, get: if request.auth != null && isAdminOrMaestro();
   allow write, create, update: if request.auth != null && isAdmin();
 }
     // Reglas para tracking de video educativo

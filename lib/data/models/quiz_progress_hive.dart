@@ -6,7 +6,7 @@ part 'quiz_progress_hive.g.dart';
 
 /// Modelo Hive para persistencia local de progreso de quiz offline
 /// Guarda ÚNICAMENTE las preguntas/opciones y las respuestas temporales del usuario.
-/// NUNCA almacena respuestas correctas (quizAnswers).
+/// NUNCA almacena respuestas correctas (quizAnswersKeys).
 @HiveType(typeId: 4)
 class QuizProgressHive {
   @HiveField(0)
@@ -28,21 +28,24 @@ class QuizProgressHive {
   Map<int, int> selectedAnswers; // questionIndex -> selectedOptionIndex
 
   @HiveField(6)
-  int? score;
+  List<String>? questionIds; // IDs de las preguntas en el orden en que se respondieron (nullable para compatibilidad con datos antiguos)
 
   @HiveField(7)
-  int maxScore;
+  int? score;
 
   @HiveField(8)
-  bool isCompleted;
+  int maxScore;
 
   @HiveField(9)
-  DateTime submittedAt;
+  bool isCompleted;
 
   @HiveField(10)
-  bool needsSync;
+  DateTime submittedAt;
 
   @HiveField(11)
+  bool needsSync;
+
+  @HiveField(12)
   List<QuizAnswerDetail> answerDetails;
 
   QuizProgressHive({
@@ -52,6 +55,7 @@ class QuizProgressHive {
     required this.courseId,
     required this.moduleId,
     required this.selectedAnswers,
+    this.questionIds,
     this.score,
     required this.maxScore,
     required this.isCompleted,

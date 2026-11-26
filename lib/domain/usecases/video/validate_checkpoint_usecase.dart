@@ -18,6 +18,7 @@ class ValidateCheckpointUsecase {
   Future<CheckpointValidationResult> call({
     required String checkpointId,
     required int selectedOptionIndex,
+    required String userId,
   }) async {
     // Validar respuesta usando el servicio (que tiene los checkpoints en memoria)
     final result = checkpointService.validateAnswer(
@@ -32,9 +33,9 @@ class ValidateCheckpointUsecase {
 
     // Actualizar estado en repositorio
     if (result.isCorrect) {
-      await checkpointRepository.markCheckpointPassed(checkpointId);
+      await checkpointRepository.markCheckpointPassed(checkpointId, userId);
     } else {
-      await checkpointRepository.incrementCheckpointAttempts(checkpointId);
+      await checkpointRepository.incrementCheckpointAttempts(checkpointId, userId);
     }
 
     return result;

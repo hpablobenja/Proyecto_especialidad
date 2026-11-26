@@ -28,13 +28,14 @@ class QuizEntity extends Equatable {
       'lessonId': lessonId,
       'courseId': courseId,
       'moduleId': moduleId,
-      'questions': questions
-          .map((q) => q.toMap(includeCorrectAnswer: includeCorrectAnswers))
-          .toList(),
+      'questions':
+          questions
+              .map((q) => q.toMap(includeCorrectAnswer: includeCorrectAnswers))
+              .toList(),
     };
   }
 
-  /// Genera el mapa para la colección separada 'quizAnswers'
+  /// Genera el mapa para la colección separada 'quizAnswersKeys'
   Map<String, dynamic> toAnswersMap() {
     return {
       'quizId': id,

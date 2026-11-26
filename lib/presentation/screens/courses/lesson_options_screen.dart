@@ -9,6 +9,7 @@ import '../../widgets/offline_lesson_badge.dart';
 import 'lesson_player_screen.dart';
 import 'lesson_documentation_screen.dart';
 import 'quiz_screen.dart';
+import '../../../core/services/performance_service.dart';
 
 class LessonOptionsScreen extends ConsumerWidget {
   final LessonEntity lesson;
@@ -96,12 +97,18 @@ class LessonOptionsScreen extends ConsumerWidget {
                       color: Colors.green,
                       isEnabled: true, // Always enabled
                       onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder:
-                                (_) =>
-                                    LessonDocumentationScreen(lesson: lesson),
-                          ),
+                        PerformanceService.instance.trackOpenEducationalContent(
+                          contentType: 'lesson_documentation',
+                          contentId: lesson.id,
+                          operation: (trace) async {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder:
+                                    (_) =>
+                                        LessonDocumentationScreen(lesson: lesson),
+                              ),
+                            );
+                          },
                         );
                       },
                     ),

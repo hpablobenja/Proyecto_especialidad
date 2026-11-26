@@ -51,11 +51,11 @@ class _QuizManagementScreenState extends ConsumerState<QuizManagementScreen> {
         final quizData = quizDoc.docs.first.data();
         final questionsData = quizData['questions'] as List? ?? [];
 
-        // Cargar respuestas correctas desde 'quizAnswers'
+        // Cargar respuestas correctas desde 'quizAnswersKeys'
         Map<String, dynamic> answersMap = {};
         try {
           final answersDoc =
-              await firestore.collection('quizAnswers').doc(quizId).get();
+              await firestore.collection('quizAnswersKeys').doc(quizId).get();
           if (answersDoc.exists && answersDoc.data() != null) {
             final data = answersDoc.data()!;
             if (data['answers'] is Map) {
@@ -63,14 +63,14 @@ class _QuizManagementScreenState extends ConsumerState<QuizManagementScreen> {
             }
           }
         } catch (e) {
-          debugPrint('Error al cargar quizAnswers: $e');
+          debugPrint('Error al cargar quizAnswersKeys: $e');
         }
 
         final questions =
             questionsData.map((q) {
               final map = Map<String, dynamic>.from(q as Map<String, dynamic>);
               final qId = map['id'] as String? ?? '';
-              // Si la respuesta correcta está en quizAnswers, usarla
+              // Si la respuesta correcta está en quizAnswersKeys, usarla
               if (answersMap.containsKey(qId)) {
                 map['correctAnswerIndex'] = answersMap[qId];
               }
@@ -108,7 +108,7 @@ class _QuizManagementScreenState extends ConsumerState<QuizManagementScreen> {
       batch.set(quizRef, quiz.toMap(includeCorrectAnswers: false));
 
       // Guardar las respuestas correctas en la colección separada 'quizAnswers'
-      final answersRef = firestore.collection('quizAnswers').doc(quiz.id);
+      final answersRef = firestore.collection('quizAnswersKeys').doc(quiz.id);
       batch.set(answersRef, quiz.toAnswersMap());
 
       await batch.commit();
@@ -163,7 +163,7 @@ class _QuizManagementScreenState extends ConsumerState<QuizManagementScreen> {
       final firestore = ref.read(firestoreProvider);
       final batch = firestore.batch();
       batch.delete(firestore.collection('quizzes').doc(_quiz!.id));
-      batch.delete(firestore.collection('quizAnswers').doc(_quiz!.id));
+      batch.delete(firestore.collection('quizAnswersKeys').doc(_quiz!.id));
       await batch.commit();
 
       if (!mounted) return;

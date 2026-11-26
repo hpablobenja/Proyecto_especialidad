@@ -21,7 +21,6 @@ class _SystemConfigScreenState extends ConsumerState<SystemConfigScreen> {
   SystemConfigEntity? _config;
   bool _isLoading = true;
   bool _isSaving = false;
-  bool _isClearingData = false;
 
   @override
   void initState() {
@@ -44,6 +43,8 @@ class _SystemConfigScreenState extends ConsumerState<SystemConfigScreen> {
 
   Future<void> _saveConfig() async {
     if (_config == null) return;
+
+    debugPrint('Guardando configuración: enableLocalDataClearForTeachers = ${_config!.enableLocalDataClearForTeachers}');
 
     setState(() {
       _isSaving = true;
@@ -116,58 +117,6 @@ class _SystemConfigScreenState extends ConsumerState<SystemConfigScreen> {
         SnackBar(
           content: Text(
             success ? 'Configuración restablecida' : 'Error al restablecer',
-          ),
-          backgroundColor:
-              success ? AppColors.successColor : AppColors.errorColor,
-        ),
-      );
-    }
-  }
-
-  Future<void> _clearAllLocalData() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Borrar datos locales'),
-            content: const Text(
-              '¿Estás seguro de borrar todos los datos locales del sistema?\n\nEsto incluye:\n• Progreso de videos\n• Checkpoints\n• Cola de sincronización\n• Quizzes offline\n\nEsta acción no se puede deshacer.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancelar'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text(
-                  'Borrar todo',
-                  style: TextStyle(color: Colors.red),
-                ),
-              ),
-            ],
-          ),
-    );
-
-    if (confirmed == true) {
-      setState(() {
-        _isClearingData = true;
-      });
-
-      final success = await _dataClearService.clearAllLocalData();
-
-      setState(() {
-        _isClearingData = false;
-      });
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            success
-                ? 'Datos locales borrados exitosamente'
-                : 'Error al borrar datos locales',
           ),
           backgroundColor:
               success ? AppColors.successColor : AppColors.errorColor,
@@ -299,7 +248,13 @@ class _SystemConfigScreenState extends ConsumerState<SystemConfigScreen> {
             _buildBoolField(
               'Habilitar checkpoints',
               _config!.enableCheckpoints,
-              (value) => _config = _config!.copyWith(enableCheckpoints: value),
+              (value) {
+                if (value != null) {
+                  setState(() {
+                    _config = _config!.copyWith(enableCheckpoints: value);
+                  });
+                }
+              },
             ),
             _buildIntField(
               'Máximo intentos de checkpoint',
@@ -341,7 +296,13 @@ class _SystemConfigScreenState extends ConsumerState<SystemConfigScreen> {
             _buildBoolField(
               'Habilitar modo offline',
               _config!.enableOfflineMode,
-              (value) => _config = _config!.copyWith(enableOfflineMode: value),
+              (value) {
+                if (value != null) {
+                  setState(() {
+                    _config = _config!.copyWith(enableOfflineMode: value);
+                  });
+                }
+              },
             ),
             const SizedBox(height: 24),
 
@@ -349,13 +310,33 @@ class _SystemConfigScreenState extends ConsumerState<SystemConfigScreen> {
             _buildBoolField(
               'Habilitar animaciones',
               _config!.enableAnimations,
-              (value) => _config = _config!.copyWith(enableAnimations: value),
+              (value) {
+                if (value != null) {
+                  setState(() {
+                    _config = _config!.copyWith(enableAnimations: value);
+                  });
+                }
+              },
             ),
             _buildDropdownField(
               'Tema por defecto',
               _config!.defaultTheme,
               ['system', 'light', 'dark'],
               (value) => _config = _config!.copyWith(defaultTheme: value),
+            ),
+            const SizedBox(height: 24),
+
+            _buildSectionHeader('Configuración de Datos Locales'),
+            _buildBoolField(
+              'Habilitar borrado de datos locales para maestros',
+              _config!.enableLocalDataClearForTeachers,
+              (value) {
+                if (value != null) {
+                  setState(() {
+                    _config = _config!.copyWith(enableLocalDataClearForTeachers: value);
+                  });
+                }
+              },
             ),
             const SizedBox(height: 32),
 
@@ -383,34 +364,6 @@ class _SystemConfigScreenState extends ConsumerState<SystemConfigScreen> {
                           'Guardar Configuración',
                           style: TextStyle(fontSize: 16),
                         ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            Center(
-              child: OutlinedButton.icon(
-                onPressed: _isClearingData ? null : _clearAllLocalData,
-                icon: _isClearingData
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
-                        ),
-                      )
-                    : const Icon(Icons.delete_outline, size: 18),
-                label: Text(
-                  _isClearingData ? 'Borrando...' : 'Borrar datos locales',
-                  style: const TextStyle(fontSize: 14),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red,
-                  side: const BorderSide(color: Colors.red),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  minimumSize: const Size(200, 40),
-                ),
               ),
             ),
           ],
@@ -486,7 +439,7 @@ class _SystemConfigScreenState extends ConsumerState<SystemConfigScreen> {
     );
   }
 
-  Widget _buildBoolField(String label, bool value, Function(bool) onChanged) {
+  Widget _buildBoolField(String label, bool value, ValueChanged<bool?> onChanged) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: SwitchListTile(

@@ -2,18 +2,104 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_styles.dart';
 import '../../../core/di/riverpod_providers.dart';
+import '../../../core/services/system_config_service.dart';
+import '../../../core/services/local_data_clear_service.dart';
+import '../../../core/services/crashlytics_service.dart';
 import '../../widgets/custom_app_bar.dart';
 import 'edit_profile_screen.dart';
 
-class ProfileScreen extends ConsumerWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  final SystemConfigService _configService = SystemConfigService();
+  final LocalDataClearService _dataClearService = LocalDataClearService();
+  bool _enableLocalDataClear = false;
+  bool _isLoadingConfig = true;
+  bool _isClearingData = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadConfig();
+  }
+
+  Future<void> _loadConfig() async {
+    final config = await _configService.getConfig();
+    debugPrint(
+      'Configuración cargada: enableLocalDataClearForTeachers = ${config.enableLocalDataClearForTeachers}',
+    );
+    if (mounted) {
+      setState(() {
+        _enableLocalDataClear = config.enableLocalDataClearForTeachers;
+        _isLoadingConfig = false;
+      });
+    }
+  }
+
+  Future<void> _clearLocalData() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Borrar datos locales'),
+            content: const Text(
+              '¿Estás seguro de borrar todos tus datos locales?\n\nEsto incluye:\n• Progreso de videos\n• Checkpoints\n• Cola de sincronización\n• Quizzes offline\n\nEsta acción no se puede deshacer.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancelar'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text(
+                  'Borrar todo',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
+          ),
+    );
+
+    if (confirmed == true) {
+      setState(() {
+        _isClearingData = true;
+      });
+
+      final success = await _dataClearService.clearAllLocalData();
+
+      setState(() {
+        _isClearingData = false;
+      });
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? 'Datos locales borrados exitosamente'
+                : 'Error al borrar datos locales',
+          ),
+          backgroundColor:
+              success ? AppColors.successColor : AppColors.errorColor,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authProvider = ref.watch(authStateProvider);
     final user = authProvider.currentUser;
 
@@ -198,6 +284,7 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 20),
+
               ElevatedButton.icon(
                 onPressed:
                     authProvider.isLoading
@@ -289,6 +376,55 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                 ),
               ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () async {
+                  // Agregar logs antes del crash para asegurar que se envíe
+                  await CrashlyticsService.instance.log('Test crash iniciado desde pantalla de perfil');
+                  await CrashlyticsService.instance.setCustomKey('test_crash_source', 'profile_screen');
+                  await CrashlyticsService.instance.setCustomKey('test_timestamp', DateTime.now().toIso8601String());
+                  // Pequeña pausa para permitir que los logs se envíen
+                  await Future.delayed(const Duration(milliseconds: 500));
+                  // Forzar el crash
+                  FirebaseCrashlytics.instance.crash();
+                },
+                child: const Text('Test Crash'),
+              ),
+              const SizedBox(height: 20),
+
+              // Botón para borrar datos locales (solo para maestros cuando está habilitado por admin)
+              if (user.role.toLowerCase() == 'maestro' &&
+                  !_isLoadingConfig &&
+                  _enableLocalDataClear)
+                ElevatedButton.icon(
+                  onPressed: _isClearingData ? null : _clearLocalData,
+                  icon:
+                      _isClearingData
+                          ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                          : const Icon(Icons.delete_outline),
+                  label: Text(
+                    _isClearingData ? 'Borrando...' : 'Borrar datos locales',
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 30,
+                      vertical: 15,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

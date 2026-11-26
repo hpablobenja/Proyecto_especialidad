@@ -201,6 +201,7 @@ class _VideoTrackingWidgetState extends ConsumerState<VideoTrackingWidget> {
                   .validateCheckpoint(
                     checkpointId: checkpoint.id,
                     selectedOptionIndex: selectedIndex,
+                    userId: widget.userId,
                   );
 
               if (!mounted) return;

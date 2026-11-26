@@ -5,7 +5,9 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i5;
 
+import 'package:flutter/foundation.dart' as _i12;
 import 'package:mockito/mockito.dart' as _i1;
+import 'package:redmaestra1/core/services/crashlytics_service.dart' as _i11;
 import 'package:redmaestra1/domain/entities/user_entity.dart' as _i3;
 import 'package:redmaestra1/domain/repositories/auth_repository.dart' as _i2;
 import 'package:redmaestra1/domain/usecases/auth/get_current_user_usecase.dart'
@@ -309,6 +311,214 @@ class MockAuthRepository extends _i1.Mock implements _i2.AuthRepository {
         Invocation.method(
           #resetPassword,
           [email],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+}
+
+/// A class which mocks [CrashlyticsService].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockCrashlyticsService extends _i1.Mock
+    implements _i11.CrashlyticsService {
+  MockCrashlyticsService() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  _i5.Future<void> initialize({bool? enableInDebug = false}) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #initialize,
+          [],
+          {#enableInDebug: enableInDebug},
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> setUserId(String? userId) => (super.noSuchMethod(
+        Invocation.method(
+          #setUserId,
+          [userId],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> setUserContext({
+    required String? userId,
+    String? role,
+    String? appVersion,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #setUserContext,
+          [],
+          {
+            #userId: userId,
+            #role: role,
+            #appVersion: appVersion,
+          },
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> setCustomKey(
+    String? key,
+    Object? value,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #setCustomKey,
+          [
+            key,
+            value,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> removeCustomKey(String? key) => (super.noSuchMethod(
+        Invocation.method(
+          #removeCustomKey,
+          [key],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> log(String? message) => (super.noSuchMethod(
+        Invocation.method(
+          #log,
+          [message],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> recordError(
+    dynamic exception,
+    StackTrace? stackTrace, {
+    dynamic reason,
+    Iterable<Object>? information = const [],
+    bool? fatal = false,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #recordError,
+          [
+            exception,
+            stackTrace,
+          ],
+          {
+            #reason: reason,
+            #information: information,
+            #fatal: fatal,
+          },
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  void recordFlutterError(
+    _i12.FlutterErrorDetails? details, {
+    bool? fatal = false,
+  }) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #recordFlutterError,
+          [details],
+          {#fatal: fatal},
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  _i5.Future<void> logAuthEvent(
+    String? action, {
+    String? email,
+    String? uid,
+    String? role,
+    String? extra,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #logAuthEvent,
+          [action],
+          {
+            #email: email,
+            #uid: uid,
+            #role: role,
+            #extra: extra,
+          },
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> logFirestoreEvent(
+    String? operation, {
+    required String? path,
+    String? details,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #logFirestoreEvent,
+          [operation],
+          {
+            #path: path,
+            #details: details,
+          },
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> logStorageEvent(
+    String? operation, {
+    required String? boxOrKey,
+    String? details,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #logStorageEvent,
+          [operation],
+          {
+            #boxOrKey: boxOrKey,
+            #details: details,
+          },
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> logDownloadEvent(
+    String? action, {
+    required String? resourceId,
+    String? details,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #logDownloadEvent,
+          [action],
+          {
+            #resourceId: resourceId,
+            #details: details,
+          },
         ),
         returnValue: _i5.Future<void>.value(),
         returnValueForMissingStub: _i5.Future<void>.value(),

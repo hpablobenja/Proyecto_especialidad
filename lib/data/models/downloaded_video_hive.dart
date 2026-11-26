@@ -7,33 +7,37 @@ part 'downloaded_video_hive.g.dart';
 @HiveType(typeId: 6)
 class DownloadedVideoHive extends HiveObject {
   @HiveField(0)
-  String videoId;
+  String userId;
 
   @HiveField(1)
-  String courseId;
+  String videoId;
 
   @HiveField(2)
-  String localPath;
+  String courseId;
 
   @HiveField(3)
-  String downloadStatus; // 'pending', 'downloading', 'paused', 'completed', 'failed', 'canceled'
+  String localPath;
 
   @HiveField(4)
-  DateTime downloadedAt;
+  String downloadStatus; // 'pending', 'downloading', 'paused', 'completed', 'failed', 'canceled'
 
   @HiveField(5)
-  int fileSize;
+  DateTime downloadedAt;
 
   @HiveField(6)
-  int watchedSeconds;
+  int fileSize;
 
   @HiveField(7)
-  int totalSeconds;
+  int watchedSeconds;
 
   @HiveField(8)
+  int totalSeconds;
+
+  @HiveField(9)
   bool pendingSync;
 
   DownloadedVideoHive({
+    required this.userId,
     required this.videoId,
     required this.courseId,
     required this.localPath,

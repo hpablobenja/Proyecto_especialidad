@@ -14,82 +14,98 @@ class CheckpointHiveDataSource {
   }
 
   /// Guarda o actualiza un checkpoint
-  Future<void> saveCheckpoint(CheckpointEntity checkpoint) async {
+  Future<void> saveCheckpoint(CheckpointEntity checkpoint, String userId) async {
     final box = await _openBox();
-    final hive = CheckpointHive.fromMap(checkpoint.toMap());
+    final hive = CheckpointHive.fromMap(checkpoint.toMap(), userId);
     await box.put(hive.key, hive);
   }
 
   /// Obtiene un checkpoint por ID
-  Future<CheckpointHive?> getCheckpoint(String checkpointId) async {
+  Future<CheckpointHive?> getCheckpoint(String checkpointId, String userId) async {
     final box = await _openBox();
-    return box.get(checkpointId);
+    return box.get('${userId}_$checkpointId');
   }
 
-  /// Obtiene todos los checkpoints
-  Future<List<CheckpointHive>> getAllCheckpoints() async {
+  /// Obtiene todos los checkpoints de un usuario
+  Future<List<CheckpointHive>> getAllCheckpoints(String userId) async {
     final box = await _openBox();
-    return box.values.toList();
+    return box.values.where((item) => item.userId == userId).toList();
   }
 
-  /// Obtiene todos los checkpoints de una lección
-  Future<List<CheckpointHive>> getLessonCheckpoints(String lessonId) async {
+  /// Obtiene todos los checkpoints de una lección para un usuario
+  Future<List<CheckpointHive>> getLessonCheckpoints(String lessonId, String userId) async {
     final box = await _openBox();
-    return box.values.where((item) => item.lessonId == lessonId).toList();
+    return box.values.where((item) => item.lessonId == lessonId && item.userId == userId).toList();
   }
 
-  /// Obtiene checkpoints aprobados de una lección
-  Future<List<CheckpointHive>> getPassedCheckpoints(String lessonId) async {
+  /// Obtiene checkpoints aprobados de una lección para un usuario
+  Future<List<CheckpointHive>> getPassedCheckpoints(String lessonId, String userId) async {
     final box = await _openBox();
     return box.values
-        .where((item) => item.lessonId == lessonId && item.isPassed)
+        .where((item) => item.lessonId == lessonId && item.userId == userId && item.isPassed)
         .toList();
   }
 
-  /// Obtiene checkpoints fallados de una lección
-  Future<List<CheckpointHive>> getFailedCheckpoints(String lessonId) async {
+  /// Obtiene checkpoints fallados de una lección para un usuario
+  Future<List<CheckpointHive>> getFailedCheckpoints(String lessonId, String userId) async {
     final box = await _openBox();
     return box.values
         .where(
           (item) =>
-              item.lessonId == lessonId && !item.isPassed && item.attempts > 0,
+              item.lessonId == lessonId && item.userId == userId && !item.isPassed && item.attempts > 0,
         )
         .toList();
   }
 
   /// Marca un checkpoint como aprobado
-  Future<void> markCheckpointPassed(String checkpointId) async {
+  Future<void> markCheckpointPassed(String checkpointId, String userId) async {
     final box = await _openBox();
-    final existing = box.get(checkpointId);
+    final key = '${userId}_$checkpointId';
+    final existing = box.get(key);
 
     if (existing != null) {
       existing.isPassed = true;
       existing.passedAt = DateTime.now();
-      await box.put(checkpointId, existing);
+      await box.put(key, existing);
     }
   }
 
   /// Incrementa el contador de intentos de un checkpoint
-  Future<void> incrementCheckpointAttempts(String checkpointId) async {
+  Future<void> incrementCheckpointAttempts(String checkpointId, String userId) async {
     final box = await _openBox();
-    final existing = box.get(checkpointId);
+    final key = '${userId}_$checkpointId';
+    final existing = box.get(key);
 
     if (existing != null) {
       existing.attempts++;
       if (existing.firstAttemptAt == null) {
         existing.firstAttemptAt = DateTime.now();
       }
-      await box.put(checkpointId, existing);
+      await box.put(key, existing);
     }
   }
 
-  /// Elimina todos los checkpoints de una lección
-  Future<void> deleteLessonCheckpoints(String lessonId) async {
+  /// Elimina todos los checkpoints de una lección para un usuario
+  Future<void> deleteLessonCheckpoints(String lessonId, String userId) async {
     final box = await _openBox();
     final keysToDelete =
         box.keys.where((key) {
           final item = box.get(key);
-          return item?.lessonId == lessonId;
+          return item?.lessonId == lessonId && item?.userId == userId;
+        }).toList();
+
+    for (final key in keysToDelete) {
+      await box.delete(key);
+    }
+  }
+
+  /// Elimina todos los checkpoints de un usuario
+  Future<void> clearUserCheckpoints(String userId) async {
+    final box = await _openBox();
+    final keysToDelete =
+        box.keys.where((key) {
+          final item = box.get(key);
+          return item?.userId == userId;
         }).toList();
 
     for (final key in keysToDelete) {

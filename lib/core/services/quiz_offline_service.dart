@@ -1,6 +1,7 @@
 // lib/core/services/quiz_offline_service.dart
 
 import 'package:hive/hive.dart';
+import 'package:flutter/foundation.dart';
 import '../../data/models/quiz_progress_hive.dart';
 import 'hive_encryption_service.dart';
 
@@ -12,6 +13,19 @@ class QuizOfflineService {
 
   /// Inicializa el servicio
   Future<void> init() async {
+    // Borrar el box completamente debido a cambio incompatible en el modelo
+    // (agregado del campo questionIds que desplazó los campos)
+    // Los datos antiguos no pueden ser migrados automáticamente
+    try {
+      if (Hive.isBoxOpen(_boxName)) {
+        await Hive.box(_boxName).close();
+      }
+      await Hive.deleteBoxFromDisk(_boxName);
+      debugPrint('QuizOfflineService: Box de datos antiguos eliminado debido a cambio de estructura');
+    } catch (e) {
+      debugPrint('QuizOfflineService: Error al eliminar box antiguo (puede no existir): $e');
+    }
+    
     _box = await HiveEncryptionService.instance.openBox<QuizProgressHive>(
       _boxName,
     );
@@ -67,6 +81,18 @@ class QuizOfflineService {
   /// Obtiene todos los quizzes de un usuario
   List<QuizProgressHive> getUserQuizzes(String userId) {
     return _box.values.where((quiz) => quiz.userId == userId).toList();
+  }
+
+  /// Elimina todos los quizzes de un usuario
+  Future<void> clearUserQuizzes(String userId) async {
+    final keysToDelete = _box.keys.where((key) {
+      final quiz = _box.get(key);
+      return quiz?.userId == userId;
+    }).toList();
+
+    for (final key in keysToDelete) {
+      await _box.delete(key);
+    }
   }
 
   /// Limpia todos los datos (útil para testing o logout)

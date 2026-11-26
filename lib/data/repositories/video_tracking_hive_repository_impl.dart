@@ -172,8 +172,8 @@ class CheckpointHiveRepositoryImpl implements CheckpointRepository {
   CheckpointHiveRepositoryImpl({required this.localDataSource});
 
   @override
-  Future<CheckpointEntity?> getCheckpoint(String checkpointId) async {
-    final local = await localDataSource.getCheckpoint(checkpointId);
+  Future<CheckpointEntity?> getCheckpoint(String checkpointId, String userId) async {
+    final local = await localDataSource.getCheckpoint(checkpointId, userId);
     if (local != null) {
       return CheckpointEntity.fromMap(local.toMap());
     }
@@ -181,33 +181,44 @@ class CheckpointHiveRepositoryImpl implements CheckpointRepository {
   }
 
   @override
-  Future<List<CheckpointEntity>> getLessonCheckpoints(String lessonId) async {
-    final local = await localDataSource.getLessonCheckpoints(lessonId);
+  Future<List<CheckpointEntity>> getLessonCheckpoints(String lessonId, String userId) async {
+    final local = await localDataSource.getLessonCheckpoints(lessonId, userId);
     return local.map((item) => CheckpointEntity.fromMap(item.toMap())).toList();
   }
 
   @override
-  Future<void> saveCheckpoint(CheckpointEntity checkpoint) async {
-    await localDataSource.saveCheckpoint(checkpoint);
+  Future<void> saveCheckpoint(CheckpointEntity checkpoint, String userId) async {
+    await localDataSource.saveCheckpoint(checkpoint, userId);
   }
 
   @override
-  Future<void> markCheckpointPassed(String checkpointId) async {
-    await localDataSource.markCheckpointPassed(checkpointId);
+  Future<void> markCheckpointPassed(String checkpointId, String userId) async {
+    await localDataSource.markCheckpointPassed(checkpointId, userId);
   }
 
   @override
-  Future<void> incrementCheckpointAttempts(String checkpointId) async {
-    await localDataSource.incrementCheckpointAttempts(checkpointId);
+  Future<void> incrementCheckpointAttempts(String checkpointId, String userId) async {
+    await localDataSource.incrementCheckpointAttempts(checkpointId, userId);
   }
 
   @override
-  Future<List<CheckpointEntity>> getPassedCheckpoints(String lessonId) async {
-    final local = await localDataSource.getPassedCheckpoints(lessonId);
+  Future<List<CheckpointEntity>> getPassedCheckpoints(String lessonId, String userId) async {
+    final local = await localDataSource.getPassedCheckpoints(lessonId, userId);
     return local.map((item) => CheckpointEntity.fromMap(item.toMap())).toList();
   }
 
-  Future<void> deleteLessonCheckpoints(String lessonId) async {
-    await localDataSource.deleteLessonCheckpoints(lessonId);
+  @override
+  Future<List<CheckpointEntity>> getFailedCheckpoints(String lessonId, String userId) async {
+    final local = await localDataSource.getFailedCheckpoints(lessonId, userId);
+    return local.map((item) => CheckpointEntity.fromMap(item.toMap())).toList();
+  }
+
+  @override
+  Future<void> clearUserCheckpoints(String userId) async {
+    await localDataSource.clearUserCheckpoints(userId);
+  }
+
+  Future<void> deleteLessonCheckpoints(String lessonId, String userId) async {
+    await localDataSource.deleteLessonCheckpoints(lessonId, userId);
   }
 }

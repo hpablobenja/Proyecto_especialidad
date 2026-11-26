@@ -1,5 +1,6 @@
 // lib/main.dart
 
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,8 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/di/riverpod_providers.dart';
+import 'core/services/crashlytics_service.dart';
+import 'core/services/performance_service.dart';
 import 'core/services/hive_encryption_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/session_tracking_service.dart';
@@ -26,14 +29,62 @@ import 'presentation/screens/home/home_screen.dart';
 import 'firebase_options.dart';
 
 void main() async {
+  // Medición de inicio de aplicación (Cold Start)
+  final Stopwatch appStartStopwatch = Stopwatch()..start();
+
   // Asegura que los widgets de Flutter estén inicializados
   WidgetsFlutterBinding.ensureInitialized();
 
   // Inicializa Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+  // Inicializa Performance Monitoring e inicia trace de arranque de aplicación
+  final performanceService = PerformanceService.instance;
+  await performanceService.initialize();
+  final appStartTrace = await performanceService.startTrace(
+    'trace_app_start_time',
+  );
+
+  // Inicializa y configura Firebase Crashlytics
+  final crashlyticsService = CrashlyticsService.instance;
+  await crashlyticsService.initialize(enableInDebug: false);
+
+  // 1. Capturar todos los errores del framework de Flutter
+  FlutterError.onError = (FlutterErrorDetails details) {
+    crashlyticsService.recordFlutterError(details, fatal: true);
+  };
+
+  // 2. Capturar todos los errores asíncronos y no controlados fuera del árbol de widgets
+  PlatformDispatcher.instance.onError = (error, stack) {
+    crashlyticsService.recordError(
+      error,
+      stack,
+      fatal: true,
+      reason: 'Error no controlado capturado por PlatformDispatcher',
+    );
+    return true; // Indica que el error fue manejado
+  };
+
   // Inicializa Hive para persistencia local de tracking
   await Hive.initFlutter();
+
+  // Limpiar todas las cajas Hive para eliminar datos corruptos con campos DateTime
+  final boxNames = [
+    'videoProgress',
+    'checkpoints',
+    'syncQueue',
+    'quizProgress',
+    'downloadedVideos',
+    'userData',
+  ];
+  for (final boxName in boxNames) {
+    try {
+      await Hive.deleteBoxFromDisk(boxName);
+      debugPrint('Caja $boxName eliminada preventivamente');
+    } catch (e) {
+      // Si no existe, ignorar el error
+    }
+  }
 
   // Registrar adaptadores Hive
   Hive.registerAdapter(VideoProgressHiveAdapter());
@@ -58,15 +109,27 @@ void main() async {
     debugPrint('Error inicializando quiz offline service: $e');
   });
 
-  // Inicializa el servicio global de sincronización de quizzes
-  final quizSyncService = QuizSyncService();
-  await quizSyncService.init().catchError((e) {
+  // Inicializa el servicio global de sincronización de quizzes (singleton)
+  await QuizSyncService().init().catchError((e) {
     debugPrint('Error inicializando quiz sync service: $e');
   });
 
   // Inicializa el servicio de descargas de video de fondo sin bloquear el inicio de la app
   VideoDownloadService().init().catchError((e) {
     debugPrint('Error inicializando video download service: $e');
+  });
+
+  // Finalizar y registrar el trace de App Start Time una vez renderizado el primer frame
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    appStartStopwatch.stop();
+    appStartTrace.setMetric(
+      'first_frame_render_ms',
+      appStartStopwatch.elapsedMilliseconds,
+    );
+    performanceService.stopTrace(appStartTrace);
+    debugPrint(
+      '[PerformanceService] App Start Time completado en ${appStartStopwatch.elapsedMilliseconds} ms',
+    );
   });
 
   runApp(const ProviderScope(child: SessionLifecycleHandler(child: MyApp())));
@@ -105,6 +168,12 @@ class MyApp extends ConsumerWidget {
         ConnectivityRedirect.goToFormaciones(ref);
       });
     });
+
+    final session = ref.read(authStateProvider);
+    final user = session.currentUser;
+    if (user != null && user.role.isNotEmpty) {
+      PerformanceService.instance.setUserContext(role: user.role);
+    }
 
     return MaterialApp(
       navigatorKey: rootNavigatorKey,

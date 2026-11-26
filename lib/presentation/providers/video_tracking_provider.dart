@@ -374,10 +374,12 @@ class VideoTrackingNotifier extends StateNotifier<VideoTrackingState> {
   Future<CheckpointValidationResult> validateCheckpoint({
     required String checkpointId,
     required int selectedOptionIndex,
+    required String userId,
   }) async {
     final result = await validateCheckpointUsecase.call(
       checkpointId: checkpointId,
       selectedOptionIndex: selectedOptionIndex,
+      userId: userId,
     );
 
     if (result.isCorrect) {

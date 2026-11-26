@@ -31,6 +31,9 @@ class SystemConfigEntity extends Equatable {
   final bool enableAnimations;
   final String defaultTheme;
 
+  // Configuración de Datos Locales
+  final bool enableLocalDataClearForTeachers;
+
   const SystemConfigEntity({
     this.seekToleranceSeconds = 5,
     this.trackingIntervalSeconds = 1,
@@ -46,6 +49,7 @@ class SystemConfigEntity extends Equatable {
     this.enableOfflineMode = true,
     this.enableAnimations = true,
     this.defaultTheme = 'system',
+    this.enableLocalDataClearForTeachers = false,
   });
 
   @override
@@ -64,6 +68,7 @@ class SystemConfigEntity extends Equatable {
     enableOfflineMode,
     enableAnimations,
     defaultTheme,
+    enableLocalDataClearForTeachers,
   ];
 
   Map<String, dynamic> toMap() {
@@ -82,6 +87,7 @@ class SystemConfigEntity extends Equatable {
       'enableOfflineMode': enableOfflineMode,
       'enableAnimations': enableAnimations,
       'defaultTheme': defaultTheme,
+      'enableLocalDataClearForTeachers': enableLocalDataClearForTeachers,
       'updatedAt': DateTime.now().toIso8601String(),
     };
   }
@@ -104,6 +110,7 @@ class SystemConfigEntity extends Equatable {
       enableOfflineMode: map['enableOfflineMode'] as bool? ?? true,
       enableAnimations: map['enableAnimations'] as bool? ?? true,
       defaultTheme: map['defaultTheme'] as String? ?? 'system',
+      enableLocalDataClearForTeachers: map['enableLocalDataClearForTeachers'] as bool? ?? false,
     );
   }
 
@@ -122,6 +129,7 @@ class SystemConfigEntity extends Equatable {
     bool? enableOfflineMode,
     bool? enableAnimations,
     String? defaultTheme,
+    bool? enableLocalDataClearForTeachers,
   }) {
     return SystemConfigEntity(
       seekToleranceSeconds: seekToleranceSeconds ?? this.seekToleranceSeconds,
@@ -143,6 +151,7 @@ class SystemConfigEntity extends Equatable {
       enableOfflineMode: enableOfflineMode ?? this.enableOfflineMode,
       enableAnimations: enableAnimations ?? this.enableAnimations,
       defaultTheme: defaultTheme ?? this.defaultTheme,
+      enableLocalDataClearForTeachers: enableLocalDataClearForTeachers ?? this.enableLocalDataClearForTeachers,
     );
   }
 }

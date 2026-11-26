@@ -17,42 +17,45 @@ class CheckpointHiveAdapter extends TypeAdapter<CheckpointHive> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return CheckpointHive(
-      checkpointId: fields[0] as String,
-      lessonId: fields[1] as String,
-      triggerPositionSeconds: fields[2] as int,
-      question: fields[3] as String,
-      options: (fields[4] as List).cast<String>(),
-      correctOptionIndex: fields[5] as int,
-      isPassed: fields[6] as bool,
-      passedAt: fields[7] as DateTime?,
-      attempts: fields[8] as int,
-      firstAttemptAt: fields[9] as DateTime?,
+      userId: fields[0] as String,
+      checkpointId: fields[1] as String,
+      lessonId: fields[2] as String,
+      triggerPositionSeconds: fields[3] as int,
+      question: fields[4] as String,
+      options: (fields[5] as List).cast<String>(),
+      correctOptionIndex: fields[6] as int,
+      isPassed: fields[7] as bool,
+      passedAt: fields[8] as DateTime?,
+      attempts: fields[9] as int,
+      firstAttemptAt: fields[10] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, CheckpointHive obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(11)
       ..writeByte(0)
-      ..write(obj.checkpointId)
+      ..write(obj.userId)
       ..writeByte(1)
-      ..write(obj.lessonId)
+      ..write(obj.checkpointId)
       ..writeByte(2)
-      ..write(obj.triggerPositionSeconds)
+      ..write(obj.lessonId)
       ..writeByte(3)
-      ..write(obj.question)
+      ..write(obj.triggerPositionSeconds)
       ..writeByte(4)
-      ..write(obj.options)
+      ..write(obj.question)
       ..writeByte(5)
-      ..write(obj.correctOptionIndex)
+      ..write(obj.options)
       ..writeByte(6)
-      ..write(obj.isPassed)
+      ..write(obj.correctOptionIndex)
       ..writeByte(7)
-      ..write(obj.passedAt)
+      ..write(obj.isPassed)
       ..writeByte(8)
-      ..write(obj.attempts)
+      ..write(obj.passedAt)
       ..writeByte(9)
+      ..write(obj.attempts)
+      ..writeByte(10)
       ..write(obj.firstAttemptAt);
   }
 

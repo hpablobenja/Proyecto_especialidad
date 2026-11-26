@@ -36,7 +36,7 @@ class _VideoDownloadButtonState extends State<VideoDownloadButton> {
 
     if (!Hive.isBoxOpen(VideoDownloadService.boxName)) {
       return FutureBuilder<Box<DownloadedVideoHive>>(
-        future: Hive.openBox<DownloadedVideoHive>(VideoDownloadService.boxName),
+        future: Hive.openBox<DownloadedVideoHive>(VideoDownloadService.boxName, crashRecovery: true),
         builder: (context, snapshot) {
           if (!snapshot.hasData) return const SizedBox.shrink();
           return _buildButton(snapshot.data!);

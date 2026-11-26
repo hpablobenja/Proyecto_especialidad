@@ -15,6 +15,7 @@ import '../../../domain/entities/system_config_entity.dart';
 import '../../../core/di/riverpod_providers.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/quiz_offline_service.dart';
+import '../../../core/services/performance_service.dart';
 import '../../../data/models/quiz_progress_hive.dart';
 import '../../widgets/offline_lesson_badge.dart';
 
@@ -131,7 +132,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
       try {
         // Obtener la clave obligatoriamente desde el servidor (Source.server)
         final answersDoc = await firestore
-            .collection('quizAnswers')
+            .collection('quizAnswersKeys')
             .doc(quiz.quizId)
             .get(const GetOptions(source: Source.server));
 
@@ -139,7 +140,9 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         if (answersDoc.exists && answersDoc.data() != null) {
           final data = answersDoc.data()!;
           if (data['answers'] is Map) {
-            correctAnswersMap = Map<String, dynamic>.from(data['answers'] as Map);
+            correctAnswersMap = Map<String, dynamic>.from(
+              data['answers'] as Map,
+            );
           }
         }
 
@@ -149,8 +152,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
             .doc(quiz.quizId)
             .get(const GetOptions(source: Source.server));
 
-        final questionsData =
-            (quizDoc.data()?['questions'] as List? ?? []);
+        final questionsData = (quizDoc.data()?['questions'] as List? ?? []);
 
         int calculatedScore = 0;
         final List<Map<String, dynamic>> evaluatedAnswers = [];
@@ -176,11 +178,12 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                     ? options[selected]
                     : null,
             'correctAnswerIndex': correctIndex ?? -1,
-            'correctAnswerText': (correctIndex != null &&
-                    correctIndex >= 0 &&
-                    correctIndex < options.length)
-                ? options[correctIndex]
-                : '',
+            'correctAnswerText':
+                (correctIndex != null &&
+                        correctIndex >= 0 &&
+                        correctIndex < options.length)
+                    ? options[correctIndex]
+                    : '',
             'isCorrect': isCorrect,
           });
         }
@@ -219,7 +222,9 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         // Limpiar los datos temporales del almacenamiento local (Hive)
         await _quizOfflineService.deleteQuizProgress(quiz.userId, quiz.quizId);
         syncedCount++;
-        debugPrint('Quiz sincronizado, evaluado online y eliminado de almacenamiento local: ${quiz.quizId}');
+        debugPrint(
+          'Quiz sincronizado, evaluado online y eliminado de almacenamiento local: ${quiz.quizId}',
+        );
       } catch (e) {
         debugPrint('Error al sincronizar quiz ${quiz.quizId}: $e');
       }
@@ -251,13 +256,15 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
 
       // Verificar si hay progreso local previo cuando está offline
       if (!_isOnline && auth.currentUser != null) {
-        final localProgress = _quizOfflineService.getQuizProgressByLesson(
-          auth.currentUser!.uid,
-          widget.lesson.id,
-        ) ?? _quizOfflineService.getQuizProgress(
-          auth.currentUser!.uid,
-          widget.lesson.id,
-        );
+        final localProgress =
+            _quizOfflineService.getQuizProgressByLesson(
+              auth.currentUser!.uid,
+              widget.lesson.id,
+            ) ??
+            _quizOfflineService.getQuizProgress(
+              auth.currentUser!.uid,
+              widget.lesson.id,
+            );
 
         if (localProgress != null && localProgress.isCompleted) {
           setState(() {
@@ -275,7 +282,9 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         final cachedQuestions = await cacheService.getCachedQuizQuestions(
           widget.lesson.id,
         );
-        final cachedQuizId = await cacheService.getCachedQuizId(widget.lesson.id);
+        final cachedQuizId = await cacheService.getCachedQuizId(
+          widget.lesson.id,
+        );
         if (cachedQuestions.isNotEmpty) {
           setState(() {
             _quiz = QuizEntity(
@@ -299,12 +308,19 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
       }
 
       final firestore = ref.read(firestoreProvider);
-      final quizDoc =
-          await firestore
-              .collection('quizzes')
-              .where('lessonId', isEqualTo: widget.lesson.id)
-              .limit(1)
-              .get();
+      final quizDoc = await PerformanceService.instance.trackLoadQuiz(
+        lessonId: widget.lesson.id,
+        operation: (trace) async {
+          final querySnap =
+              await firestore
+                  .collection('quizzes')
+                  .where('lessonId', isEqualTo: widget.lesson.id)
+                  .limit(1)
+                  .get();
+          trace.putAttribute('has_quiz', querySnap.docs.isNotEmpty.toString());
+          return querySnap;
+        },
+      );
 
       if (quizDoc.docs.isEmpty) {
         setState(() {
@@ -322,25 +338,29 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
               .map((q) => QuestionEntity.fromMap(q as Map<String, dynamic>))
               .toList();
 
-      // Guardar automáticamente en local las preguntas del cuestionario
-      await ref
-          .read(offlineCacheServiceProvider)
-          .cacheQuizQuestions(widget.lesson.id, allQuestions);
-
-      // Guardar el quizId real para uso offline
-      await ref
-          .read(offlineCacheServiceProvider)
-          .cacheQuizId(widget.lesson.id, quizDoc.docs.first.id);
-
       final isTeacher = auth.currentUser?.role == 'maestro';
       final maxQuestionsForTeacher = _systemConfig?.maxQuestionsForTeacher ?? 5;
 
       List<QuestionEntity> questionsToShow;
       if (isTeacher && allQuestions.length > maxQuestionsForTeacher) {
-        questionsToShow = _getRandomQuestions(allQuestions, maxQuestionsForTeacher);
+        questionsToShow = _getRandomQuestions(
+          allQuestions,
+          maxQuestionsForTeacher,
+        );
       } else {
         questionsToShow = allQuestions;
       }
+
+      // Guardar automáticamente en local las preguntas del cuestionario FILTRADAS
+      // (no todas, solo las que se muestran al usuario)
+      await ref
+          .read(offlineCacheServiceProvider)
+          .cacheQuizQuestions(widget.lesson.id, questionsToShow);
+
+      // Guardar el quizId real para uso offline
+      await ref
+          .read(offlineCacheServiceProvider)
+          .cacheQuizId(widget.lesson.id, quizDoc.docs.first.id);
 
       int? fetchedScore;
       bool hasPrevious = false;
@@ -382,7 +402,9 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           widget.lesson.id,
         );
         if (cachedQuestions.isNotEmpty) {
-          final cachedQuizId = await cacheService.getCachedQuizId(widget.lesson.id);
+          final cachedQuizId = await cacheService.getCachedQuizId(
+            widget.lesson.id,
+          );
           setState(() {
             _quiz = QuizEntity(
               id: cachedQuizId ?? 'cached_${widget.lesson.id}',
@@ -434,7 +456,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         // 4. Evaluación Online en Flutter:
         // Obtener obligatoriamente la clave desde Firestore usando Source.server
         final answersDoc = await firestore
-            .collection('quizAnswers')
+            .collection('quizAnswersKeys')
             .doc(_quiz!.id)
             .get(const GetOptions(source: Source.server));
 
@@ -442,8 +464,9 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         if (answersDoc.exists && answersDoc.data() != null) {
           final data = answersDoc.data()!;
           if (data['answers'] is Map) {
-            correctAnswersMap =
-                Map<String, dynamic>.from(data['answers'] as Map);
+            correctAnswersMap = Map<String, dynamic>.from(
+              data['answers'] as Map,
+            );
           }
         }
 
@@ -457,8 +480,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           final selected = _selectedAnswers[i];
           final correctIndex = correctAnswersMap[q.id] as int?;
 
-          final isCorrect =
-              correctIndex != null && selected == correctIndex;
+          final isCorrect = correctIndex != null && selected == correctIndex;
           if (isCorrect) {
             calculatedScore++;
           }
@@ -466,21 +488,19 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           answerDetails.add({
             'questionText': q.text,
             'selectedAnswerIndex': selected,
-            'selectedAnswerText':
-                selected != null ? q.options[selected] : null,
+            'selectedAnswerText': selected != null ? q.options[selected] : null,
             'correctAnswerIndex': correctIndex ?? -1,
-            'correctAnswerText': (correctIndex != null &&
-                    correctIndex >= 0 &&
-                    correctIndex < q.options.length)
-                ? q.options[correctIndex]
-                : '',
+            'correctAnswerText':
+                (correctIndex != null &&
+                        correctIndex >= 0 &&
+                        correctIndex < q.options.length)
+                    ? q.options[correctIndex]
+                    : '',
             'isCorrect': isCorrect,
           });
 
           // Actualizar pregunta efímeramente en memoria para mostrar resultados
-          evaluatedQuestions.add(
-            q.copyWith(correctAnswerIndex: correctIndex),
-          );
+          evaluatedQuestions.add(q.copyWith(correctAnswerIndex: correctIndex));
         }
 
         if (auth.currentUser != null) {
@@ -562,6 +582,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
             courseId: widget.lesson.courseId,
             moduleId: widget.lesson.moduleId,
             selectedAnswers: _selectedAnswers.cast<int, int>(),
+            questionIds: _quiz!.questions.map((q) => q.id).toList(),
             score: null, // Pospuesto: no hay calificación offline
             maxScore: _quiz!.questions.length,
             isCompleted: true,
@@ -692,7 +713,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
 
     if (_showingPreviousScore) {
       final auth = ref.read(authStateProvider);
-      final hasPendingSync = !_isOnline &&
+      final hasPendingSync =
+          !_isOnline &&
           auth.currentUser != null &&
           _quizOfflineService
               .getPendingSyncQuizzes(auth.currentUser!.uid)
@@ -1034,7 +1056,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
             ...List.generate(_quiz!.questions.length, (index) {
               final question = _quiz!.questions[index];
               final selected = _selectedAnswers[index];
-              final isCorrect = question.correctAnswerIndex != null &&
+              final isCorrect =
+                  question.correctAnswerIndex != null &&
                   selected == question.correctAnswerIndex;
               return _ResultQuestionCard(
                 questionNumber: index + 1,

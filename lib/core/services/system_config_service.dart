@@ -44,7 +44,7 @@ class SystemConfigService {
       await _firestore
           .collection(_collectionName)
           .doc(_docId)
-          .set(config.toMap(), SetOptions(merge: true));
+          .set(config.toMap());
       debugPrint('Configuración del sistema actualizada exitosamente');
       return true;
     } catch (e) {

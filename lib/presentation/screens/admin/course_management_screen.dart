@@ -1238,9 +1238,13 @@ class _CourseManagementScreenState
     final u = url.trim();
     final patterns = <RegExp>[
       RegExp(r'^https?:\/\/(?:www\.)?youtu\.be\/([A-Za-z0-9_-]{11})'),
-      RegExp(r'^https?:\/\/(?:www\.)?youtube\.com\/watch\?v=([A-Za-z0-9_-]{11})'),
+      RegExp(
+        r'^https?:\/\/(?:www\.)?youtube\.com\/watch\?v=([A-Za-z0-9_-]{11})',
+      ),
       RegExp(r'^https?:\/\/(?:www\.)?youtube\.com\/embed\/([A-Za-z0-9_-]{11})'),
-      RegExp(r'^https?:\/\/(?:www\.)?youtube\.com\/shorts\/([A-Za-z0-9_-]{11})'),
+      RegExp(
+        r'^https?:\/\/(?:www\.)?youtube\.com\/shorts\/([A-Za-z0-9_-]{11})',
+      ),
     ];
     for (final p in patterns) {
       final m = p.firstMatch(u);
@@ -1486,7 +1490,8 @@ class _CourseManagementScreenState
 
         // Extraer estrategias: primero de la pestaña 'Estrategias'
         List<Map<String, String>> strategies = [];
-        if (lessonImport.id.isNotEmpty && strategiesByLessonId.containsKey(lessonImport.id.trim())) {
+        if (lessonImport.id.isNotEmpty &&
+            strategiesByLessonId.containsKey(lessonImport.id.trim())) {
           strategies.addAll(strategiesByLessonId[lessonImport.id.trim()]!);
         }
 
@@ -1499,8 +1504,12 @@ class _CourseManagementScreenState
             if (decoded is List) {
               for (final item in decoded) {
                 if (item is Map) {
-                  final t = (item['title'] ?? item['titulo'] ?? '').toString().trim();
-                  final d = (item['description'] ?? item['descripcion'] ?? '').toString().trim();
+                  final t =
+                      (item['title'] ?? item['titulo'] ?? '').toString().trim();
+                  final d =
+                      (item['description'] ?? item['descripcion'] ?? '')
+                          .toString()
+                          .trim();
                   if (t.isNotEmpty || d.isNotEmpty) {
                     strategies.add({'title': t, 'description': d});
                   }
@@ -1521,16 +1530,26 @@ class _CourseManagementScreenState
         final videoUrl = lessonImport.videoUrl?.trim();
         if (videoUrl != null && videoUrl.isNotEmpty) {
           final videoId = _extractYouTubeVideoId(videoUrl);
-          final String mediaId = videoId != null ? 'youtube:$videoId' : 'video_${DateTime.now().millisecondsSinceEpoch}';
-          final String canonicalUrl = videoId != null ? 'https://www.youtube.com/watch?v=$videoId' : videoUrl;
-          final String mimeType = (lessonImport.videoType?.toLowerCase().contains('youtube') ?? false) || videoId != null
-              ? 'video/youtube'
-              : (lessonImport.videoType ?? 'video/youtube');
+          final String mediaId =
+              videoId != null
+                  ? 'youtube:$videoId'
+                  : 'video_${DateTime.now().millisecondsSinceEpoch}';
+          final String canonicalUrl =
+              videoId != null
+                  ? 'https://www.youtube.com/watch?v=$videoId'
+                  : videoUrl;
+          final String mimeType =
+              (lessonImport.videoType?.toLowerCase().contains('youtube') ??
+                          false) ||
+                      videoId != null
+                  ? 'video/youtube'
+                  : (lessonImport.videoType ?? 'video/youtube');
 
           mediaList.add({
             'id': mediaId,
             'url': canonicalUrl,
-            'filename': videoId != null ? 'YouTube $videoId' : lessonImport.title,
+            'filename':
+                videoId != null ? 'YouTube $videoId' : lessonImport.title,
             'mimeType': mimeType,
             'sizeBytes': 0,
             'durationSeconds': 0,
@@ -1592,7 +1611,8 @@ class _CourseManagementScreenState
 
         for (final quizImport in result.quizzes) {
           final rawLessonId = quizImport.lessonId.trim();
-          final realLessonId = cleanLessonIdMap[rawLessonId.toLowerCase()] ??
+          final realLessonId =
+              cleanLessonIdMap[rawLessonId.toLowerCase()] ??
               lessonIdMap[rawLessonId] ??
               (lessonIdMap.isNotEmpty ? lessonIdMap.values.first : rawLessonId);
 
@@ -1602,20 +1622,26 @@ class _CourseManagementScreenState
 
           final matchedLesson = result.lessons.firstWhere(
             (l) => l.id.trim().toLowerCase() == rawLessonId.toLowerCase(),
-            orElse: () => result.lessons.isNotEmpty ? result.lessons.first : LessonImportModel(
-              id: '',
-              courseId: '',
-              moduleId: '',
-              title: '',
-              orderIndex: 0,
-            ),
+            orElse:
+                () =>
+                    result.lessons.isNotEmpty
+                        ? result.lessons.first
+                        : LessonImportModel(
+                          id: '',
+                          courseId: '',
+                          moduleId: '',
+                          title: '',
+                          orderIndex: 0,
+                        ),
           );
 
           if (matchedLesson.id.isNotEmpty) {
             final rawCourse = matchedLesson.courseId.trim();
             final rawMod = matchedLesson.moduleId.trim();
-            quizCourseId = courseIdMap[rawCourse] ?? defaultCourseFirestoreId ?? rawCourse;
-            quizModuleId = moduleIdMap[rawMod] ?? defaultModuleFirestoreId ?? rawMod;
+            quizCourseId =
+                courseIdMap[rawCourse] ?? defaultCourseFirestoreId ?? rawCourse;
+            quizModuleId =
+                moduleIdMap[rawMod] ?? defaultModuleFirestoreId ?? rawMod;
           }
 
           if (quizCourseId.isEmpty && defaultCourseFirestoreId != null) {
@@ -1626,8 +1652,11 @@ class _CourseManagementScreenState
           }
 
           final quizKey = quizImport.id.trim().toLowerCase();
-          final quizQuestionsModels = questionsByQuiz[quizKey] ??
-              (questionsByQuiz.length == 1 ? questionsByQuiz.values.first : <QuestionImportModel>[]);
+          final quizQuestionsModels =
+              questionsByQuiz[quizKey] ??
+              (questionsByQuiz.length == 1
+                  ? questionsByQuiz.values.first
+                  : <QuestionImportModel>[]);
 
           final questionsEntities = <Map<String, dynamic>>[];
           final quizAnswersMap = <String, int>{};
@@ -1649,9 +1678,10 @@ class _CourseManagementScreenState
               options.addAll(['Opción A', 'Opción B', 'Opción C']);
             }
 
-            final questionId = qModel.id.isNotEmpty
-                ? qModel.id
-                : DateTime.now().millisecondsSinceEpoch.toString();
+            final questionId =
+                qModel.id.isNotEmpty
+                    ? qModel.id
+                    : DateTime.now().millisecondsSinceEpoch.toString();
 
             questionsEntities.add({
               'id': questionId,
@@ -1671,13 +1701,18 @@ class _CourseManagementScreenState
             'lessonId': realLessonId,
             'courseId': quizCourseId,
             'moduleId': quizModuleId,
-            'title': quizImport.title.isNotEmpty ? quizImport.title.trim() : 'Evaluación',
+            'title':
+                quizImport.title.isNotEmpty
+                    ? quizImport.title.trim()
+                    : 'Evaluación',
             'questions': questionsEntities,
             'createdAt': FieldValue.serverTimestamp(),
           });
 
-          // Guardar en la colección raíz 'quizAnswers'
-          final quizAnswerDocRef = firestore.collection('quizAnswers').doc(quizDocRef.id);
+          // Guardar en la colección raíz 'quizAnswersKeys'
+          final quizAnswerDocRef = firestore
+              .collection('quizAnswersKeys')
+              .doc(quizDocRef.id);
           batch.set(quizAnswerDocRef, {
             'quizId': quizDocRef.id,
             'lessonId': realLessonId,

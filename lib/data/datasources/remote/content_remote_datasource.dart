@@ -9,6 +9,7 @@ import '../../../domain/entities/lesson_entity.dart';
 import '../../../domain/entities/media_resource.dart';
 import '../../../domain/entities/comment_entity.dart';
 import '../../../domain/entities/checkpoint_entity.dart';
+import '../../../core/services/performance_service.dart';
 
 abstract class ContentRemoteDataSource {
   Future<List<CourseEntity>> listCourses();
@@ -232,14 +233,21 @@ class ContentRemoteDataSourceImpl implements ContentRemoteDataSource {
     String courseId,
     String moduleId,
   ) async {
-    final qs =
-        await _rootLessonsCol
-            .where('courseId', isEqualTo: courseId)
-            .where('moduleId', isEqualTo: moduleId)
-            .get();
-    final list = qs.docs.map(_lessonFromDoc).toList();
-    list.sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
-    return list;
+    return PerformanceService.instance.trackLoadLessons(
+      courseId: courseId,
+      moduleId: moduleId,
+      operation: (trace) async {
+        final qs =
+            await _rootLessonsCol
+                .where('courseId', isEqualTo: courseId)
+                .where('moduleId', isEqualTo: moduleId)
+                .get();
+        final list = qs.docs.map(_lessonFromDoc).toList();
+        list.sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
+        trace.setMetric('lessons_count', list.length);
+        return list;
+      },
+    );
   }
 
   @override

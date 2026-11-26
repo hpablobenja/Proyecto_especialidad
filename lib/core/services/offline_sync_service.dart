@@ -272,7 +272,9 @@ class SyncQueueItem {
       operation: map['operation'] as String,
       targetId: map['targetId'] as String,
       payload: Map<String, dynamic>.from(map['payload'] as Map),
-      createdAt: DateTime.parse(map['createdAt'] as String),
+      createdAt: map['createdAt'] is DateTime
+          ? map['createdAt'] as DateTime
+          : DateTime.parse(map['createdAt'] as String),
       retryCount: map['retryCount'] as int? ?? 0,
       isProcessing: map['isProcessing'] as bool? ?? false,
     );
